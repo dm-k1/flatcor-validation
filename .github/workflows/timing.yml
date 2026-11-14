@@ -26,9 +26,34 @@ on:
 permissions:
   contents: read
   packages: read
+  actions: read
 
 jobs:
+  # When the same push also rebuilds the image (renv.lock changed), time the
+  # new image, not the one before it.
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 320
+    steps:
+      - name: Wait for this commit's image build, if there is one
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 60
+          while true; do
+            state=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
+              --commit "$GITHUB_SHA" --json status,conclusion \
+              -q '.[0] | "\(.status) \(.conclusion)"')
+            case "$state" in
+              "") echo "No image build for this commit"; exit 0 ;;
+              "completed success") echo "Image built"; exit 0 ;;
+              completed*) echo "Image build ended: $state"; exit 1 ;;
+            esac
+            sleep 60
+          done
+
   time:
+    needs: image
     runs-on: ubuntu-latest
     timeout-minutes: 340
     strategy:
