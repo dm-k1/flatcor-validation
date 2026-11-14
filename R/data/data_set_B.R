@@ -1,9 +1,8 @@
 ## =====================================================================
 ##  Data set B: data drawn from each prior (docs/appendix/C_study_design.md)
 ##
-##  Used by study 3 (calibration of the posterior), study 4 (calibration of
-##  the Bayes factor) and study 6 (coherence with the joint model). Needs
-##  R/data/data_sets.R (with_stream_of()) and flatcor.
+##  Used by study 3 (calibration of the posterior and of the Bayes factor).
+##  Needs R/data/data_sets.R (with_stream_of()) and flatcor.
 ##
 ##  One dataset: predictors with equal correlation .3 (centred, then held
 ##  fixed: the model conditions on them); the intercept from N(0, 10) and the
@@ -14,9 +13,13 @@
 ##  (BayesFactor's Cauchy prior, scale 0.354).
 ##
 ##  x1 can be set instead of drawn:
-##    x1 = "prior"   drawn with the others (study 3)
-##    x1 = "null"    0 (half of study 4's datasets)
-##    x1 = <number>  a target t-value: x1's partial f is t / sqrt(n) (study 6)
+##    x1 = "prior"    drawn with the others: data from the model with all k
+##                    predictors
+##    x1 = "reduced"  0, and x2 ... xk drawn from the generating prior for
+##                    those k - 1 predictors (in their own covariance): data
+##                    from the model without x1, with its own prior. Half of
+##                    the Bayes factor calibration's datasets.
+##    x1 = <number>   a target t-value: x1's partial f is t / sqrt(n)
 ## =====================================================================
 
 jzs_scale <- sqrt(2) / 4
@@ -51,8 +54,9 @@ generate_B <- function(generating_prior, k, n, x1 = "prior", purpose, replicatio
     covariance <- sample_covariance(predictors)
     intercept  <- rnorm(1, 0, 10)
     noise_sd   <- rlnorm(1, 0, 1)
-    coefficients <- draw_coefficients_B(generating_prior, covariance)   # noise units
-    if (identical(x1, "null")) coefficients[1] <- 0
+    coefficients <- if (identical(x1, "reduced"))                      # noise units
+      c(0, if (k > 1) draw_coefficients_B(generating_prior, covariance[-1, -1, drop = FALSE])) else
+      draw_coefficients_B(generating_prior, covariance)
     if (is.numeric(x1)) coefficients[1] <- x1 / sqrt(n) / sd_given_others(covariance)
     coefficients <- noise_sd * coefficients                            # data units
     outcome <- intercept + drop(predictors %*% coefficients) + rnorm(n, 0, noise_sd)

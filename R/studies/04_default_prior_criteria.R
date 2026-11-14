@@ -1,12 +1,12 @@
 ## =====================================================================
-##  Study 5: does each prior meet the default-prior criteria?
-##  (docs/appendix/C_study_design.md, study 5; replaces checks B1-B5 of the old study 02
-##  and the old study 08, growing k)
+##  Study 4: does each prior meet the default-prior criteria?
+##  (docs/appendix/C_study_design.md, study 4)
 ##
 ##  Aims. The criteria of Bayarri, Berger, Forte and Garcia-Donato (2012) for
 ##  each of the three priors: predictive matching, information consistency,
-##  intrinsic consistency, and model-selection consistency for a fixed and a
-##  growing number of predictors k. (Invariance is checked in study 2.)
+##  intrinsic consistency, model-selection consistency for a fixed and a
+##  growing number of predictors k, and invariance under rescaling and
+##  recoding of the predictors.
 ##  Data. None for the formula checks; simulated R-squared values and datasets
 ##  for the rates (per-draw streams from their IDs); data set D for growing k
 ##  (R/data/data_set_D.R).
@@ -29,32 +29,35 @@
 ##  setting for growing k with a true model (n_sim_of("growing_k_data")).
 ##
 ##  Checks (each for each prior):
-##    5.1 predictive matching: BF = 1 at n = k + 1 (old B1)
-##    5.2 information consistency: evidence increases without bound as
+##    4.1 predictive matching: BF = 1 at n = k + 1 (old B1)
+##    4.2 information consistency: evidence increases without bound as
 ##        R-squared -> 1 (old B2)
-##    5.3 information consistency starts exactly at n = k + 3 (old B2b)
-##    5.4 consistency under the null: one null predictor next to two real
+##    4.3 information consistency starts exactly at n = k + 3 (old B2b)
+##    4.4 consistency under the null: one null predictor next to two real
 ##        ones, 95% interval of the slope within (.35, .65) (old B3)
-##    5.5 the rate with a real effect in the smaller model: 95% interval of
+##    4.5 the rate with a real effect in the smaller model: 95% interval of
 ##        the slope within 20% of q/2, q = 1, 3, 6 (old B3b, smaller model x1)
-##    5.6 the rate against the intercept-only model: 95% interval within 30%
+##    4.6 the rate against the intercept-only model: 95% interval within 30%
 ##        of a, q = 1, 3, 6 (old B3b, intercept only)
-##    5.7 consistency under the alternative: median log BF10 for a real effect
+##    4.7 consistency under the alternative: median log BF10 for a real effect
 ##        increases with n, and its 95% lower bound at n = 5,000 exceeds 20
 ##        (old B4)
-##    5.8 intrinsic consistency: the prior with the sample covariance is
+##    4.8 intrinsic consistency: the prior with the sample covariance is
 ##        indistinguishable from the prior with the population covariance at
 ##        n = 100,000 and distinguishable at n = 30 (two-sample KS against its
 ##        .01 critical value; old B5)
-##    5.9 growing k, null true: evidence for the null grows; 95% lower bound
+##    4.9 growing k, null true: evidence for the null grows; 95% lower bound
 ##        of the slope above 0.1 (old G1)
-##    5.10 growing k, small model true: evidence for it grows; 95% lower
+##    4.10 growing k, small model true: evidence for it grows; 95% lower
 ##        bound of the slope above 0.1 (old G2)
+##    4.11 invariance: rescaling, shifting and recoding the predictors (and
+##        the outcome) leaves the Bayes factor unchanged, within a relative
+##        1e-8
 ##
-##  Run from the project folder:  Rscript R/studies/05_default_prior_criteria.R
-##  Smoke test:  VALIDATION_SMOKE=1 Rscript R/studies/05_default_prior_criteria.R
-##  Raw results are cached in cache/study_05/flatcor_<build>/ (delete it to rerun); the
-##  tables and checks are saved to results/studies/study_05.rds.
+##  Run from the project folder:  Rscript R/studies/04_default_prior_criteria.R
+##  Smoke test:  VALIDATION_SMOKE=1 Rscript R/studies/04_default_prior_criteria.R
+##  Raw results are cached in cache/study_04/flatcor_<build>/ (delete it to rerun); the
+##  tables and checks are saved to results/studies/study_04.rds.
 ## =====================================================================
 library(SimDesign)
 library(dplyr)
@@ -66,7 +69,7 @@ source("R/shared/precision.R")            # n_sim_of(), smoke_mode
 source("R/data/data_sets.R")            # with_stream_of()
 source("R/data/data_set_D.R")           # design_D(), generate_D_null(), generate_D_true()
 
-study_folder <- study_cache_folder("05")
+study_folder <- study_cache_folder("04")
 
 priors <- c("flat_r", "flat_partial_r", "flat_r_squared")
 log_bf <- function(prior, r_squared, n, k)
@@ -107,26 +110,34 @@ slope_of_medians <- function(draws) {
 ##  Part 1: the formula checks (no simulation)
 ## =====================================================================
 for (prior in priors) {
-  ## 5.1 predictive matching (flat_r_squared at k = 1 goes through the block
-  ## route, which returns exactly 1 at n = k + 1 by construction, so k = 1 is
-  ## not a test there)
-  ks <- if (prior == "flat_r_squared") 2:6 else 1:6
-  matching <- sapply(ks, function(k) exp(log_bf(prior, 1 - 1e-12, k + 1, k)))
-  record_check(sprintf("5.1 %s: predictive matching, BF = 1 at n = k + 1 (k = %d-%d)", prior, min(ks), max(ks)),
-               all(abs(matching - 1) < 1e-3), paste(sprintf("%.4f", matching), collapse = " "))
+  ## 4.1 predictive matching. At n = k + 1 the package returns BF = 1 without
+  ## integrating (every model fits exactly), so the check computes the integral
+  ## itself: the package's likelihood ratio averaged over R-squared ~ Beta(a, 1)
+  ## by integrate(), for a sample R-squared just below 1.
+  ks <- 1:6
+  matching <- sapply(ks, function(k) {
+    n <- k + 1; a <- prior_shape(prior, k)
+    integrand <- function(f) exp(log_likelihood_ratio_block(f, 1 - 1e-12, n, k, k)) *
+      2 * a * f^(2 * a - 1) / (1 + f^2)^(a + 1)
+    sum(sapply(list(c(0, 1), c(1, 100), c(100, Inf)), function(range)
+      integrate(integrand, range[1], range[2], rel.tol = 1e-10)$value))
+  })
+  record_check(sprintf("4.1 %s: predictive matching, BF = 1 at n = k + 1 (k = %d-%d)", prior, min(ks), max(ks)),
+               all(abs(matching - 1) < 1e-3) && all(exp(sapply(ks, function(k) log_bf(prior, 1 - 1e-12, k + 1, k))) == 1),
+               paste(sprintf("%.4f", matching), collapse = " "))
 
-  ## 5.2 information consistency: strictly increasing, above 50 at R2 = .9999
+  ## 4.2 information consistency: strictly increasing, above 50 at R2 = .9999
   information <- sapply(c(0.9, 0.99, 0.999, 0.9999), function(r2) log_bf(prior, r2, 20, 3))
-  record_check(sprintf("5.2 %s: information consistency", prior),
+  record_check(sprintf("4.2 %s: information consistency", prior),
                all(diff(information) > 0) && information[4] > 50,
                paste("log BF at R2 = .9 ... .9999:", paste(sprintf("%.1f", information), collapse = " ")))
 
-  ## 5.3 the exact boundary: bounded at n = k + 2, growing at n = k + 3
+  ## 4.3 the exact boundary: bounded at n = k + 2, growing at n = k + 3
   boundary <- sapply(1:3, function(k) {
     at <- function(n) sapply(c(1 - 1e-6, 1 - 1e-8), function(r2) log_bf(prior, r2, n, k))
     c(bounded_at_k_plus_2 = diff(at(k + 2)) < 0.01, growing_at_k_plus_3 = diff(at(k + 3)) > 0.2)
   })
-  record_check(sprintf("5.3 %s: information consistency starts exactly at n = k + 3 (k = 1-3)", prior),
+  record_check(sprintf("4.3 %s: information consistency starts exactly at n = k + 3 (k = 1-3)", prior),
                all(boundary), "bounded at n = k + 2, growing at n = k + 3")
 }
 
@@ -205,21 +216,21 @@ describe <- function(rows)
                 rows$expected), collapse = "; ")
 
 for (p in priors) {
-  ## 5.4 one null predictor next to two real ones: the slope is near 1/2
+  ## 4.4 one null predictor next to two real ones: the slope is near 1/2
   rows <- filter(rate_slopes, prior == p, setting == "x3 null next to two real")
-  record_check(sprintf("5.4 %s: consistency under the null, slope within (.35, .65)", p),
+  record_check(sprintf("4.4 %s: consistency under the null, slope within (.35, .65)", p),
                nrow(rows) == 0 || (rows$lower > 0.35 && rows$upper < 0.65), describe(rows))
-  ## 5.5 a real effect in the smaller model: the slope is q/2
+  ## 4.5 a real effect in the smaller model: the slope is q/2
   rows <- filter(rate_slopes, prior == p, setting == "x1 real")
-  record_check(sprintf("5.5 %s: smaller model x1, slope within 20%% of q/2", p),
+  record_check(sprintf("4.5 %s: smaller model x1, slope within 20%% of q/2", p),
                interval_within(rows, 0.2), describe(rows))
-  ## 5.6 the intercept-only model: the slope is a, the shape of the prior
+  ## 4.6 the intercept-only model: the slope is a, the shape of the prior
   rows <- filter(rate_slopes, prior == p, setting == "intercept only")
-  record_check(sprintf("5.6 %s: smaller model intercept only, slope within 30%% of a", p),
+  record_check(sprintf("4.6 %s: smaller model intercept only, slope within 30%% of a", p),
                interval_within(rows, 0.3), describe(rows))
 }
 
-## 5.7 a real effect: the median log BF10 grows with n, above 20 at n = 5,000
+## 4.7 a real effect: the median log BF10 grows with n, above 20 at n = 5,000
 RNGkind("L'Ecuyer-CMRG"); set.seed(57)   # the bootstrap's own, fixed stream
 alternative_medians <- rate_draws |>
   filter(setting == "alternative") |>
@@ -230,7 +241,7 @@ alternative_medians <- rate_draws |>
 for (p in priors) {
   rows <- arrange(filter(alternative_medians, prior == p), n)
   largest <- tail(rows, 1)
-  record_check(sprintf("5.7 %s: consistency under the alternative", p),
+  record_check(sprintf("4.7 %s: consistency under the alternative", p),
                nrow(rows) >= 2 && all(diff(rows$median) - 1.96 * sqrt(head(rows$mcse, -1)^2 +
                                                                        tail(rows$mcse, -1)^2) > 0) &&
                  (smoke_mode || (largest$n == 5000 && largest$median - 1.96 * largest$mcse > 20)),
@@ -259,7 +270,7 @@ for (p in priors) {
     suppressWarnings(unname(ks.test(draw_coefficients_from_prior(intrinsic_draws, sample_covariance,
                                                                  prior = p)[, 1], limit_draws)$statistic))
   }))
-  record_check(sprintf("5.8 %s: intrinsic consistency (prior with Sigma_n -> prior with Sigma)", p),
+  record_check(sprintf("4.8 %s: intrinsic consistency (prior with Sigma_n -> prior with Sigma)", p),
                distance[3] < critical_two_sample && distance[1] > critical_two_sample,
                sprintf("KS distance at n = 30, 300, 100,000: %s (critical value %.4f, %d draws)",
                        paste(sprintf("%.4f", distance), collapse = " "), critical_two_sample,
@@ -318,9 +329,9 @@ cat("\nGrowing k: slope of the median log BF for the truth against log n (with M
 print(as.data.frame(growing_slopes), digits = 3, row.names = FALSE)
 
 for (p in names(contenders)) for (g in unique(growing$growth)) {
-  for (check in list(list(id = "5.9", question = "null true: log BF(null vs k-predictor model)",
+  for (check in list(list(id = "4.9", question = "null true: log BF(null vs k-predictor model)",
                           label = "null true: evidence for the null grows"),
-                     list(id = "5.10", question = "3-predictor model true: log BF(true vs full)",
+                     list(id = "4.10", question = "3-predictor model true: log BF(true vs full)",
                           label = "small model true: evidence for it grows"))) {
     row <- filter(growing_slopes, method == p, growth == g, question == check$question)
     medians <- arrange(filter(growing_medians, method == p, growth == g, question == check$question), n)
@@ -344,8 +355,37 @@ save_figure(
          title = "Consistency when the number of predictors grows with n",
          subtitle = sprintf("%d R-squared draws (null) and %d datasets (true model) per setting",
                             n_sim_of("rate_draws"), n_sim_of("growing_k_data"))),
-  "study_05_growing_k", width = 11, height = 7)
+  "study_04_growing_k", width = 11, height = 7)
 
-save_study_results("05", list(rate_slopes = rate_slopes, alternative_medians = alternative_medians,
+
+## ---- 4.11 invariance ----------------------------------------------------------------
+## The Bayes factor of each predictor (the model with it against the model
+## without it) and of the whole model, before and after rescaling, shifting
+## and recoding the predictors and the outcome
+invariance_data <- local({
+  set.seed(42)
+  correlations <- matrix(0.4, 3, 3); diag(correlations) <- 1
+  x <- matrix(rnorm(60 * 3), 60) %*% chol(correlations)
+  data.frame(x1 = x[, 1], x2 = x[, 2], x3 = x[, 3], y = drop(x %*% c(0.3, 0.2, 0)) + rnorm(60))
+})
+bayes_factors_of <- function(data, formula_full, prior) {
+  full <- lm(formula_full, data)
+  terms_full <- attr(terms(full), "term.labels")
+  c(whole = bayes_factor_models(full, lm(y ~ 1, data), prior = prior),
+    sapply(terms_full, function(term)
+      bayes_factor_models(full, update(full, paste(". ~ . -", term)), prior = prior)))
+}
+for (p in priors) {
+  original <- bayes_factors_of(invariance_data, y ~ x1 + x2 + x3, p)
+  rescaled <- bayes_factors_of(transform(invariance_data, x1 = 100 * x1 + 7, x2 = -0.01 * x2,
+                                         x3 = x3 - 50, y = 1000 * y - 3), y ~ x1 + x2 + x3, p)
+  recoded_whole <- bayes_factors_of(transform(invariance_data, sum_12 = x1 + x2, difference_12 = x1 - x2),
+                                    y ~ sum_12 + difference_12 + x3, p)[["whole"]]
+  largest <- max(abs(rescaled / original - 1), abs(recoded_whole / original[["whole"]] - 1))
+  record_check(sprintf("4.11 %s: invariance under rescaling, shifting and recoding", p), largest < 1e-8,
+               sprintf("largest relative difference %.1e", largest))
+}
+
+save_study_results("04", list(rate_slopes = rate_slopes, alternative_medians = alternative_medians,
                               growing_slopes = growing_slopes, growing_medians = growing_medians))
 report_checks()

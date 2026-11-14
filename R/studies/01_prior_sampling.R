@@ -1,6 +1,6 @@
 ## =====================================================================
 ##  Study 1: is the prior sampled correctly?
-##  (docs/appendix/C_study_design.md, study 1; replaces checks P1-P10 of the old study 01)
+##  (docs/appendix/C_study_design.md, study 1)
 ##
 ##  Aims. flatcor's Stan model (inst/stan/flatcor.stan in the installed
 ##  package, used by fit_regression()) samples R, with R-squared ~ Beta(a, 1),
@@ -25,22 +25,17 @@
 ##  n_sim_of("ks_draws") = 26,569 (critical distance <= .01;
 ##  R/shared/precision.R): the chains are lengthened until it does.
 ##
-##  Checks (old number in brackets):
-##    1.1  flat_r, k = 1: the correlation is flat on (-1, 1)              (P1)
-##    1.2  flat_r, k = 3 correlated: R-squared ~ Beta(1/2, 1)             (P2)
-##    1.3  flat_r, k = 8: R-squared ~ Beta(1/2, 1)                        (P3)
-##    1.4  flat_r, k = 3 correlated: each partial correlation matches the
-##         recipe draw_coefficients_from_prior() (two-sample)            (P4)
-##    1.5  flat_partial_r, k = 3 correlated: R-squared ~ Beta(3/2, 1)     (P5)
-##    1.6  flat_partial_r, k = 8: R-squared ~ Beta(4, 1)                  (P6)
-##    1.7  flat_partial_r, k = 3 correlated: each partial correlation
-##         flat on (-1, 1)                                                (P7)
-##    1.8  flat_r_squared, k = 3 correlated: R-squared flat               (P8)
-##    1.9  flat_r_squared, k = 8: R-squared flat                          (P9)
-##    1.10 flat_r_squared, k = 1: r^2 flat (|r| has density 2|r|)         (P10)
-##  The old threshold was a fixed KS distance of 0.03; each check now passes
-##  when the distance is below the critical value for its ESS.
-##
+##  Checks, the same four for each prior (a its shape: flat_r 1/2,
+##  flat_partial_r k/2, flat_r_squared 1):
+##    1.1 k = 1: r^2 ~ Beta(a, 1), a for k = 1 (r^2 rather than r: under
+##        flat_r_squared r is bimodal near -1 and 1, so its sign mixes slowly)
+##    1.2 k = 3 correlated: R-squared ~ Beta(a, 1)
+##    1.3 k = 8: R-squared ~ Beta(a, 1)
+##    1.4 k = 3 correlated: each partial correlation matches the prior as a
+##        recipe, draw_coefficients_from_prior() (two-sample)
+##  Each check passes when the KS distance is below the critical value for
+##  its ESS.
+
 ##  Run from the project folder:  Rscript R/studies/01_prior_sampling.R
 ##  Smoke test (ESS target 500, about a minute):
 ##    VALIDATION_SMOKE=1 Rscript R/studies/01_prior_sampling.R
@@ -131,24 +126,18 @@ correlation_one <- function(draws, predictor_covariance) {
 ## smallest ESS of its checked quantities falls short of the target, the
 ## chains are lengthened in proportion and sampled again (same seed); the rule
 ## concerns precision only, not the outcome of any check.
-settings <- list(
-  list(name = "flat_r-one",                design = "one",              prior = "flat_r",         seed = 101),
-  list(name = "flat_r-three_correlated",   design = "three_correlated", prior = "flat_r",         seed = 102),
-  list(name = "flat_r-eight",              design = "eight",            prior = "flat_r",         seed = 103),
-  list(name = "flat_partial_r-three_correlated", design = "three_correlated", prior = "flat_partial_r", seed = 105),
-  list(name = "flat_partial_r-eight",      design = "eight",            prior = "flat_partial_r", seed = 106),
-  list(name = "flat_r_squared-three_correlated", design = "three_correlated", prior = "flat_r_squared", seed = 108),
-  list(name = "flat_r_squared-eight",      design = "eight",            prior = "flat_r_squared", seed = 109),
-  list(name = "flat_r_squared-one",        design = "one",              prior = "flat_r_squared", seed = 110))
+priors <- c("flat_r", "flat_partial_r", "flat_r_squared")
+settings <- unlist(lapply(seq_along(priors), function(i) lapply(seq_along(designs), function(j)
+  list(name = paste(priors[i], names(designs)[j], sep = "-"), design = names(designs)[j],
+       prior = priors[i], seed = 100 + 10 * i + j))), recursive = FALSE)
 
 ## the quantities whose ESS must reach the target, per setting
 checked_quantities <- function(draws, setting) {
   covariance <- covariance_of(designs[[setting$design]])
   k <- ncol(covariance)
-  ## k = 1: flat_r checks r itself, flat_r_squared checks r^2 (its r is
-  ## bimodal near -1 and 1, so the sign mixes slowly while r^2 does not)
-  if (k == 1) return(list(if (setting$prior == "flat_r_squared") correlation_one(draws, covariance)^2
-                          else correlation_one(draws, covariance)))
+  ## k = 1: r^2 (under flat_r_squared r is bimodal near -1 and 1, so its
+  ## sign mixes slowly while r^2 does not)
+  if (k == 1) return(list(correlation_one(draws, covariance)^2))
   c(list(implied_r_squared(draws, covariance)),
     if (setting$design == "three_correlated")
       lapply(seq_len(k), function(j) partial_correlation(draws, covariance, j)))
@@ -204,59 +193,36 @@ record_ks <- function(label, results) {
 }
 covariance <- lapply(designs, covariance_of)
 
-## 1.1 (old P1) flat_r, k = 1: the correlation is flat on (-1, 1)
-record_ks("1.1 flat_r, k = 1: the correlation is flat on (-1, 1)",
-          ks_against(correlation_one(samples[["flat_r-one"]]$draws, covariance$one),
-                     function(r) punif(r, min = -1, max = 1)))
-
-## 1.2, 1.3 (old P2, P3) flat_r: R-squared ~ Beta(1/2, 1)
-record_ks("1.2 flat_r, k = 3 correlated: R-squared ~ Beta(1/2, 1)",
-          ks_against(implied_r_squared(samples[["flat_r-three_correlated"]]$draws, covariance$three_correlated),
-                     function(r2) pbeta(r2, 0.5, 1)))
-record_ks("1.3 flat_r, k = 8: R-squared ~ Beta(1/2, 1)",
-          ks_against(implied_r_squared(samples[["flat_r-eight"]]$draws, covariance$eight),
-                     function(r2) pbeta(r2, 0.5, 1)))
-
-## 1.4 (old P4) flat_r, k = 3 correlated: each partial correlation matches the
-## prior as a recipe (draw_coefficients_from_prior(), in noise units)
 reference_size <- if (smoke_mode) 20000 else 200000
-recipe <- with_stream_of("study01-recipe-flat_r-three",
-  draw_coefficients_from_prior(reference_size, covariance$three_correlated, prior = "flat_r"))
 spread_left <- sqrt(1 / diag(solve(covariance$three_correlated)))
-recipe_partials <- sweep(recipe, 2, spread_left, "*")
-recipe_partials <- recipe_partials / sqrt(1 + recipe_partials^2)
-record_ks("1.4 flat_r, k = 3 correlated: each partial correlation matches the recipe",
-          lapply(1:3, function(j)
-            ks_against(partial_correlation(samples[["flat_r-three_correlated"]]$draws,
-                                           covariance$three_correlated, j),
-                       recipe_partials[, j], reference_size = reference_size)))
+for (prior in priors) {
+  shape_of <- function(k) prior_shape(prior, k)
+  draws_of <- function(design) samples[[paste(prior, design, sep = "-")]]$draws
 
-## 1.5, 1.6 (old P5, P6) flat_partial_r: R-squared ~ Beta(k/2, 1)
-record_ks("1.5 flat_partial_r, k = 3 correlated: R-squared ~ Beta(3/2, 1)",
-          ks_against(implied_r_squared(samples[["flat_partial_r-three_correlated"]]$draws,
-                                       covariance$three_correlated),
-                     function(r2) pbeta(r2, 3 / 2, 1)))
-record_ks("1.6 flat_partial_r, k = 8: R-squared ~ Beta(4, 1)",
-          ks_against(implied_r_squared(samples[["flat_partial_r-eight"]]$draws, covariance$eight),
-                     function(r2) pbeta(r2, 4, 1)))
+  ## 1.1 k = 1: r^2 ~ Beta(a, 1)
+  record_ks(sprintf("1.1 %s, k = 1: r^2 ~ Beta(%g, 1)", prior, shape_of(1)),
+            ks_against(correlation_one(draws_of("one"), covariance$one)^2,
+                       function(r2) pbeta(r2, shape_of(1), 1)))
 
-## 1.7 (old P7) flat_partial_r, k = 3 correlated: each partial correlation flat
-record_ks("1.7 flat_partial_r, k = 3 correlated: each partial correlation flat on (-1, 1)",
-          lapply(1:3, function(j)
-            ks_against(partial_correlation(samples[["flat_partial_r-three_correlated"]]$draws,
-                                           covariance$three_correlated, j),
-                       function(r) punif(r, min = -1, max = 1))))
+  ## 1.2, 1.3 R-squared ~ Beta(a, 1) at k = 3 (correlated) and k = 8
+  record_ks(sprintf("1.2 %s, k = 3 correlated: R-squared ~ Beta(%g, 1)", prior, shape_of(3)),
+            ks_against(implied_r_squared(draws_of("three_correlated"), covariance$three_correlated),
+                       function(r2) pbeta(r2, shape_of(3), 1)))
+  record_ks(sprintf("1.3 %s, k = 8: R-squared ~ Beta(%g, 1)", prior, shape_of(8)),
+            ks_against(implied_r_squared(draws_of("eight"), covariance$eight),
+                       function(r2) pbeta(r2, shape_of(8), 1)))
 
-## 1.8, 1.9 (old P8, P9) flat_r_squared: R-squared flat
-record_ks("1.8 flat_r_squared, k = 3 correlated: R-squared flat",
-          ks_against(implied_r_squared(samples[["flat_r_squared-three_correlated"]]$draws,
-                                       covariance$three_correlated), punif))
-record_ks("1.9 flat_r_squared, k = 8: R-squared flat",
-          ks_against(implied_r_squared(samples[["flat_r_squared-eight"]]$draws, covariance$eight), punif))
-
-## 1.10 (old P10) flat_r_squared, k = 1: r^2 flat (|r| has density 2|r|)
-record_ks("1.10 flat_r_squared, k = 1: r^2 flat (|r| has density 2|r|)",
-          ks_against(correlation_one(samples[["flat_r_squared-one"]]$draws, covariance$one)^2, punif))
+  ## 1.4 k = 3 correlated: each partial correlation matches the prior as a
+  ## recipe (draw_coefficients_from_prior(), in noise units)
+  recipe <- with_stream_of(paste0("study01-recipe-", prior, "-three"),
+    draw_coefficients_from_prior(reference_size, covariance$three_correlated, prior = prior))
+  recipe_partials <- sweep(recipe, 2, spread_left, "*")
+  recipe_partials <- recipe_partials / sqrt(1 + recipe_partials^2)
+  record_ks(sprintf("1.4 %s, k = 3 correlated: each partial correlation matches the recipe", prior),
+            lapply(1:3, function(j)
+              ks_against(partial_correlation(draws_of("three_correlated"), covariance$three_correlated, j),
+                         recipe_partials[, j], reference_size = reference_size)))
+}
 
 save_study_results("01", list(iterations = vapply(samples, `[[`, numeric(1), "iter_sampling"),
                               smallest_ess = vapply(samples, `[[`, numeric(1), "smallest_ess")))

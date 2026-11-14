@@ -4,8 +4,8 @@
 ##
 ##  Submit from the project folder (the logs folder must exist first):
 ##    mkdir -p cache/logs
-##    sbatch cluster/slurm_array.sh                 all ten studies
-##    sbatch --array=7,9 cluster/slurm_array.sh     a selection
+##    sbatch cluster/slurm_array.sh                 all five studies
+##    sbatch --array=3,5 cluster/slurm_array.sh     a selection
 ##    VALIDATION_IMAGE=$PWD/flatcor-validation.sif sbatch cluster/slurm_array.sh
 ##                                                     inside the container
 ##  Without VALIDATION_IMAGE the studies run with the cluster's own R (which
@@ -25,7 +25,7 @@
 ##  VALIDATION_SMOKE=1 sbatch ... runs the smoke test on the cluster first.
 ## =====================================================================
 #SBATCH --job-name=flatcor-validation
-#SBATCH --array=1-10
+#SBATCH --array=1-5
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
 #SBATCH --time=24:00:00
@@ -34,9 +34,8 @@
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 
-studies=(01_prior_sampling 02_bayes_factors 03_posterior_calibration
-         04_bayes_factor_calibration 05_default_prior_criteria 06_coherence
-         07_one_coefficient 08_factors 09_estimation 10_variable_selection)
+studies=(01_prior_sampling 02_bayes_factors 03_calibration 04_default_prior_criteria
+         05_behaviour)
 study=${studies[$((SLURM_ARRAY_TASK_ID - 1))]}
 
 export VALIDATION_CORES=$SLURM_CPUS_PER_TASK

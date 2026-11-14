@@ -1,9 +1,12 @@
 # Validation redesign
 
 Working plan for the branch `validation-redesign`. It records the decisions
-taken so far; the ADEMP descriptions (next step) fill in each study's design
-before any code changes. When the redesign is done, this file is replaced by
-the finished validation document.
+taken so far. When the redesign is done, this file is replaced by the
+finished validation document.
+
+**14 November 2026: the validation is simplified** (next section) to five
+studies, ported and run in smoke mode the same day; the ten-study structure
+is kept further down as the state before the simplification.
 
 ## Why
 
@@ -24,7 +27,91 @@ but it was built study by study:
   criteria are split over 02 and 08, and study 10 mixes calibration with
   coherence.
 
-## Decisions
+## Simplification (14 November 2026)
+
+### Why
+
+The ten studies do too much, and they do not test the three priors the same
+way. The point of the validation is to establish experimentally what each
+prior does, so every prior has to be computed by the same technique and
+checked by the same routes. The conditional test of one coefficient breaks
+that rule: only under flat partial r is it a Bayes factor of one model (it
+equals the Savage–Dickey ratio of the full model). Under flat R the
+restricted model collapses to the intercept-only model, and under flat R²
+the conditional test differs from Savage–Dickey (old study 10). A route that
+holds for one prior and not the others cannot be the method for any of them.
+
+### Decisions
+
+1. **Three ideas, nothing else**, each in the standard Bayesian sense:
+   - **Model comparison**: the Bayes factor between two models, the ratio of
+     their marginal likelihoods, each model with its own prior.
+   - **A term**: the model with the term against the model without it, each
+     with its own prior (the joint test). This is a model comparison, not a
+     separate technique; a term with several columns (a factor) is the same.
+   - **Estimation**: the posterior from flatcor's Stan model.
+2. **One implementation for all three priors.** Each prior is R² ~ Beta(a, 1)
+   with a uniform direction, and only a changes (flat partial r k/2, flat R
+   1/2, flat R² 1). So there are two implementations in all: the closed form
+   of the whole-model marginal likelihood (`log_bayes_factor_vs_intercept_only()`)
+   and the Stan model. Every check runs the same way for every prior.
+3. **The conditional test goes**, from the validation and from flatcor. So do
+   the Savage–Dickey coherence study and the support curves, which only exist
+   to back it.
+4. **Validate the way a prior is normally validated**, and nothing beyond it:
+   does the code draw the prior, are the Bayes factors right, are the
+   posterior and the Bayes factor calibrated, does the prior meet the
+   objective-Bayes criteria, and how does it behave on data with a known
+   truth.
+5. **Two reference methods: JZS and Zellner–Siow**, both from BayesFactor,
+   in studies 4 and 5 alongside the three priors. BIC and hyper-g/n (BAS)
+   go, so `BAS` can leave `renv.lock`.
+6. **Kept from the earlier decisions:** the frameworks (SimDesign, rsimsum,
+   SBC, bridgesampling, Rmpfr), the number of datasets set by a target Monte
+   Carlo error, a Monte Carlo SE on every number, checks relative to it,
+   shared datasets by seed, the layout, the notebook and the cluster setup.
+
+### The new structure
+
+| New | Question | Standard practice | From the ten studies | Data |
+|---|---|---|---|---|
+| 1 | Does the code draw the prior? | prior check | 1 | none |
+| 2 | Are the Bayes factors computed correctly? | against independent routes: numerical integration, a 200-bit ground truth, bridge sampling on the Stan model | 2, the whole-model routes only (the conditional checks go) | none / few |
+| 3 | Are the posterior and the Bayes factor calibrated? | SBC (Talts et al., 2018); Bayes factor calibration (Schad et al., 2023) | 3 + 4 | B |
+| 4 | Does each prior meet the objective-Bayes criteria? | Bayarri, Berger, Forte & García-Donato (2012): model-selection consistency (fixed and growing k), information consistency, predictive matching, invariance | 5 (invariance moves here from 2) | none / D |
+| 5 | How does it behave on data with a known truth? | operating characteristics: how often the test of a term finds an effect, confirms a null or stays undecided across k and n; how well it separates a null from a small effect; bias, coverage and prediction error of the estimates | 7 + 8 + 9, with the joint test | A (with factors) |
+
+Dropped: study 6 (coherence) and study 10 (variable selection); data set C
+goes with it.
+
+### What this changes in flatcor
+
+A new major release (2.0.0, since it removes exports), pinned in
+`renv.lock` before the studies are ported:
+
+- Removed: `log_bayes_factor_conditional()`, `support_per_partial_correlation()`,
+  `support_per_partial_r_squared()`, `support_regions()`, and the `test =`
+  argument.
+- `bayes_factor_per_term()` becomes the joint test only, a loop over
+  `bayes_factor_models()`. (Open: keep it as that convenience, or drop it
+  and show the loop in the README.)
+- Kept: `bayes_factor_models()`, `log_bayes_factor_vs_intercept_only()`,
+  `fit_regression()` with `loo()` and `pp_check()`, and
+  `draw_coefficients_from_prior()` (prior predictive checks).
+
+### What this changes in the argument
+
+The earlier headline (flat partial r confirms true nulls at the same rate
+for any k, flat R drifts) came from the conditional test. Under the joint
+test that question is open again: the earlier run only showed that the joint
+tests of flat R and flat R² separated nulls from small effects worse than JZS
+with correlated predictors (old study 06). Study 5 answers it. Until then
+the README, `docs/1_why_a_choice.md`, `docs/2_the_three_priors.md` and
+appendix A, section 10 (the conditional test) describe a method that is
+leaving, and appendix C describes ten studies; all are rewritten from the
+new results.
+
+## Decisions (before the simplification)
 
 1. **Established frameworks where they exist, all in R.**
    - `SimDesign` (Chalmers & Adkins, 2020) for every simulation study:
@@ -68,7 +155,7 @@ but it was built study by study:
    validation loads it with `library(flatcor)`; the internal functions some
    checks need are taken from its namespace in `R/shared/settings.R`.
 
-## The new structure
+## The ten-study structure (before the simplification)
 
 | New | Question | From the current studies | Data |
 |---|---|---|---|
@@ -97,10 +184,38 @@ but it was built study by study:
    and for resuming. *Done, except automated tests for seeding and resuming
    (seeding is confirmed by hand: every study gives the same check lines on 1
    and 4 cores).*
-6. Run the full validation on the cluster, then rewrite the docs and the
-   report from the new results.
+6. Simplify (see "Simplification"):
+   1. flatcor 2.0.0: remove the conditional test and `bayes_factor_per_term()`
+      (the support curves stay: they use no prior); one route computes the
+      Bayes factor for every prior (the likelihood ratio averaged over
+      R-squared ~ Beta(a, 1) by integrate(), as BayesFactor integrates over
+      g). Released and pinned in `renv.lock` (v2.0.0, cec149c). *Done.*
+   2. Rewrite appendix C to the five studies. *Done.*
+   3. Port the studies to the five. *Done*: study 1 has the same four checks
+      for every prior; study 2 the same four routes for every prior
+      (`integrate()` of the g-prior form, the shared likelihood ratio against
+      its 200-bit series, brute force, bridge sampling); study 3 merges the
+      two calibrations, with the Bayes factor's null data drawn from the model
+      without x1 under its own prior (data set B, `x1 = "reduced"`); study 4
+      adds invariance, and check 4.1 integrates at n = k + 1 instead of
+      reading the package's shortcut; study 5 merges one coefficient, factors
+      (the others now explain a fixed R-squared of .5) and estimation, all
+      with model-against-model Bayes factors and the same checks for every
+      method. Studies 6 and 10 and data set C are gone; `run_all.R`, the
+      notebook, the SLURM array, the timing workflow and the cluster README
+      list the five.
+   4. Smoke-run all five. *Done* (14 November 2026): all five run end to end.
+      Then a new run-time estimate (the timing workflow), still to do.
+   Found while porting, for a flatcor 2.0.1 (not yet released): with zero
+   residual degrees of freedom the likelihood ratio drops the point v = 0
+   (0 x log 0), so check 4.1 gives 1.0033 instead of 1 at k = 1 (the
+   package's Bayes factors never reach this: they return 1 there); and the
+   compiled Stan model is kept in one folder for every version, so after a
+   reinstall a stale executable can crash (seen once; a recompile fixed it).
+7. Run the full validation, then rewrite the docs and the README from the
+   new results.
 
-## Status (handoff, 4 November 2026)
+## Status before the simplification (handoff, 4 November 2026)
 
 Every study is written to the conventions of the sample (ADEMP header,
 SimDesign for repeated simulation, `n_sim_of()` targets, Monte Carlo SE on
@@ -245,6 +360,9 @@ study 06's full run.
 
 ## References
 
+- Bayarri, M. J., Berger, J. O., Forte, A., & García-Donato, G. (2012).
+  Criteria for Bayesian model choice with application to variable
+  selection. *The Annals of Statistics*, *40*(3), 1550–1577.
 - Chalmers, R. P., & Adkins, M. C. (2020). Writing effective and reliable
   Monte Carlo simulations with the SimDesign package. *The Quantitative
   Methods for Psychology*, *16*(4), 248–280.
@@ -253,7 +371,13 @@ study 06's full run.
 - Morris, T. P., White, I. R., & Crowther, M. J. (2019). Using simulation
   studies to evaluate statistical methods. *Statistics in Medicine*, *38*(11),
   2074–2102. https://doi.org/10.1002/sim.8086
+- Schad, D. J., Nicenboim, B., Bürkner, P.-C., Betancourt, M., & Vasishth, S.
+  (2023). Workflow techniques for the robust use of Bayes factors.
+  *Psychological Methods*, *28*(6), 1404–1426.
 - Siepe, B. S., Bartoš, F., Morris, T. P., Boulesteix, A.-L., Heck, D. W., &
   Pawel, S. (2024). Simulation studies for methodological research in
   psychology: A standardized template for planning, preregistration, and
   reporting. *Psychological Methods*. https://doi.org/10.1037/met0000695
+- Talts, S., Betancourt, M., Simpson, D., Vehtari, A., & Gelman, A. (2018).
+  Validating Bayesian inference algorithms with simulation-based
+  calibration. arXiv:1804.06788.

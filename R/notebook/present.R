@@ -16,12 +16,9 @@ if (!isTRUE(l10n_info()$`UTF-8`))
   for (locale in c("C.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"))
     if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", locale)))) break
 
-## The ten studies, in the order of docs/appendix/C_study_design.md
-study_files <- c("01" = "01_prior_sampling", "02" = "02_bayes_factors",
-                 "03" = "03_posterior_calibration", "04" = "04_bayes_factor_calibration",
-                 "05" = "05_default_prior_criteria", "06" = "06_coherence",
-                 "07" = "07_one_coefficient", "08" = "08_factors", "09" = "09_estimation",
-                 "10" = "10_variable_selection")
+## The five studies, in the order of docs/appendix/C_study_design.md
+study_files <- c("01" = "01_prior_sampling", "02" = "02_bayes_factors", "03" = "03_calibration",
+                 "04" = "04_default_prior_criteria", "05" = "05_behaviour")
 study_questions <- c("01" = "Is the prior sampled correctly?",
                      "02" = "Are the Bayes factors computed correctly?",
                      "03" = "Is the posterior calibrated?",

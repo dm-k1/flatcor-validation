@@ -35,10 +35,6 @@ precision_targets <- list(
   coverage_per_cell = list(mcse = 0.01, n_sim = n_sim_for_proportion(0.01, p = 0.95)),     # 475
   ## KS checks of a distribution at the .01 level with critical distance .01
   ks_draws          = list(mcse = NA, n_sim = n_sim_for_ks(0.01)),                          # 26,569
-  ## a mean log BF difference (coherence), SD about 0.30 in the last run:
-  ## (0.30 / 0.05)^2 = 36 estimable datasets; 50 per cell because some fits
-  ## are not estimable
-  coherence_mean    = list(mcse = 0.05, n_sim = 50),
   ## simulation-based calibration: fits per prior and setting (power against
   ## miscalibration of about 5% of the rank distribution)
   sbc_fits          = list(mcse = NA, n_sim = 1000),

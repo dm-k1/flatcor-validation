@@ -21,11 +21,8 @@ if (!isTRUE(l10n_info()$`UTF-8`))
 ## installed at the version pinned in renv.lock. Some checks also call internal
 ## functions; they are taken from the package namespace here, in one place.
 library(flatcor)
-flatcor_internals <- c("sample_r_squared", "prior_shape", "prior_cdf_of_f", "log_sum_exp",
-                       "log_sum_exp_per_row", "log_likelihood_ratio_block",
-                       "log_bayes_factor_from_prior_cdf_of_f",
-                       "log_bayes_factor_shape_vs_intercept_only",
-                       "log_bayes_factor_flat_r_vs_intercept_only")
+flatcor_internals <- c("sample_r_squared", "prior_shape", "log_sum_exp",
+                       "log_likelihood_ratio_block")
 for (internal in flatcor_internals)
   assign(internal, utils::getFromNamespace(internal, "flatcor"), envir = globalenv())
 
@@ -214,7 +211,7 @@ report_checks <- function() {
 }
 
 ## ---- The study's results file ----------------------------------------------------
-## save_study_results("07", list(...)) writes results/studies/study_07.rds:
+## save_study_results("05", list(...)) writes results/studies/study_05.rds:
 ## the study's tables, its checks, the figures it saved and the setup of the
 ## run. The notebook (validation.ipynb) presents only these files.
 ## The studies may run on different machines (cluster/README.md), so each

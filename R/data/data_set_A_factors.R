@@ -1,11 +1,11 @@
 ## =====================================================================
-##  Data set A, extended with a factor (docs/appendix/C_study_design.md, study 8)
+##  Data set A, extended with a factor (docs/appendix/C_study_design.md, study 5, part B)
 ##
 ##  A factor with q + 1 equal-sized levels (q columns in the model), equally
 ##  spaced level means with Cohen's f^2 = 0 (null), .02 (small) or .15
 ##  (medium), plus 2 or 10 uncorrelated continuous predictors. What the
 ##  others explain is set afterwards from the same predictors, factor and
-##  noise (R/studies/08_factors.R), so the values of it differ only in the
+##  noise (outcome_A_factors()), so the values of it differ only in the
 ##  others' slopes. Every dataset has its own stream (R/data/data_sets.R,
 ##  with_stream_of()), with an ID that starts with "A-factor".
 ## =====================================================================
