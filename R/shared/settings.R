@@ -65,8 +65,16 @@ parallel_map <- function(items, work) {
     assign(".Random.seed", streams[[index]], envir = globalenv())
     work(items[[index]])
   }
+  ## an error in one item stops the run with that error, instead of coming
+  ## back as a value that fails later
+  stop_on_failure <- function(results) {
+    failed <- vapply(results, inherits, logical(1), what = "try-error")
+    if (any(failed)) stop("parallel_map(): item ", which(failed)[1], " failed: ",
+                          conditionMessage(attr(results[[which(failed)[1]]], "condition")), call. = FALSE)
+    results
+  }
   if (forking_allowed)
-    return(parallel::mclapply(seq_along(items), seeded_work, mc.cores = number_of_cores))
+    return(stop_on_failure(parallel::mclapply(seq_along(items), seeded_work, mc.cores = number_of_cores)))
   cluster <- parallel::makeCluster(number_of_cores)
   on.exit(parallel::stopCluster(cluster))
   parallel::clusterCall(cluster, setwd, getwd())

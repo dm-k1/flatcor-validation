@@ -84,6 +84,27 @@ cached <- function(name, expression) {
 ##                   (a = k/2 = 1); k = 1: over the effect f directly
 ## Everything on the log scale, scaled by the largest value.
 
+## The integral of exp(log_integrand(x)) over (lower, upper): the peak on a
+## coarse grid, refined by optimize(); its width from the curvature; the
+## interval split at the peak +- 1, 4, 10 and 30 widths, so that a narrow peak
+## (very strong evidence) is never stepped over
+log_integral_around_peak <- function(log_integrand, lower, upper, grid_step = 1) {
+  grid   <- seq(lower, upper, by = grid_step)
+  start  <- grid[which.max(log_integrand(grid))]
+  peak   <- optimize(log_integrand, c(max(lower, start - grid_step), min(upper, start + grid_step)),
+                     maximum = TRUE, tol = 1e-10)$maximum
+  height <- log_integrand(peak)
+  step   <- 1e-4 * max(1, abs(peak))
+  curvature <- (log_integrand(peak + step) - 2 * height + log_integrand(peak - step)) / step^2
+  width  <- if (is.finite(curvature) && curvature < 0) 1 / sqrt(-curvature) else grid_step
+  breaks <- sort(unique(pmin(upper, pmax(lower, c(lower, upper,
+                                                  peak + width * c(-30, -10, -4, -1, 0, 1, 4, 10, 30))))))
+  scaled <- function(x) { value <- exp(log_integrand(x) - height); value[!is.finite(value)] <- 0; value }
+  height + log(sum(vapply(seq_len(length(breaks) - 1), function(i)
+    integrate(scaled, breaks[i], breaks[i + 1], rel.tol = 1e-10, subdivisions = 2000L,
+              stop.on.error = FALSE)$value, numeric(1))))
+}
+
 ## average over directions for one value of g: the angle phi between a
 ## direction and the data's direction, weight sin(phi)^(k - 2)
 log_direction_average_by_integration <- function(scaled_share, sample_size, number_of_predictors) {
@@ -116,26 +137,14 @@ log_bayes_factor_flat_r_by_integration <- function(explained_share, sample_size,
       log_direction_average_by_integration(explained_share * g / (1 + g), sample_size,
                                            number_of_predictors)
   }, numeric(1))
-  peak_location <- optimize(log_integrand, c(-20, 40), maximum = TRUE)$maximum
-  peak_height   <- log_integrand(peak_location)
-  scaled <- function(log_g) exp(log_integrand(log_g) - peak_height)
-  break_points <- c(-40, peak_location - 3, peak_location + 3, 60)
-  pieces <- vapply(1:3, function(i)
-    integrate(scaled, break_points[i], break_points[i + 1], rel.tol = 1e-10, subdivisions = 1000L)$value,
-    numeric(1))
-  peak_height + log(sum(pieces))
+  log_integral_around_peak(log_integrand, -40, 60)
 }
 
 ## flat_partial_r: one integral over g, with g ~ Inverse-Gamma(1, n/2)
 log_bf_g_inverse_gamma_by_integration <- function(r_squared, n, k) {
   log_integrand <- function(log_g) log(n / 2) - log_g - n / (2 * exp(log_g)) +
     (n - 1 - k) / 2 * log1p(exp(log_g)) - (n - 1) / 2 * log1p(exp(log_g) * (1 - r_squared))
-  peak <- optimize(log_integrand, c(-20, 40), maximum = TRUE)$maximum
-  height <- log_integrand(peak)
-  break_points <- c(-40, peak - 3, peak + 3, 60)
-  height + log(sum(vapply(1:3, function(i)
-    integrate(function(x) exp(log_integrand(x) - height), break_points[i], break_points[i + 1],
-              rel.tol = 1e-10, subdivisions = 1000L)$value, numeric(1))))
+  log_integral_around_peak(log_integrand, -40, 60)
 }
 
 ## R-squared ~ Beta(a, 1) as a g-prior mixture, a < k/2: g/n = t = B W,
@@ -154,23 +163,20 @@ log_bf_g_mixture_by_integration <- function(r_squared, n, k, a) {
       log_hyperprior_density_g_over_n(exp(lt), k, a) + lt
     if (is.finite(value)) value else -Inf
   }, numeric(1))
-  peak <- optimize(log_integrand, c(-20, 25), maximum = TRUE)$maximum
-  height <- log_integrand(peak)
-  break_points <- sort(c(-20, max(-19, peak - 3), min(24, peak + 3), 25))
-  height + log(sum(vapply(1:3, function(i)
-    integrate(function(x) exp(log_integrand(x) - height), break_points[i], break_points[i + 1],
-              rel.tol = 1e-8, subdivisions = 2000L)$value, numeric(1))))
+  log_integral_around_peak(log_integrand, -25, 25)
 }
 
 ## log of the integral of v^m exp(-v^2/2 + b v) over v > 0, around its peak
 log_I_by_integration <- function(b, m) {
   peak     <- (b + sqrt(b^2 + 4 * m)) / 2
   log_peak <- m * log(peak) - peak^2 / 2 + b * peak
+  width    <- 1 / sqrt(1 + m / peak^2)           # of the integrand's peak
   scaled   <- function(v) exp(m * log(v) - v^2 / 2 + b * v - log_peak)
-  value <- tryCatch(integrate(scaled, max(0, peak - 40), peak + 40, rel.tol = 1e-10)$value,
-                    error = function(e) integrate(scaled, max(0, peak - 40), peak + 40,
-                                                  rel.tol = 1e-8)$value)
-  log_peak + log(value)
+  breaks   <- c(max(0, peak - 40 * width), peak - width, peak + width, peak + 40 * width)
+  breaks   <- sort(unique(pmax(breaks, 0)))
+  log_peak + log(sum(vapply(seq_len(length(breaks) - 1), function(i)
+    integrate(scaled, breaks[i], breaks[i + 1], rel.tol = 1e-10, stop.on.error = FALSE)$value,
+    numeric(1))))
 }
 
 ## flat_r_squared with one predictor, over the effect f: |f| has density
@@ -184,13 +190,9 @@ log_bf_one_predictor_flat_r_squared_by_integration <- function(r_squared, n) {
     -n * f1^2 / 2 + max(terms) + log(sum(exp(terms - max(terms)))) - log(2) - log_I0 +
       log(2 * f1) - 2 * log1p(f1^2)
   }, numeric(1))
-  peak <- optimize(log_integrand, c(1e-8, 50), maximum = TRUE)$maximum
-  height <- log_integrand(peak)
-  width <- 1 / sqrt(n)
-  break_points <- sort(unique(c(1e-12, max(1e-12, peak - 30 * width), peak, peak + 30 * width, 200)))
-  height + log(sum(vapply(seq_len(length(break_points) - 1), function(i)
-    integrate(function(x) exp(log_integrand(x) - height), break_points[i], break_points[i + 1],
-              rel.tol = 1e-8, subdivisions = 2000L)$value, numeric(1))))
+  ## over log f, where the peak's width is of order 1 / sqrt(n) relative to f
+  log_integral_around_peak(function(log_f) log_integrand(exp(log_f)) + log_f, log(1e-8), log(1e4),
+                           grid_step = 0.25)
 }
 
 log_bf_by_integration <- function(prior, r_squared, n, k) {

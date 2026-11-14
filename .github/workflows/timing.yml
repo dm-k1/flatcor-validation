@@ -7,7 +7,8 @@
 # table appears on the run's summary page and as the artifact run-time-estimate.
 # Studies 01 and 02 do not depend on the number of datasets and run in full.
 #
-# It runs when this file changes on validation-redesign, and from Actions >
+# It runs when this file or the studies' code changes on validation-redesign
+# (a newer push cancels a run still going on the same branch), and from Actions >
 # "Run-time estimate" > Run workflow once it is on main (GitHub offers that
 # button only for workflows on the default branch). On a public repository the
 # runners are free; it takes about as long as the slowest job.
@@ -16,7 +17,13 @@ name: Run-time estimate
 on:
   push:
     branches: [validation-redesign]
-    paths: [.github/workflows/timing.yml]
+    paths:
+      - .github/workflows/timing.yml
+      - R/studies/**
+      - R/shared/**
+      - R/data/**
+      - cluster/time_study.R
+      - cluster/estimate_run_time.R
   workflow_dispatch:
     inputs:
       fractions:
@@ -27,6 +34,10 @@ permissions:
   contents: read
   packages: read
   actions: read
+
+concurrency:
+  group: timing-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # When the same push also rebuilds the image (renv.lock changed), time the
