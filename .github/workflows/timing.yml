@@ -54,7 +54,7 @@ jobs:
           while true; do
             state=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
               --commit "$GITHUB_SHA" --json status,conclusion \
-              -q '.[0] | "\(.status) \(.conclusion)"')
+              -q '.[0] // empty | "\(.status) \(.conclusion)"')
             case "$state" in
               "") echo "No image build for this commit"; exit 0 ;;
               "completed success") echo "Image built"; exit 0 ;;
