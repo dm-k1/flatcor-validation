@@ -1,11 +1,11 @@
 ## =====================================================================
 ##  Times one study on a fraction of its datasets
 ##
-##    VALIDATION_TIMING=0.02 Rscript cluster/time_study.R 05
+##    VALIDATION_TIMING=0.02 Rscript cluster/time_study.R 03
 ##
-##  runs R/studies/05_*.R in timing mode (R/shared/settings.R): the full
+##  runs R/studies/03_*.R in timing mode (R/shared/settings.R): the full
 ##  design and full-length chains, but 2% of the datasets (at least 10).
-##  It writes cache/timing/time_05_at_0.02.rds with the elapsed time, the CPU
+##  It writes cache/timing/time_03_at_0.02.rds with the elapsed time, the CPU
 ##  time of R and of every process it started (forked workers, CmdStan), and
 ##  the datasets the study used against its full number.
 ##  cluster/estimate_run_time.R scales these up to the full run; the
@@ -17,7 +17,7 @@
 
 .timing_study <- commandArgs(trailingOnly = TRUE)[1]
 .timing_file  <- Sys.glob(sprintf("R/studies/%s_*.R", .timing_study))
-stopifnot("give a study number, as in Rscript cluster/time_study.R 05" = length(.timing_file) == 1,
+stopifnot("give a study number, as in Rscript cluster/time_study.R 03" = length(.timing_file) == 1,
           "set VALIDATION_TIMING to the fraction of datasets, as in 0.02" =
             !is.na(suppressWarnings(as.numeric(Sys.getenv("VALIDATION_TIMING", NA)))))
 

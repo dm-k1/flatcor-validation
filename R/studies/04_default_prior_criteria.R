@@ -24,32 +24,30 @@
 ##  expected value (the tolerance covers finite-n deviation; the interval
 ##  covers Monte Carlo error).
 ##  n_sim. 2,000 R-squared draws per setting for the rates and for growing k
-##  under the null (n_sim_of("rate_draws"); slope MCSE about 0.02, where the
-##  old 200 gave slopes that moved by 0.1 between runs); 400 datasets per
+##  under the null (n_sim_of("rate_draws"); slope MCSE about 0.02); 400 datasets per
 ##  setting for growing k with a true model (n_sim_of("growing_k_data")).
 ##
 ##  Checks (each for each prior):
-##    4.1 predictive matching: BF = 1 at n = k + 1 (old B1)
+##    4.1 predictive matching: BF = 1 at n = k + 1
 ##    4.2 information consistency: evidence increases without bound as
-##        R-squared -> 1 (old B2)
-##    4.3 information consistency starts exactly at n = k + 3 (old B2b)
+##        R-squared -> 1
+##    4.3 information consistency starts exactly at n = k + 3
 ##    4.4 consistency under the null: one null predictor next to two real
-##        ones, 95% interval of the slope within (.35, .65) (old B3)
+##        ones, 95% interval of the slope within (.35, .65)
 ##    4.5 the rate with a real effect in the smaller model: 95% interval of
-##        the slope within 20% of q/2, q = 1, 3, 6 (old B3b, smaller model x1)
+##        the slope within 20% of q/2, q = 1, 3, 6
 ##    4.6 the rate against the intercept-only model: 95% interval within 30%
-##        of a, q = 1, 3, 6 (old B3b, intercept only)
+##        of a, q = 1, 3, 6
 ##    4.7 consistency under the alternative: median log BF10 for a real effect
 ##        increases with n, and its 95% lower bound at n = 5,000 exceeds 20
-##        (old B4)
 ##    4.8 intrinsic consistency: the prior with the sample covariance is
 ##        indistinguishable from the prior with the population covariance at
 ##        n = 100,000 and distinguishable at n = 30 (two-sample KS against its
-##        .01 critical value; old B5)
+##        .01 critical value)
 ##    4.9 growing k, null true: evidence for the null grows; 95% lower bound
-##        of the slope above 0.1 (old G1)
+##        of the slope above 0.1
 ##    4.10 growing k, small model true: evidence for it grows; 95% lower
-##        bound of the slope above 0.1 (old G2)
+##        bound of the slope above 0.1
 ##    4.11 invariance: rescaling, shifting and recoding the predictors (and
 ##        the outcome) leaves the Bayes factor unchanged, within a relative
 ##        1e-8
@@ -150,7 +148,7 @@ for (prior in priors) {
 ## smaller model is exactly Beta(q/2, (n - k_small - 1 - q)/2) and is drawn
 ## directly; the smaller model's R-squared comes from simulated data when it
 ## has real effects. "alternative" is the reverse: a real x1 = 0.15 next to
-## x2 = 0.2 and a null x3, evidence for the model with x1 (old B4).
+## x2 = 0.2 and a null x3, evidence for the model with x1.
 rates_settings <- bind_rows(
   tibble(setting = "x3 null next to two real",  k_small = 2, q = 1),
   tibble(setting = "intercept only",            k_small = 0, q = c(1, 3, 6)),
@@ -349,7 +347,7 @@ save_figure(
     geom_line(linewidth = 0.8, alpha = 0.8) + geom_point(size = 1.3, alpha = 0.8) +
     scale_x_log10(breaks = sort(unique(growing_medians$n))) +
     scale_y_continuous(trans = scales::pseudo_log_trans(base = 10), breaks = c(0, 1, 3, 10, 30, 100, 300)) +
-    method_scales(model_methods, linetype = FALSE) +
+    method_scales(model_methods) +
     facet_grid(question ~ growth) +
     labs(x = "n (log scale)", y = "median log Bayes factor for the truth (pseudo-log scale)",
          title = "Consistency when the number of predictors grows with n",

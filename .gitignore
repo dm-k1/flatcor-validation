@@ -5,10 +5,10 @@
 .Ruserdata
 .Rproj.user/
 
-# Simulation caches, Stan fits and run logs (re-create with the validation scripts)
+# Simulation caches, compiled Stan models and run logs (re-created by the studies)
 cache/
 
-# Stan / brms build files
+# Stan build files
 *.exe
 *.o
 *.so
@@ -22,9 +22,3 @@ cache/
 
 # Stray R graphics output
 Rplots.pdf
-
-# Compiled Stan models and package check output
-inst/stan/*.rds
-inst/stan/flat_r
-*.Rcheck/
-flatcor_*.tar.gz

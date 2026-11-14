@@ -57,10 +57,8 @@ The three shapes of $R^2 \sim \mathrm{Beta}(a, 1)$, side by side:
 
 The default prior is **flat partial r**; a function that uses it because no
 prior was given says so once per session, and `prior =` selects the others.
-The earlier validation (run of 4 November 2026) recommended flat partial r
-and listed its costs ([`working/old_run/comparison.md`](working/old_run/comparison.md),
-section 8); the recommendation will be restated from the redesigned
-validation. Flat R and flat R-squared remain available.
+**TO REFRESH:** why flat partial r is the default, and its costs, from the
+results of the validation. Flat R and flat R-squared remain available.
 
 Flat partial r is the $R^2$ prior of rstanarm's `stan_lm` with η = 1. All
 three are mixtures of Zellner g-priors, the family of the JZS default, for the
@@ -70,8 +68,8 @@ every $a$ (appendix A, section 7). Each prior has one property that singles it o
 
 | | Unique property | Shown in |
 |---|---|---|
-| flat partial r | the only `stan_lm` shape (η = 1) where every coefficient's partial correlation is Jeffreys' flat correlation, whatever $k$ is | [appendix B](appendix/B_relation_to_other_priors.md), "Why η = 1"; study 2, check 2.13 |
-| flat R | the only g-mixture whose $R^2$ prior is the same for every $k$ *and* is Jeffreys' prior at $k = 1$ | appendix A, section 8; study 10, check 10.5 |
+| flat partial r | the only `stan_lm` shape (η = 1) where every coefficient's partial correlation is Jeffreys' flat correlation, whatever $k$ is | [appendix B](appendix/B_relation_to_other_priors.md), "Why η = 1"; motivating simulation, check M2 |
+| flat R | the only g-mixture whose $R^2$ prior is the same for every $k$ *and* is Jeffreys' prior at $k = 1$ | appendix A, section 8 |
 | flat R-squared | the total explained share is flat on its own scale, for every $k$ | by construction; motivating simulation, check M4 |
 
 ---
@@ -127,14 +125,13 @@ branch. This was found by simulating, then deriving, then checking:
    5 and 10. For $k = 1$ the share is 1: the predictor gets the whole total.
 
 Predictor 1's own ratio of explained to unexplained variance (its Cohen's
-$f^2$) is then share × $R^2/(1-R^2)$, with $R^2 \sim$ Beta($a$, 1). This is
-the prior of the conditional test
-([appendix A](appendix/A_derivations.md), section 10).
+$f^2$) is then share × $R^2/(1-R^2)$, with $R^2 \sim$ Beta($a$, 1): the
+prior each branch implies for one coefficient.
 
 - **Flat partial r** ($a = k/2$): the mixture is exactly a flat partial
   correlation, for every $k$. The total grows with $k$ just fast enough to
-  keep each coefficient's partial correlation flat (study 2, checks 2.10 and
-  2.11).
+  keep each coefficient's partial correlation flat (motivating simulation,
+  check M2; validation study 1, check 1.4).
 - **Flat R and flat R-squared** ($a$ fixed): the total stays where it is and
   the share shrinks, so each coefficient's prior narrows as $k$ grows (the motivating
   simulation, [`1_why_a_choice.md`](1_why_a_choice.md), section 3).
@@ -161,13 +158,14 @@ rather than left for the reader to find:
 - Under flat partial r, each coefficient keeps the same prior whatever the
   model around it, and a large model claims a large total.
 - The amount of prior mass near zero sets the rate in the last row:
-  $P(R^2 < 1/n) \approx n^{-a}$ for $R^2 \sim$ Beta($a$, 1). Study 5 measures
-  this rate as the slope of the evidence against $\log n$ (checks 5.5 and
-  5.6).
+  $P(R^2 < 1/n) \approx n^{-a}$ for $R^2 \sim$ Beta($a$, 1). Validation
+  study 4 measures this rate as the slope of the evidence against $\log n$
+  (checks 4.4 to 4.6).
 
-No branch has every property. The validation measures the trade-offs
-([`validation.ipynb`](../validation.ipynb), studies 1–10), and the
-recommendation with its costs will be written from its results.
+No branch has every property. The validation
+([`validation.ipynb`](../validation.ipynb)) checks that each works correctly
+as a Bayesian prior; how the trade-offs play out in use is a later study.
+**TO REFRESH:** the recommendation with its costs, from the results.
 
 ---
 
@@ -176,17 +174,14 @@ recommendation with its costs will be written from its results.
 | Question | Function | How it computes | Explained in |
 |---|---|---|---|
 | What are the coefficients? | `fit_regression()` | Stan, sampling $R$ and a direction (not the coefficients) | appendix A, section 6 |
-| Which of two models? (nested or not) | `bayes_factor_models()`, `log_bayes_factor_vs_intercept_only()` | exact: needs only $R^2$, $n$, $k$ | appendix A, sections 7–9 |
-| Is there evidence for this one coefficient? | `bayes_factor_per_term()`, `log_bayes_factor_conditional()` | the conditional test: its partial correlation, with the prior the joint prior implies for it | appendix A, section 10 |
+| Which of two models? (nested or not) | `bayes_factor_models()`, `log_bayes_factor_vs_intercept_only()` | each model against the intercept-only model, one integral over $R^2 \sim$ Beta($a$, 1) that needs only $R^2$, $n$, $k$; any two models by dividing | appendix A, sections 7–9 |
+| Is there evidence for this term? | `bayes_factor_models()`, with and without the term | the model with the term against the model without it | appendix A, sections 7–9 |
+| How does the data favour each value of a partial correlation? | `support_per_partial_correlation()`, `support_per_partial_r_squared()`, `support_regions()` | the likelihood alone, no prior | the package's documentation |
 
-There are two ways to test one coefficient, and the package uses the second
-by default:
-
-| | Joint test (`test = "joint"`) | Conditional test (default) |
-|---|---|---|
-| What it compares | the model with against without the term | the term's partial correlation against zero |
-| Depends on what the other predictors explain? | yes (the conditional Lindley paradox) | no |
-| Depends on how many other predictors there are? | yes | flat partial r: no; flat R and flat R-squared: yes (the share shrinks with $k$) |
-| Used for | only when asked (`test = "joint"`), or to compare whole models | every term; a term with several columns (a factor with more than two levels) as a block, by its partial $R^2$ |
-
-
+A term (one coefficient, or a factor's columns together) is tested as the
+model with it against the model without it, each with its own prior. That
+test depends on what the other predictors explain (the conditional Lindley
+paradox; Som, Hans & MacEachern, 2016), and under flat R and flat R-squared
+also on how many there are, since each coefficient's prior narrows as $k$
+grows. How much it does in practice is for the later study of how the priors
+behave in use.

@@ -1,6 +1,6 @@
 # Running the validation on a cluster
 
-The full validation takes hours (study 9 alone about 6 hours on 7 cores), so
+The full validation takes hours (study 3, the calibration, most of them), so
 it is meant for a cluster. Two pieces make that work:
 
 - `cluster/slurm_array.sh` runs one study per SLURM array task, with
@@ -28,8 +28,8 @@ That is enough to choose a machine, or the time limit of the SLURM tasks.
 The same can be run anywhere, a study at a time:
 
 ```bash
-VALIDATION_TIMING=0.02 Rscript cluster/time_study.R 05
-VALIDATION_TIMING=0.05 Rscript cluster/time_study.R 05
+VALIDATION_TIMING=0.02 Rscript cluster/time_study.R 03
+VALIDATION_TIMING=0.05 Rscript cluster/time_study.R 03
 Rscript cluster/estimate_run_time.R
 ```
 
@@ -76,7 +76,7 @@ To run a single study in the image by hand, from the project folder:
 ```bash
 apptainer exec --no-home --bind "$PWD":/project --pwd /project \
   --env VALIDATION_CORES=16,R_USER_CACHE_DIR=/project/cache/r_user_cache \
-  flatcor-validation.sif Rscript R/studies/05_behaviour.R
+  flatcor-validation.sif Rscript R/studies/03_calibration.R
 ```
 
 Unlike Docker, Apptainer runs as the user who calls it, and keeps the image
@@ -103,17 +103,17 @@ mkdir -p cache/logs
 VALIDATION_SMOKE=1 VALIDATION_IMAGE=$PWD/flatcor-validation.sif sbatch cluster/slurm_array.sh
 ```
 
-runs the smoke test of all five studies first (minutes per study, with checks
+runs the smoke test of all four studies first (minutes per study, with checks
 that are shown but mean nothing). Then the full run:
 
 ```bash
 VALIDATION_IMAGE=$PWD/flatcor-validation.sif sbatch cluster/slurm_array.sh
 ```
 
-or a selection, for example studies 3 and 5:
+or a selection, for example studies 3 and 4:
 
 ```bash
-VALIDATION_IMAGE=$PWD/flatcor-validation.sif sbatch --array=3,5 cluster/slurm_array.sh
+VALIDATION_IMAGE=$PWD/flatcor-validation.sif sbatch --array=3,4 cluster/slurm_array.sh
 ```
 
 Without `VALIDATION_IMAGE` the tasks use the cluster's own `Rscript`, which
@@ -123,7 +123,7 @@ the environment of the submitting shell to the tasks, which is how
 
 The script asks for 16 cores, 32 GB and 24 hours per task, the same for every
 study. Change the `#SBATCH` lines to suit the cluster, or override them when
-submitting (`sbatch --cpus-per-task=32 --time=12:00:00 --array=5 ...`).
+submitting (`sbatch --cpus-per-task=32 --time=12:00:00 --array=3 ...`).
 
 Each task writes:
 
@@ -148,7 +148,7 @@ does the same as the array, one study after the other, and also writes
 
 The studies need not run in one go or on one machine: run them in order, each
 where it fits (`Rscript run_all.R 01` on a laptop, a cloud machine for 03,
-`sbatch --array=5` here), and copy each study's `results/studies/study_NN.rds`,
+`sbatch --array=4` here), and copy each study's `results/studies/study_NN.rds`,
 `results/session_info/study_NN.txt` and figures into the repository. Every
 study records its own processor, cores and minutes, and `run_summary.md`
 covers every study present.

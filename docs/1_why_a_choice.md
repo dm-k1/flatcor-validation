@@ -216,18 +216,18 @@ Lewandowski, Kurowicka and Joe (2009) at $k$ = 1, 3 and 8 finds no difference
 Section 3 shows which candidate keeps the behaviour of random correlation
 matrices: flat partial r does, flat R does only at $k = 1$, and flat
 R-squared does not. That is an argument about where the prior comes from. It
-does not yet show that flat partial r makes the better default. Whether it
-does is a question about how the three behave as tests and estimates: whether
-each computes what it claims, meets the criteria for a default prior, stays
-calibrated, and how it confirms nulls, finds effects and selects variables as
-predictors are added. The validation answers that for all three, with the JZS
-default and Zellner–Siow as references
+does not yet show that flat partial r makes the better default. Two questions
+come first, for each of the three: does it work correctly as a Bayesian prior
+(the code draws it, its Bayes factors are right, its posterior and Bayes
+factors are calibrated, it meets the criteria for a default prior), and how
+does it behave as a test and an estimate as predictors are added? The
+validation answers the first for all three, in the same way for each
 ([`validation.ipynb`](../validation.ipynb); the designs are in [appendix
-C](appendix/C_study_design.md)). Under flat R and flat R-squared, one
-consequence of section 3 is already predictable: a prior that narrows each
-partial correlation as $k$ grows expects each coefficient to be a smaller part
-of the total, so its test of one coefficient changes with the number of other
-predictors in the model.
+C](appendix/C_study_design.md)); the second is a later study. Under flat R
+and flat R-squared, one consequence of section 3 is already predictable: a
+prior that narrows each partial correlation as $k$ grows expects each
+coefficient to be a smaller part of the total, so its test of one coefficient
+changes with the number of other predictors in the model.
 
 The next document, [`2_the_three_priors.md`](2_the_three_priors.md),
 describes the three priors as one family and what each expects.

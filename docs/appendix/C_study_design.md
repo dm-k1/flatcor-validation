@@ -1,6 +1,6 @@
 # Appendix C. The design of the validation studies (ADEMP)
 
-One description per study of the validation, five studies since the
+One description per study of the validation, four studies since the
 simplification of 14 November 2026 (see [`REDESIGN.md`](../working/REDESIGN.md) for
 the structure and the decisions), in the
 ADEMP form of Morris, White and Crowther (2019) as adapted for psychology by
@@ -9,6 +9,14 @@ Siepe et al. (2024): **A**ims, **D**ata-generating mechanisms, **E**stimands,
 (*n*<sub>sim</sub>) is derived from a target Monte Carlo standard error (MCSE), fixed
 here before anything is run. The package under test is flatcor 2.0.0
 ([dm-k1/flatcor](https://github.com/dm-k1/flatcor), pinned in `renv.lock`).
+
+**What the validation is for.** The four studies are what someone needs to
+trust that each prior works within the Bayesian framework, and no more: the
+code draws the prior it claims (study 1), its Bayes factors are computed
+correctly (2), its posterior and its Bayes factors are calibrated (3), and it
+meets the standard criteria for a default prior (4). How the priors behave
+in use (decision rates, separating a null from a small effect, estimation
+against OLS) is a separate study, for later.
 
 **One rule for every study:** the three priors are computed by the same
 technique and checked by the same routes. flatcor has two implementations,
@@ -27,29 +35,26 @@ design cell.
 
 ## How *n*<sub>sim</sub> is chosen
 
-For a performance measure that is a proportion *p* (a rate of decisions,
-interval coverage), the Monte Carlo standard error is
+For a performance measure that is a proportion *p* (the share of nulls in a
+calibration bin), the Monte Carlo standard error is
 
 $$\mathrm{MCSE} = \sqrt{\frac{p(1-p)}{n_\text{sim}}}, \qquad\text{so}\qquad
 n_\text{sim} = \frac{p(1-p)}{\mathrm{MCSE}^2},$$
 
 taken at the worst case *p* = .5 where *p* is not known in advance (Morris et
-al., 2019, Table 6). For a mean (a bias, a mean log difference), MCSE =
-SD / √*n*<sub>sim</sub>, with the SD taken from the run of 4 November 2026 where one
-exists.
+al., 2019, Table 6). The targets are in `R/shared/precision.R`:
 
-| Target | MCSE | *n*<sub>sim</sub> (worst case) |
+| Target | MCSE | *n*<sub>sim</sub> |
 |---|---|---|
-| A proportion reported per design cell | .02 | 625 |
-| A proportion reported pooled over cells | .01 | 2,500 in total (met by pooling cells at 625 each) |
-| Interval coverage near .95, per cell | .01 | 475 |
-| A Kolmogorov–Smirnov check at the .01 level | critical distance ≤ .01 | 1.63² / .01² ≈ 26,600 (effective draws) |
+| A Kolmogorov–Smirnov check at the .01 level (studies 1, 4) | critical distance ≤ .01 | 1.63² / .01² ≈ 26,600 (effective draws) |
+| Simulation-based calibration (study 3) | power against a miscalibration of about 5% of the rank distribution | 1,000 fits per prior and setting |
+| A share in a calibration bin (study 3) | .02 | 625 per bin (20,000 datasets per cell) |
+| The slope of the median log Bayes factor against log *n* (study 4) | about .02 | 2,000 *R*² draws per setting |
+| Growing *k* with a true model (study 4) | bounded by the cost of the *k* = 500 regressions | 400 datasets per setting |
 
 Checks then compare an estimate with its target **relative to its MCSE**
-(for example "within 2 MCSE of zero") instead of against a fixed number.
-
-All results are reported with their MCSE, computed by `rsimsum` where it
-applies.
+(for example "within 2 MCSE of zero") instead of against a fixed number, and
+every result is reported with its MCSE.
 
 ---
 
@@ -62,7 +67,6 @@ their seed, not stored.
 
 | Set | How the data arise | Grid | Used by |
 |---|---|---|---|
-| **A** | Fixed true effects. Predictors are multivariate normal with unit variances and equal correlation ρ; noise SD 1; slopes in units of the noise SD. | *k* ∈ {2, 5, 10, 20}; *n* ∈ {50, 200, 1,000}; ρ ∈ {0, .3, .7}; other slopes sparse (one at 0.3, the rest 0) or dense (all 0.1); slope of *x*₁ ∈ {0, 0.1, 0.2, 0.3}. That is 72 designs, each at 4 slopes. Extended with a factor of *q* + 1 levels (*q* = 2 to 5; Cohen's *f*² = 0, .02, .15) next to 2 or 10 other predictors that explain *R*² = .5. | 5 |
 | **B** | Drawn from each prior: the coefficients and the noise SD from the prior (proper stand-ins for the intercept and noise), then the data. For the Bayes factor's calibration, half the datasets come from the model without *x*₁ (its own prior for *k* − 1 predictors). | *k* ∈ {3, 8}; *n* ∈ {50, 200} (and *n* = 60 at *k* = 8 for calibration of the posterior); one cell per prior. | 3 |
 | **D** | *k* growing with *n*: *k* = *n*/4 and *k* = √*n*. Under the null only *R*² is drawn (it is Beta(*k*/2, (*n* − *k* − 1)/2)); with a small true model (3 slopes of 0.3) full datasets are drawn. | *n* ∈ {50, 100, 200, 500, 1,000, 2,000}. | 4 |
 
@@ -104,12 +108,12 @@ priors.
 `R/studies/03_calibration.R`
 
 - **Aims.** Part A: simulation-based calibration of the posterior (Talts et al., 2018), with `SBC`. Part B: the Bayes factor's calibration (Schad et al., 2023): among datasets with a given BF₁₀, the share from the model without *x*₁ equals 1 / (1 + BF₁₀).
-- **Data.** Set B. Part A: *k* = 8, *n* = 60 and *k* = 3, *n* = 50. Part B: *k* ∈ {3, 8}, *n* ∈ {50, 200}; generating priors the three and JZS; half the datasets from the model without *x*₁, half from the model with all *k*.
-- **Estimands.** Part A: the ranks of the true *R*², *b*₁ and σ. Part B: the observed share without *x*₁ per bin of log BF₁₀ against the predicted share; the logistic calibration slope.
-- **Methods.** Part A: the Stan model. Part B: the Bayes factor of the model with *x*₁ against the model without it; on data from a prior that prior's, on JZS data all three.
+- **Data.** Set B. Part A: *k* = 8, *n* = 60 and *k* = 3, *n* = 50. Part B: *k* ∈ {3, 8}, *n* ∈ {50, 200}; each of the three priors generates; half the datasets from the model without *x*₁, half from the model with all *k*.
+- **Estimands.** Part A: the ranks of the true *R*², *b*₁ and σ; the divergent transitions of each fit. Part B: the observed share without *x*₁ per bin of log BF₁₀ against the predicted share; the logistic calibration slope.
+- **Methods.** Part A: the Stan model. Part B: the Bayes factor of the model with *x*₁ against the model without it, under the prior that generated the data.
 - **Performance.** Part A: a chi-square over 20 rank bins. Part B: a chi-square over the bins and the logistic slope with its SE.
 - ***n*<sub>sim</sub>.** Part A: 1,000 fits per prior and setting. Part B: 20,000 datasets per cell (bins of 625 or more have MCSE ≤ .02).
-- **Checks.** 3.1 ranks uniform (*p* > .01), each prior and setting; 3.2 each prior's Bayes factor calibrated on its own prior's data (*p* > .01, slope within 3 SE of 1); 3.3 on JZS data, miscalibration shows (*p* < .001).
+- **Checks, for each prior.** 3.1 ranks uniform (*p* > .01), each setting; 3.2 no divergent transitions, each setting; 3.3 the Bayes factor calibrated on the prior's own data (*p* > .01, slope within 3 SE of 1), each cell.
 
 ## 4. Does each prior meet the objective-Bayes criteria?
 
@@ -123,18 +127,6 @@ priors.
 - ***n*<sub>sim</sub>.** 2,000 *R*² draws per setting; 400 datasets per setting for growing *k* with a true model.
 - **Checks, for each prior.** 4.1 predictive matching (the integral itself at *n* = *k* + 1); 4.2 and 4.3 information consistency; 4.4 to 4.6 the rates; 4.7 consistency under the alternative; 4.8 intrinsic consistency; 4.9 and 4.10 growing *k*; 4.11 invariance under rescaling, shifting and recoding.
 
-## 5. How does each prior behave on data with a known truth?
-
-`R/studies/05_behaviour.R`
-
-- **Aims.** Operating characteristics of the three priors next to JZS and Zellner–Siow. Part A: the Bayes factor for one coefficient (the model with *x*₁ against the model without it): how often it supports either model or stays undecided, how that depends on *k*, how well it separates a null from a small effect. Part B: the same for a factor. Part C: bias, coverage and prediction error of the posterior.
-- **Data.** Set A: part A all 72 designs at four slopes; part B the extension with a factor; part C 16 cells (*k* 2 and 10, *n* 50 and 200, ρ 0 and .7, sparse and dense) at slope 0.2, the same datasets as part A's.
-- **Estimands.** Parts A and B: the share of each answer at BF 3; the AUC for a null against a small effect and its difference from JZS. Part C: relative bias, coverage of the 95% interval, excess prediction error relative to OLS.
-- **Methods.** The three priors (Bayes factors and Stan posteriors), JZS and Zellner–Siow (BayesFactor), and OLS in part C.
-- **Performance.** Shares with MCSE; AUC differences and prediction-error ratios with paired bootstrap SEs; bias and coverage with `rsimsum`.
-- ***n*<sub>sim</sub>.** Parts A and B: 625 datasets per cell. Part C: 475 per cell.
-- **Checks, for every method.** 5.1 the share of true nulls confirmed is the same at *k* = 2 and *k* = 20 (95% Monte Carlo interval of the difference within ±.05); 5.2 JZS for a factor computed precisely enough (proportional error < .05); 5.3 coverage near nominal, each prior; 5.4 prediction at least as good as OLS, each prior; 5.5 no divergent transitions.
-
 ---
 
 ## Summary
@@ -145,7 +137,6 @@ priors.
 | 2 | deterministic; brute force and bridge sampling to MCSE 0.01 | `Rmpfr`, bridge sampling |
 | 3 | 1,000 fits (part A); 20,000 datasets (part B) | Stan; the Bayes factors |
 | 4 | 2,000 *R*² draws; 400 datasets (growing *k*) | the *k* = 500 regressions |
-| 5 | 625 (parts A, B); 475 (part C) | the Bayes factors; BayesFactor; Stan |
 
 ## References
 

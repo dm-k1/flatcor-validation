@@ -59,7 +59,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        study: ["03", "04", "05"]
+        study: ["03", "04"]
         fraction: ${{ fromJSON(inputs.fractions || '["0.02", "0.05"]') }}
         include:
           - study: "01"

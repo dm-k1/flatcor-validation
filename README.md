@@ -24,33 +24,24 @@ every $k$: **flat partial r** (what random matrices give; $R^2 \sim$
 Beta($k/2$, 1)), **flat R** and **flat R²** (the total held fixed, so each
 partial correlation narrows as $k$ grows). This repository builds all three
 in [flatcor](https://github.com/dm-k1/flatcor) and validates them side by
-side, with the JZS default and Zellner–Siow as references.
+side: does each work correctly within the Bayesian framework?
 
-### What the earlier validation found
+### What the validation finds
 
-In the earlier validation (eleven studies, run of 4 November 2026, in which
-137 of 138 checks passed), flat partial r's test of one coefficient confirmed
-true nulls at the same rate for any number of predictors, while under flat R
-and flat R² the test drifted with the number of predictors without becoming
-more accurate. At 20 predictors all three ranked datasets identically, yet
-flat R left 92% of true nulls undecided while flat partial r confirmed 88%.
-Only flat partial r's conditional test was also the Bayes factor of one joint
-model (the full model against its restriction by conditioning, as the
-Savage–Dickey ratio assumes).
+> **TO REFRESH from the full run:** a short summary of the four studies'
+> results (prior sampling, Bayes factors, calibration, default-prior
+> criteria) for each prior, with the figure that shows them best.
 
-![What each test says about one coefficient as predictors are added (earlier validation)](docs/working/old_run/figures/06_outcomes.png)
-
-Its findings, comparison and report are kept in
-[`docs/working/old_run/`](docs/working/old_run/). The validation has since
-been redesigned and simplified: five studies that treat the three priors the
-same way (one technique, the same checks), each with the number of datasets
-set by a target Monte Carlo error
-([`docs/appendix/C_study_design.md`](docs/appendix/C_study_design.md)). Its
-results, presented in [`validation.ipynb`](validation.ipynb), will replace
-these numbers. flatcor 2.0.0 no longer has the conditional test these
-findings rest on: every Bayes factor compares two models, each with its own
-prior, so the question of how the test of one coefficient behaves as $k$
-grows is open again (study 5).
+The validation is what someone needs to trust that each prior works within
+the Bayesian framework: four studies (the prior is drawn correctly, the
+Bayes factors are right, the posterior and Bayes factors are calibrated, the
+default-prior criteria hold) that treat the three priors the same way (one
+technique, the same checks), each with the number of datasets set by a
+target Monte Carlo error
+([`docs/appendix/C_study_design.md`](docs/appendix/C_study_design.md)); the
+results are in [`validation.ipynb`](validation.ipynb). How the test of one
+coefficient behaves as $k$ grows, the question above, is for a later study
+of how the priors behave in use.
 
 ## Reading order
 
@@ -58,15 +49,14 @@ grows is open again (study 5).
 |---|---|---|
 | 1 | [`docs/1_why_a_choice.md`](docs/1_why_a_choice.md) | **Why a choice is needed**: what adding predictors does to valid correlation matrices, and the three intuitive choices of what stays flat |
 | 2 | [`docs/2_the_three_priors.md`](docs/2_the_three_priors.md) | **The three priors**: the family $R^2 \sim$ Beta($a$, 1), what each keeps flat and expects, how the total is divided, what the package computes |
-| 3 | [`validation.ipynb`](validation.ipynb) | **The validation**: five studies, each with its question, PASS/FAIL checks, tables and figures |
+| 3 | [`validation.ipynb`](validation.ipynb) | **The validation**: four studies, each with its question, PASS/FAIL checks, tables and figures |
 | | `docs/3_results.md` | What the validation shows and the recommendation: to be written from the results of the redesigned validation |
 | A | [`docs/appendix/A_derivations.md`](docs/appendix/A_derivations.md) | How the prior calculates: the density factor by factor, the Stan model, the Bayes factors, the default-prior criteria |
 | B | [`docs/appendix/B_relation_to_other_priors.md`](docs/appendix/B_relation_to_other_priors.md) | How the three relate to JZS, `stan_lm`, R2-D2 and other priors; what is new here and what is not |
-| C | [`docs/appendix/C_study_design.md`](docs/appendix/C_study_design.md) | The design of the five studies (aims, data, estimands, methods, performance) and the number of datasets each needs |
+| C | [`docs/appendix/C_study_design.md`](docs/appendix/C_study_design.md) | The design of the four studies (aims, data, estimands, methods, performance) and the number of datasets each needs |
 
 Working notes, not part of the reading path, are in [`docs/working/`](docs/working/):
-the plan of the validation redesign, the reading list, and the results of the
-earlier validation ([`docs/working/old_run/`](docs/working/old_run/)).
+the plan of the validation redesign, the reading list and the run-time estimate.
 
 ## The three priors
 
@@ -79,8 +69,8 @@ In brief:
 | **flat R²** (`prior = "flat_r_squared"`) | $R^2$ | Beta(1, 1), for every $k$ | its share of the flat total; narrows as $k$ grows |
 
 All three are $R^2$ ~ Beta($a$, 1) with $a$ = $k/2$, ½ or 1. The default is
-**flat partial r**, the prior the earlier validation recommended; a function that uses
-it because no prior was given says so once per session, and `prior =`
+**flat partial r** (**TO REFRESH:** why, from the results); a function that
+uses it because no prior was given says so once per session, and `prior =`
 selects the others.
 
 All three divide the total over the predictors without preference. As a
@@ -98,8 +88,9 @@ P(beta) = P(total) x P(this combination | total) x unit conversion
   shape for which every coefficient's partial correlation is flat.
 
 The package provides estimation with Stan (with `loo()`, `pp_check()` and
-bayesplot), Bayes factors between any two linear models from a formula that
-needs only $R^2$, $n$ and $k$, and a test for each coefficient
+bayesplot), and Bayes factors between any two linear models, computed from
+only $R^2$, $n$ and $k$ of each; a term is tested as the model with it
+against the model without it
 ([`docs/2_the_three_priors.md`](docs/2_the_three_priors.md), "What the package
 computes with them").
 
@@ -111,8 +102,7 @@ computes with them").
 | **shape** $a$ | the first parameter of $R^2 \sim$ Beta($a$, 1): $k/2$, ½ or 1 | `r_squared_shape` (Stan), `prior_shape()` |
 | **share** | the fraction of the total that one predictor gets; Beta(½, (k−1)/2) for every $a$ | $c^2$ (squared alignment, appendix A section 7), $B$ (appendix A section 8) |
 | **noise units**, $f$ | an effect divided by the noise SD $\sigma$; $f^2$ is Cohen's $f^2$ | |
-| **Bayes factor for a term** | the model with the term against the model without it, each with its own prior (the joint test) | |
-| **conditional test** | the earlier test of one coefficient's partial correlation, removed in flatcor 2.0.0 | "per-coefficient test" |
+| **Bayes factor for a term** | the model with the term against the model without it, each with its own prior | "joint test" (earlier versions) |
 | **flat partial r** | $a = k/2$ | "uniform correlations" (earlier versions), `stan_lm` with η = 1, LKJ(1) |
 | **flat R** | $a = ½$ | "flat-R" (earlier versions) |
 | **flat R-squared** | $a = 1$ | "flat R²" |
@@ -126,10 +116,8 @@ computes with them").
 
 - **Choosing the prior.** Without `prior =`, the functions use flat partial
   r and say so once per session. What each prior assumes is described in
-  [`docs/2_the_three_priors.md`](docs/2_the_three_priors.md); the earlier
-  validation's recommendation (flat partial r) and its costs are in
-  [`docs/working/old_run/comparison.md`](docs/working/old_run/comparison.md),
-  section 8.
+  [`docs/2_the_three_priors.md`](docs/2_the_three_priors.md); the
+  recommendation and its costs follow from the results (**TO REFRESH**).
 - **Shrinkage at small $n$.** With several predictors and a small sample, the
   prior pulls estimates towards zero. The example in flatcor ([`inst/examples/example.R`](https://github.com/dm-k1/flatcor/blob/main/inst/examples/example.R)) prints this
   pull next to the ordinary estimates.
@@ -168,13 +156,16 @@ and models without an intercept.
 
 ## Open questions
 
-- **Proofs.** The consistency criteria are checked numerically (study 5), in
+- **Proofs.** The consistency criteria are checked numerically (study 4), in
   the settings it covers. None is proven analytically
   here, and non-nested models are not covered.
 - **The empirical question between the branches:** how explained variance
   grows with the number of predictors in published regressions. Flat partial r
   predicts a median $R^2$ of .76 with 5 predictors; flat R predicts .25 and
   flat R-squared .50 at any size.
+- **How the priors behave in use**, a later study: how often the test of a
+  term finds an effect, confirms a null or stays undecided as $k$ and $n$
+  change, and how well the estimates do.
 - **Benchmarks in variable selection** against the robust, hyper-g/n and
   intrinsic priors (BAS package), and a reanalysis of real data.
 
@@ -199,13 +190,13 @@ publishes as `ghcr.io/dm-k1/flatcor-validation`. Then open
 | Path | What it is |
 |---|---|
 | `docs/1_why_a_choice.md`, `docs/2_the_three_priors.md` | Parts 1 and 2 of the reading path (see "Reading order") |
-| `docs/appendix/` | Appendices A (derivations), B (relation to other priors) and C (the design of the five studies) |
+| `docs/appendix/` | Appendices A (derivations), B (relation to other priors) and C (the design of the four studies) |
 | `docs/figures/` | The figures of the docs |
-| `docs/working/` | Working notes: the plan of the redesign (`REDESIGN.md`), the reading list, and the results of the earlier validation (`old_run/`) |
+| `docs/working/` | Working notes: the plan of the redesign (`REDESIGN.md`), the reading list, the run-time estimate |
 | `R/docs/` | The code behind the docs: the motivating simulation and the figures of parts 1 and 2 |
 | `R/shared/` | The settings, precision targets and comparison methods every study uses |
-| `R/data/` | The shared simulated data sets (A to D), each dataset with its own random stream |
-| `R/studies/` | The five validation studies: correctness (01-03), formal properties (04), behaviour (05) |
+| `R/data/` | The shared simulated data sets (B and D), each dataset with its own random stream |
+| `R/studies/` | The four validation studies: correctness (01-03), the default-prior criteria (04) |
 | `R/notebook/` | The notebook's helpers: they present the results, they compute nothing |
 | `validation.ipynb` | The validation notebook (R kernel): per study its question, checks, tables and figures; it reads `results/` or reruns the studies |
 | `run_all.R` | Runs the studies one after another, without the notebook |
@@ -224,10 +215,11 @@ publishes as `ghcr.io/dm-k1/flatcor-validation`. Then open
   flat R as the default, then with uniform correlations (now flat partial r).
 - **v3 (November 2026)**: the motivating simulation showed that not
   everything can stay flat, so the three options (flat partial r, flat R,
-  flat R²) are built and validated as equals. The results of the earlier
-  validation recommend flat partial r
-  (`docs/working/old_run/comparison.md`, section 8), which is now the default.
-  The validation is then redesigned around target Monte Carlo errors. The superseded scripts (by-hand
+  flat R²) are built and validated as equals. An earlier validation (run of
+  4 November 2026, in the git history up to commit 9ffd1bf) recommended flat
+  partial r, which is now the default. The validation is then redesigned
+  around target Monte Carlo errors and, with flatcor 2.0.0, simplified to
+  four studies that treat the three priors the same way. The superseded scripts (by-hand
   tutorials, the brms version of the prior, earlier approaches) were in
   `archive/` and remain in the git history up to commit a2886a7.
 

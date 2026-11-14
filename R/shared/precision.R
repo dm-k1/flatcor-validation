@@ -18,9 +18,6 @@ mcse_of_proportion <- function(p, n_sim) {
 ## Datasets needed for a proportion near p to reach a target MCSE
 n_sim_for_proportion <- function(target_mcse, p = 0.5) ceiling(p * (1 - p) / target_mcse^2)
 
-## Datasets needed for a mean with standard deviation sd to reach a target MCSE
-n_sim_for_mean <- function(target_mcse, sd) ceiling((sd / target_mcse)^2)
-
 ## Effective draws needed for a Kolmogorov-Smirnov check whose critical
 ## distance at the .01 level (1.63 / sqrt(n)) is at most a given distance
 n_sim_for_ks <- function(critical_distance) ceiling((1.63 / critical_distance)^2)
@@ -29,17 +26,13 @@ n_sim_for_ks <- function(critical_distance) ceiling((1.63 / critical_distance)^2
 ## n_sim is what the studies run; where it exceeds the formula, the reason is
 ## given.
 precision_targets <- list(
-  ## a share (rate of an answer, inclusion) reported per design cell: MCSE .02
-  rate_per_cell     = list(mcse = 0.02, n_sim = n_sim_for_proportion(0.02)),               # 625
-  ## interval coverage near .95, per cell: MCSE .01
-  coverage_per_cell = list(mcse = 0.01, n_sim = n_sim_for_proportion(0.01, p = 0.95)),     # 475
   ## KS checks of a distribution at the .01 level with critical distance .01
   ks_draws          = list(mcse = NA, n_sim = n_sim_for_ks(0.01)),                          # 26,569
   ## simulation-based calibration: fits per prior and setting (power against
   ## miscalibration of about 5% of the rank distribution)
   sbc_fits          = list(mcse = NA, n_sim = 1000),
   ## calibration of the Bayes factor: datasets per cell, so that bins of at
-  ## least 625 datasets have shares with MCSE <= .02
+  ## least n_sim_for_proportion(0.02) = 625 datasets have shares with MCSE <= .02
   bf_calibration    = list(mcse = 0.02, n_sim = 20000),
   ## slopes of the median log BF against log n: R-squared draws per setting
   ## (slope MCSE about 0.02)

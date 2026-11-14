@@ -2,15 +2,15 @@
 ##  Shared settings for the validation scripts
 ##   - parallel: use all cores but one (leaves one free for the computer),
 ##               or VALIDATION_CORES if set
-##   - caching:  simulation results and Stan fits are saved in cache/
-##               (gitignored) and reused when nothing changed
+##   - caching:  simulation results are saved in cache/ (gitignored), one
+##               folder per study and flatcor build, and reused
 ##   - figures:  saved to figures/ (tracked)
 ##   - checks:   record_check() and report_checks() for pass/fail summaries
 ## =====================================================================
 
 ## ---- Text encoding ------------------------------------------------------------------
-## A cluster job or a Jupyter kernel may start R in an ASCII locale; the checks
-## contain names such as Kucharský, so use UTF-8 (the results files then read
+## A cluster job or a Jupyter kernel may start R in an ASCII locale; the
+## results contain characters such as ² and names such as García-Donato, so use UTF-8 (the results files then read
 ## back without warnings anywhere)
 if (!isTRUE(l10n_info()$`UTF-8`))
   for (locale in c("C.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"))
@@ -97,13 +97,12 @@ smoke_mode      <- identical(Sys.getenv("VALIDATION_SMOKE"), "1")
 timing_fraction <- suppressWarnings(as.numeric(Sys.getenv("VALIDATION_TIMING", NA)))
 timing_mode     <- !smoke_mode && !is.na(timing_fraction)
 cache_folder   <- if (timing_mode) file.path("cache", "timing", timing_fraction) else "cache"
-fits_folder    <- file.path(cache_folder, "fits")
 results_folder <- if (smoke_mode) file.path(cache_folder, "smoke_results") else
                   if (timing_mode) file.path(cache_folder, "results") else "results"
 figures_folder <- if (smoke_mode) file.path(cache_folder, "smoke_figures") else
                   if (timing_mode) file.path(cache_folder, "figures") else "figures"
 studies_results_folder <- file.path(results_folder, "studies")
-for (folder in c(fits_folder, studies_results_folder, figures_folder))
+for (folder in c(studies_results_folder, figures_folder))
   dir.create(folder, recursive = TRUE, showWarnings = FALSE)
 
 ## The build of flatcor under test: its commit when installed from GitHub (as
@@ -148,43 +147,6 @@ save_figure <- function(figure, name, width = 10, height = 6) {
   invisible(figure)
 }
 
-## ---- Cached, parallel simulation runner ---------------------------------------
-## Runs `simulate_cell(cell)` for every row of `design`, in parallel, and saves
-## the combined results. The cache is linked to the settings: the saved file
-## stores `settings` (and the design), and is only reused when they are
-## identical. Change REPS, the effect sizes, the sample sizes, ... and the
-## simulation reruns automatically. Set rerun = TRUE to force a rerun.
-##
-## Each design cell gets its own seed (base_seed + row number), so results are
-## reproducible and do not depend on the number of cores.
-run_simulation_grid <- function(design, simulate_cell, results_file, settings,
-                                base_seed = 2026, rerun = FALSE) {
-  fingerprint <- list(settings = settings, design = as.data.frame(design))
-  if (!rerun && file.exists(results_file)) {
-    cached <- readRDS(results_file)
-    if (identical(attr(cached, "fingerprint"), fingerprint)) {
-      message("Using cached results: ", results_file)
-      return(cached)
-    }
-    message("Settings changed since the cached run: rerunning.")
-  }
-  message(sprintf("Running %d design cells on %d cores ...", nrow(design), number_of_cores))
-  started <- Sys.time()
-  cell_results <- parallel_map(seq_len(nrow(design)), function(row) {
-    set.seed(base_seed + row)
-    simulate_cell(design[row, , drop = FALSE])
-  })
-  failed <- vapply(cell_results, inherits, logical(1), what = "try-error")
-  if (any(failed)) stop("Simulation failed in design rows: ", paste(which(failed), collapse = ", "),
-                        "\nFirst error: ", cell_results[[which(failed)[1]]])
-  results <- dplyr::bind_rows(cell_results)
-  attr(results, "fingerprint") <- fingerprint
-  saveRDS(results, results_file)
-  message(sprintf("Done in %.1f minutes; saved to %s",
-                  as.numeric(difftime(Sys.time(), started, units = "mins")), results_file))
-  results
-}
-
 ## ---- Pass/fail checks ------------------------------------------------------------
 ## record_check() records one check and prints PASS or FAIL; report_checks()
 ## prints the summary and stops with an error if anything failed.
@@ -211,7 +173,7 @@ report_checks <- function() {
 }
 
 ## ---- The study's results file ----------------------------------------------------
-## save_study_results("05", list(...)) writes results/studies/study_05.rds:
+## save_study_results("03", list(...)) writes results/studies/study_03.rds:
 ## the study's tables, its checks, the figures it saved and the setup of the
 ## run. The notebook (validation.ipynb) presents only these files.
 ## The studies may run on different machines (cluster/README.md), so each

@@ -4,8 +4,8 @@
 ##
 ##  Submit from the project folder (the logs folder must exist first):
 ##    mkdir -p cache/logs
-##    sbatch cluster/slurm_array.sh                 all five studies
-##    sbatch --array=3,5 cluster/slurm_array.sh     a selection
+##    sbatch cluster/slurm_array.sh                 all four studies
+##    sbatch --array=3,4 cluster/slurm_array.sh     a selection
 ##    VALIDATION_IMAGE=$PWD/flatcor-validation.sif sbatch cluster/slurm_array.sh
 ##                                                     inside the container
 ##  Without VALIDATION_IMAGE the studies run with the cluster's own R (which
@@ -19,13 +19,14 @@
 ##  to results/studies/study_NN.rds and its figures to figures/.
 ##  When all tasks have finished, the notebook (setting "results") shows them.
 ##
-##  The resources below are one setting for every task. Study 9 is the
-##  longest (about 6 hours on 7 cores); adjust --time and --cpus-per-task to
-##  the cluster, or submit study 9 on its own with more cores.
+##  The resources below are one setting for every task. Study 3 is the
+##  longest; adjust --time and --cpus-per-task to the cluster, or submit
+##  study 3 on its own with more cores (the run-time estimate,
+##  cluster/README.md, says how long each takes).
 ##  VALIDATION_SMOKE=1 sbatch ... runs the smoke test on the cluster first.
 ## =====================================================================
 #SBATCH --job-name=flatcor-validation
-#SBATCH --array=1-5
+#SBATCH --array=1-4
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
 #SBATCH --time=24:00:00
@@ -34,8 +35,7 @@
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 
-studies=(01_prior_sampling 02_bayes_factors 03_calibration 04_default_prior_criteria
-         05_behaviour)
+studies=(01_prior_sampling 02_bayes_factors 03_calibration 04_default_prior_criteria)
 study=${studies[$((SLURM_ARRAY_TASK_ID - 1))]}
 
 export VALIDATION_CORES=$SLURM_CPUS_PER_TASK

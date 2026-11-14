@@ -12,17 +12,16 @@ Zellner *g*-priors) and sit next to rstanarm's `stan_lm`:
 
 Keeping the implied $R^2$ constant in $k$ does not by itself single out flat
 R: $R^2 \sim$ Beta(½, $b$) is a *g*-mixture for every $k$ and every $b$
-(checked in study 10, check 10.5; see
-[appendix A](A_derivations.md), section 8). Where the
+([appendix A](A_derivations.md), section 8). Where the
 three priors come from is described in
 [`1_why_a_choice.md`](../1_why_a_choice.md), sections 2 and 3 (the motivating simulation).
 
-Checks are named by study and number in the redesigned validation (for
-example check 2.5 is study 2, check 5; [appendix C](C_study_design.md) gives
-each study's design, and each study's script names the old check it replaces).
-Numbers quoted from checks are from the run of the earlier studies of
-4 November 2026 (commit 21d42dc, on the `main` branch) unless stated otherwise;
-they will be updated from the redesigned validation.
+Checks are named by study and number in the validation (check 2.1 is study
+2, check 1; [appendix C](C_study_design.md) gives each study's design), or
+by their name in the motivating simulation (M0 to M4,
+[`R/docs/motivating_simulation.R`](../../R/docs/motivating_simulation.R)).
+Numbers marked **TO REFRESH** come from runs before the simplification of 14
+November 2026.
 
 ## The family: mixtures of *g*-priors
 
@@ -72,8 +71,8 @@ explained variance.
 ## Three extensions: flat on the correlations, on R, or on R²
 
 With one predictor, Jeffreys' flat correlation is the starting point. Valid
-correlation matrices allow three ways to extend it to $k$ predictors (study
-00), and they differ in one claim:
+correlation matrices allow three ways to extend it to $k$ predictors (the
+motivating simulation), and they differ in one claim:
 
 | | what is flat | implied $R^2$ | median $R^2$, $k$ = 1 / 3 / 10 / 30 | Jeffreys at $k = 1$? |
 |---|---|---|---|---|
@@ -160,7 +159,7 @@ with the Beta distribution that a short argument predicts.
    whose parameters increase by ½ at each step. A product of such Betas
    collapses into a single Beta, which predicts $R^2 \sim$ Beta($k/2$, η). For
    η = 1 the simulated $R^2$ matches that Beta to within simulation noise at
-   $k$ = 1, 2 and 5 (KS = .010–.013; check 10.4). Other values of η
+   every $k$ of the motivating simulation (check M3). Other values of η
    are not checked for $R^2$.
 
 Each half needs the other: the simulation without the formula gives only
@@ -181,17 +180,17 @@ Jeffreys' flat correlation, whatever the number of other predictors.
 
 | | What it says | Unique to η = 1? | Shown by |
 |---|---|---|---|
-| 1 | Under LKJ(η), the partial correlation of $y$ with one predictor given all the others is Beta(η, η) on (−1, 1), **for every $k$**. Flat only at η = 1 | yes | study 2, check 2.13 |
+| 1 | Under LKJ(η), the partial correlation of $y$ with one predictor given all the others is Beta(η, η) on (−1, 1), **for every $k$**. Flat only at η = 1 | yes | the motivating simulation, check M2 (η = 1); the KS distances below |
 | 2 | At $k = 1$ the prior is Jeffreys' flat correlation | yes (LKJ(η) at $k = 1$ is Beta(η, η) on $r$) | the same, $k = 1$ |
 | 3 | As a g-mixture, one hyperprior for every $k$: $g/n \sim$ Inverse-Gamma(1, ½), so models of every size share one scale | no (every η gives a fixed hyperprior) | appendix A, section 8 |
 | 4 | "Every single correlation flat" (Barnard et al., 2000) leads to the same $R^2 \sim$ Beta($k/2$, 1) | — | simulation (`R/docs/make_figures.R`); no source found for the $R^2$ part |
 
-Point 1 is what matters for testing one coefficient. Under η = 1 the test of
-a coefficient is Jeffreys' correlation test on its partial correlation, with
-or without covariates (in its fixed-*X* form; see "What is not new" below),
-and it follows from one prior on the whole model rather than from a separate
-rule for each test. It also holds for correlated predictors, because the
-partial correlation already removes the other predictors.
+Point 1 is what matters for one coefficient. Under η = 1 every
+coefficient's prior, as a partial correlation, is Jeffreys' flat
+correlation, with or without covariates, and it follows from one prior on the
+whole model rather than from a separate rule for each coefficient. It also
+holds for correlated predictors, because the partial correlation already
+removes the other predictors.
 
 Point 1 holds for the following reason. The LKJ sampler builds the matrix
 from independent partial correlations, level by level, and the partial
@@ -201,8 +200,8 @@ ordering of the variables the same distribution, so $y$ and the tested
 predictor can be placed last; their partial correlation given all the others
 is then that last-level Beta(η, η).
 
-Simulated KS distances (4,000 matrices per cell; validation run of
-4 November 2026, commit 21d42dc):
+Simulated KS distances (4,000 matrices per cell; a simulation before the
+simplification, commit 21d42dc; **TO REFRESH** if cited):
 
 | | $k = 1$ | $k = 3$ | $k = 8$ |
 |---|---|---|---|
@@ -211,36 +210,15 @@ Simulated KS distances (4,000 matrices per cell; validation run of
 | η = 2, to Beta(2, 2) | .012 | .018 | .014 |
 
 **What is not new.** A Bayes factor for one partial correlation with a flat
-prior on it is the test of Kucharský et al. (2026) with α = 1. Our Bayes factor differs from the exact one
-of Kucharský et al. in one assumption only (study 2, check 2.14). Theirs is
-derived for multivariate normal data, so the predictors are random and the
-tested predictor's residual SD is an unknown parameter. Ours conditions on
-*X*, as regression does, so the effect is expressed in units of the observed
-residual SD. When ours is given that extra uncertainty, the two agree to
-within 5e-7, and the priors on the noise and the other coefficients are the
-same in both. Without it, ours is lower on the log scale by up to 0.26
-(*n* = 20, *k* = 8, *r* = 0), by 0.10 at *n* = 50 and by 0.005 at
-*n* = 1,000, with the largest difference at *r* = 0 (where ours does not
-depend on *k*). Three things were not found in the literature searched (see
-"What is new here, and what is not"): the fixed-*X* version of their test,
-the fact that this test agrees with one prior on the whole model, and the use
-of the same prior for Bayes factors between whole models and for estimation
-(`stan_lm` with η = 1).
+prior on it is the test of Kucharský et al. (2026) with α = 1. flatcor
+2.0.0 does not offer such a test: it tests a coefficient by comparing the
+models with and without it, each with its own prior.
 
-**Variable selection** (study 10; numbers from [the earlier validation report](../working/old_run/validation_report.md))
-compares the three priors with JZS, Zellner–Siow and BIC. They rank real
-above null predictors almost equally: flat partial r and flat R-squared are
-within .025 of flat R in AUC in every cell, and +.003 and −.002 on average.
-They differ in where they draw the line. At *n* = 500, with uncorrelated
-predictors and the beta-binomial model prior, flat partial r includes 0.13
-of 8 null predictors and misses 0.84 of 4 real ones, close to Zellner–Siow
-(0.12 and 0.89) and BIC (0.05 and 1.01). Flat R (0.91 and 0.45) and flat
-R-squared (0.92 and 0.44) include more and miss fewer, more so than JZS
-(0.42 and 0.58). Which extension describes real research better is partly an
-empirical question: how fast explained variance grows with the number of
-predictors in published regressions. Flat partial r predicts a median $R^2$
-of .76 with 5 predictors and .84 with 8; flat R predicts .25 and flat
-R-squared .50 at any number of predictors.
+Which extension describes real research better is partly an empirical
+question: how fast explained variance grows with the number of predictors in
+published regressions. Flat partial r predicts a median $R^2$ of .76 with 5
+predictors and .84 with 8; flat R predicts .25 and flat R-squared .50 at any
+number of predictors.
 
 ### Flat R-squared at one predictor
 
@@ -251,13 +229,13 @@ does not start from Jeffreys' correlation (the motivating simulation, R-squared 
 ## The conditional Lindley paradox
 
 Priors with one scale shared by all coefficients (Zellner–Siow, hyper-*g*,
-and the joint tests of all three priors here) let large coefficients push the
-test of a small one towards "no effect" (Som, Hans & MacEachern, 2016). Their
-remedy, block hyper-*g* priors, gives groups of coefficients their own scale.
-The conditional tests do the same for one coefficient: under flat R and flat
-R-squared it gets its own share of the total, and under flat partial r its
-own flat partial correlation
-([appendix A](A_derivations.md), section 10).
+and all three priors here) let large coefficients push the test of a small
+one towards "no effect" (Som, Hans & MacEachern, 2016): the test of a term,
+the models with and without it, depends on what the other predictors explain
+([appendix A](A_derivations.md), section 10). Their remedy, block hyper-*g*
+priors, gives groups of coefficients their own scale. How much this matters
+for the three priors in practice is for the later study of how they behave
+in use.
 
 ## How flat R differs from R2-D2
 
@@ -325,7 +303,7 @@ round(rbind(flat_r = summarise_correlation(correlation_flat_r),
 
 ## How fast evidence for a true null grows
 
-Study 5 (checks 5.5 and 5.6) measures the rate at which the evidence for a true null grows
+Validation study 4 (checks 4.4 to 4.6) measures the rate at which the evidence for a true null grows
 with the sample size: against the intercept-only model, log BF₀₁ grows like
 $a \log n$, so BF₀₁ grows like $n^{a}$. That is the polynomial rate of every
 *local* prior (= a prior on the effect whose density is positive at zero), and
@@ -341,9 +319,8 @@ Within the local priors the three branches sit at different points on this
 scale. A model with $k$ predictors under a standard local prior such as a
 fixed *g*-prior reaches the rate $n^{k/2}$; flat partial r matches it
 ($a = k/2$), while flat R ($a = ½$) and flat R-squared ($a = 1$) stay at the
-rate of a single parameter whatever $k$ is. This is the same behaviour that
-the earlier validation showed for one coefficient (study 7): with many predictors, flat R and flat
-R-squared rarely confirm a true null. Flat partial r is as fast as a local
+rate of a single parameter whatever $k$ is. How this shows in the test of one
+coefficient is for the later behaviour study. Flat partial r is as fast as a local
 prior can be without choosing an effect size; a non-local prior would be
 faster, at the cost of that choice.
 
@@ -355,13 +332,6 @@ reading before anything is written up.
 
 The following points are not new, and are cited as such:
 
-- **The test of one coefficient under flat partial r.** A flat prior on one
-  partial correlation, with a closed-form Bayes factor in $n$, $k$ and the
-  sample partial correlation, is Kucharský et al. (2026) with α = 1. Ours
-  differs in one assumption, fixed instead of random predictors
-  (study 2, check 2.14). Other default tests for one partial correlation are
-  Wetzels and Wagenmakers (2012) and the Bayes factor functions for partial
-  correlations of Datta and Johnson (2026), which use non-local alternatives.
 - **Flat partial r as a joint prior.** It is LKJ(1), uniform over correlation
   matrices (Lewandowski et al., 2009), and `stan_lm`'s $R^2 \sim$
   Beta($k/2$, 1) (Gabry & Goodrich). That each partial correlation given all
@@ -376,67 +346,17 @@ The following points are not new, and are cited as such:
 
 The following points were not found in the literature searched:
 
-- **The test of one coefficient as the Bayes factor of one joint model.**
-  Kucharský et al. justify their test by Jeffreys's desiderata, with separate
-  improper priors for the other parameters. In the parts read we found no
-  relation to a prior on the whole model (no mention of LKJ, `stan_lm` or
-  Savage–Dickey). Here the flat partial r conditional test agrees numerically
-  with the Bayes factor of the joint LKJ(1) model (within a factor 1.10 of
-  Savage–Dickey on the 16 of 20 datasets where it is estimable;
-  study 6). This does not hold for flat R-squared (a factor 2.40 at
-  $k = 8$), and under flat R the restricted model is not a proper alternative:
-  it collapses to the intercept-only model (check 6.6). In the terms of
-  the literature on **compatible priors** (= priors for nested models derived
-  from one prior on the full model; Dawid & Lauritzen, 2001; Consonni &
-  Veronese, 2008), this is compatibility by *conditioning*, the notion that
-  the Savage–Dickey ratio assumes. It is one of three: the submodel prior can
-  also be obtained by marginalisation or by Kullback–Leibler projection, and
-  Consonni and Veronese compare the three for *g*-priors without favouring
-  conditioning (an earlier version of their paper calls it "not particularly
-  advisable"). Conditioning on a single value also depends on the variable
-  conditioned on (the Borel–Kolmogorov paradox); here it is the partial
-  correlation of the tested predictor. The coherence claim is therefore
-  specific: under flat partial r the conditional test equals the Bayes factor
-  of the full model against its conditional restriction, and under flat R
-  that restriction does not exist. Under projection, flat R would have a
-  proper restricted model.
-- **How $R^2$-based defaults drift with $k$, and that for the conditional
-  tests the drift moves the threshold and leaves the ranking unchanged.** No
-  source found shows that, under a fixed prior on $R$ or $R^2$, the
-  conditional test of one coefficient changes as other predictors are added
-  while the ranking of datasets stays identical (AUC = .701 for all three at
-  $k = 20$) and only the share left undecided changes (92% of true nulls under
-  flat R; study 7). The joint tests of flat R and flat R-squared do
-  separate worse than JZS when predictors are correlated (AUC −.064 at
-  $k = 2$, correlation .70). In the parts of Kucharský et al., Som et al. and
-  Liang et al. read so far we found no simulations of this kind.
-- **Under flat partial r, the conditional restriction is not flat partial r
-  with one predictor fewer.** Conditioning the LKJ(1) prior on the tested
-  partial correlation being zero leaves the other predictors with
-  $R^2 \sim$ Beta($(k-1)/2$, 3/2), which is `stan_lm`'s prior with η = 3/2
-  on $k - 1$ predictors, not the flat partial r prior Beta($(k-1)/2$, 1)
-  (prior draws with |partial correlation| < .01: KS distance .006 at $k = 3$
-  and .008 at $k = 8$ to Beta($(k-1)/2$, 3/2), against .15 and .19 to
-  Beta($(k-1)/2$, 1); the medians .37 and .73 are those of check 6.5).
-  This is why flat partial r's joint test, which uses the flat partial r prior
-  for the smaller model, differs from its conditional test: the two tests use
-  different priors for the model without the tested predictor. It follows
-  from the vine construction of LKJ (the submatrix of the other variables is
-  LKJ(3/2)); it was checked here by simulation only.
 - **The three priors as one family**, $R^2 \sim$ Beta($a$, 1) with
-  $a = k/2$, ½ or 1, compared side by side on the Bayarri et al. criteria
-  ([the earlier comparison](../working/old_run/comparison.md)).
+  $a = k/2$, ½ or 1, computed by one route and validated side by side in
+  the same way, on the Bayarri et al. criteria among others.
+- **TO REFRESH** after the full run and the later behaviour study: what the
+  results add that was not found in the literature. The earlier claims about
+  the conditional test (that under flat partial r it is the Bayes factor of
+  one joint model, and that under flat R and flat R-squared its drift with $k$
+  moves the threshold and not the ranking) went with that test in flatcor
+  2.0.0; they are in the git history (commit 9ffd1bf).
 
-The ranked list of what to read is in [the reading list](../working/reading_list.md). Still to be read in full: Kucharský et al. (2026), on whether $k$ is
-discussed beyond its role in the formula; Som et al. (2016), for its theorems
-on tests of single coefficients; Mulder et al. (2021); the Bayes factor
-functions paper; and, most relevant to the coherence claim, Consonni and
-Veronese (2008) and Dawid and Lauritzen (2001) on compatible priors across
-nested models, which may already contain the conditioning result for flat R
-or for LKJ priors. Of lower priority: Steel (2020), a review of Bayesian
-model averaging whose discussion of *g*-priors and priors over model size
-bears on study 10 (variable selection); and Pramanik and Johnson (2024), for how a psychology
-audience is likely to read the slow growth of evidence for nulls.
+The ranked list of what to read is in [the reading list](../working/reading_list.md).
 
 The review of objective priors by Consonni, Fouskakis, Liseo and Ntzoufras
 (2018) has been read (its model-comparison part, sections 3.1 to 3.6). It
@@ -444,7 +364,7 @@ does not discuss how the test of one coefficient depends on the number of
 other predictors, priors on $R^2$ or on (partial) correlations, LKJ, or
 operating characteristics such as how often true nulls are confirmed. It
 does cover three points that bear on this project: compatibility of priors
-across models (above); the unbalanced learning rates of local priors, with
+across models; the unbalanced learning rates of local priors, with
 evidence for a true null growing only as a power of $n$ (Dawid, 2011, as cited there;
 Johnson & Rossell, 2010; see "How fast evidence for a true null grows"); and
 block hyper-*g* priors for the case where one coefficient is much larger than
@@ -459,11 +379,9 @@ the inclusion probabilities of unimportant covariates (Dellaportas et al.,
   this prior with one predictor.
 - Kucharský, Wagenmakers, van den Bergh and Ly (2026), *TEST*: the exact Bayes
   factor for one partial correlation with a stretched-beta prior. With α = 1
-  it is the flat partial r conditional test with random instead of fixed
-  predictors (study 2, check 2.14). Flat R puts the same kind of prior on the
-  total instead of on each partial correlation. The conditional flat R test
-  uses the same inputs (the sample partial correlation, $n$ and $k$), with the
-  prior that the flat total implies for one coefficient.
+  its prior is flat partial r's prior on one partial correlation; flatcor
+  tests a coefficient by comparing models instead. Flat R puts the same kind
+  of prior on the total instead of on each partial correlation.
 - rstanarm `stan_lm` (Gabry & Goodrich): the same construction with
   $R^2 \sim$ Beta($k/2$, η), used for estimation only; with η = 1 it is flat
   partial r.
@@ -477,19 +395,12 @@ the inclusion probabilities of unimportant covariates (Dellaportas et al.,
   to shrinkage. *Statistica Sinica*.
 - Bayarri, M. J., Berger, J. O., Forte, A., & García-Donato, G. (2012). Criteria
   for Bayesian model choice with application to variable selection. *Annals of Statistics*.
-- Consonni, G., & Veronese, P. (2008). Compatibility of prior specifications
-  across linear models. *Statistical Science*, *23*(3), 332–353.
-  https://doi.org/10.1214/08-STS258
 - Consonni, G., Fouskakis, D., Liseo, B., & Ntzoufras, I. (2018). Prior
   distributions for objective Bayesian analysis. *Bayesian Analysis*, *13*(2),
   627–679. https://doi.org/10.1214/18-BA1103
 - Datta, S., & Johnson, V. E. (2026). Bayes factor functions for testing
   partial correlation coefficients. *Journal of Mathematical Psychology*.
   arXiv:2503.10787.
-- Dawid, A. P., & Lauritzen, S. L. (2001). Compatible prior distributions. In
-  E. I. George (Ed.), *Bayesian methods with applications to science, policy
-  and official statistics* (pp. 109–118). Office for Official Publications of
-  the European Communities.
 - Gabry, J., & Goodrich, B. Estimating regularized linear models with
   rstanarm (`stan_lm` vignette). https://mc-stan.org/rstanarm/articles/lm.html
 - Johnson, V. E., & Rossell, D. (2010). On the use of non-local prior
@@ -517,10 +428,6 @@ the inclusion probabilities of unimportant covariates (Dellaportas et al.,
   https://doi.org/10.1037/met0000482
 - Som, A., Hans, C. M., & MacEachern, S. N. (2016). A conditional Lindley paradox
   in Bayesian linear models. *Biometrika*.
-- Steel, M. F. J. (2020). Model averaging and its use in economics. *Journal
-  of Economic Literature*, *58*(3), 644–719. https://doi.org/10.1257/jel.20191385
-- Wetzels, R., & Wagenmakers, E.-J. (2012). A default Bayesian hypothesis test
-  for correlations and partial correlations. *Psychonomic Bulletin & Review*.
 - Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2022).
   Bayesian regression using a prior on the model fit: The R2-D2 shrinkage prior.
   *JASA*.

@@ -11,24 +11,18 @@
 library(gt)
 
 ## Jupyter may start R in an ASCII locale; the checks contain names such as
-## Kucharský, so use UTF-8 here and in the study processes started from here
+## García-Donato, so use UTF-8 here and in the study processes started from here
 if (!isTRUE(l10n_info()$`UTF-8`))
   for (locale in c("C.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"))
     if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", locale)))) break
 
-## The five studies, in the order of docs/appendix/C_study_design.md
+## The four studies, in the order of docs/appendix/C_study_design.md
 study_files <- c("01" = "01_prior_sampling", "02" = "02_bayes_factors", "03" = "03_calibration",
-                 "04" = "04_default_prior_criteria", "05" = "05_behaviour")
-study_questions <- c("01" = "Is the prior sampled correctly?",
+                 "04" = "04_default_prior_criteria")
+study_questions <- c("01" = "Does the code draw the prior it claims?",
                      "02" = "Are the Bayes factors computed correctly?",
-                     "03" = "Is the posterior calibrated?",
-                     "04" = "Is the Bayes factor calibrated?",
-                     "05" = "Does each prior meet the default-prior criteria?",
-                     "06" = "Is the test of one coefficient coherent with one model?",
-                     "07" = "How does the test of one coefficient behave?",
-                     "08" = "How does it behave for factors?",
-                     "09" = "How good are the estimates?",
-                     "10" = "How does it select variables?")
+                     "03" = "Are the posterior and the Bayes factor calibrated?",
+                     "04" = "Does each prior meet the default-prior criteria?")
 
 ## Where the results are: the tracked folder, or cache/ for the smoke test
 ## (the same rule as R/shared/settings.R)
@@ -90,16 +84,12 @@ display_gt <- function(table) {
 }
 
 ## Names in the data as they are written in the text
-prior_labels <- c(flat_partial_r = "flat partial r", flat_r = "flat R", flat_r_squared = "flat R-squared",
-                  "flat_r in coefficient coordinates" = "flat R in coefficient coordinates")
-column_labels <- c(k = "*k*", n = "*n*", q = "*q*", rho = "*ρ*", p_value = "*p*",
-                   slope_x1 = "slope of *x*₁", auc = "AUC", mcse = "MCSE", n_sim = "*n*<sub>sim</sub>",
-                   auc_minus_jzs = "AUC − JZS", chi_square = "*χ*²", z = "*z*", largest_abs_z = "Largest |*z*|",
-                   est = "Estimate", difference_from_flat_r = "AUC − flat *R*",
-                   median_r_squared_others = "Median *R*² of the others",
-                   ks_beta_3_2 = "KS distance to Beta((*k* − 1)/2, 3/2)")
-abbreviations <- c(se = "SE", mcse = "MCSE", sd = "SD", mc = "MC", ks = "KS", auc = "AUC", ess = "ESS",
-                   ols = "OLS", bf = "BF", jzs = "JZS")
+prior_labels <- c(flat_partial_r = "flat partial r", flat_r = "flat R", flat_r_squared = "flat R-squared")
+column_labels <- c(k = "*k*", n = "*n*", q = "*q*", p_value = "*p*", mcse = "MCSE",
+                   n_sim = "*n*<sub>sim</sub>", chi_square = "*χ*²", z = "*z*",
+                   largest_abs_z = "Largest |*z*|", est = "Estimate")
+abbreviations <- c(se = "SE", mcse = "MCSE", sd = "SD", mc = "MC", ks = "KS", ess = "ESS",
+                   bf = "BF", jzs = "JZS")
 label_of <- function(name) {
   if (name %in% names(column_labels)) return(column_labels[[name]])
   words <- strsplit(name, "_", fixed = TRUE)[[1]]
@@ -231,17 +221,4 @@ show_study <- function(study, tables = list(), smoke = FALSE) {
   }
   show_figures(result)
   invisible(result)
-}
-
-## The shares of each answer (says null, undecided, says effect) side by
-## side, one row per setting and method
-answers_side_by_side <- function(data, by) {
-  data <- as.data.frame(data)
-  wide <- stats::reshape(data[, c(by, "answer", "share", "mcse")], idvar = by, timevar = "answer",
-                         direction = "wide", sep = "_")
-  names(wide) <- sub("^share_", "", sub("^mcse_(.*)$", "mcse_\\1", gsub(" ", "_", names(wide))))
-  answers <- intersect(c("says_null", "undecided", "says_effect"), names(wide))
-  wide <- wide[, c(by, as.vector(rbind(answers, paste0("mcse_", answers))))]
-  rownames(wide) <- NULL
-  wide
 }

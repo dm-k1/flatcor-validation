@@ -45,7 +45,6 @@
 library(ggplot2)
 library(patchwork)
 source("R/shared/settings.R")             # parallel_map(), save_figure(), record_check()
-source("R/shared/comparison_methods.R")   # draw_lkj_correlation_matrix()
 figures_folder <- file.path("docs", "figures")   # save_figure() writes here, next to the docs' figures
 
 set.seed(2026)
@@ -56,6 +55,29 @@ quantities <- c(marginal_r = "marginal r of y with x1", partial_r = "partial r o
 versions <- c("partial r flat", "R flat", "R-squared flat")
 version_colours <- setNames(c("#0072B2", "#D55E00", "#009E73"), versions)   # Okabe-Ito
 
+
+## ---- The vine method (LKJ), the reference for check M0 ----------------------
+## Every valid correlation matrix has density proportional to det^(eta - 1);
+## eta = 1 is uniform. C-vine sampler of Lewandowski, Kurowicka & Joe (2009):
+## draw partial correlations (independent Betas on (-1, 1) whose parameters
+## step down by 1/2 per level, ending at Beta(eta, eta)), then convert them
+## into ordinary correlations.
+draw_lkj_correlation_matrix <- function(dimension, eta = 1) {
+  partial <- matrix(0, dimension, dimension); correlation <- diag(dimension)
+  beta_parameter <- eta + (dimension - 1) / 2
+  for (level in seq_len(dimension - 1)) {
+    beta_parameter <- beta_parameter - 0.5
+    for (i in (level + 1):dimension) {
+      partial[level, i] <- 2 * rbeta(1, beta_parameter, beta_parameter) - 1
+      value <- partial[level, i]
+      if (level > 1) for (l in (level - 1):1)
+        value <- value * sqrt((1 - partial[l, i]^2) * (1 - partial[l, level]^2)) +
+                 partial[l, i] * partial[l, level]
+      correlation[level, i] <- correlation[i, level] <- value
+    }
+  }
+  correlation
+}
 
 ## ---- Random valid correlation matrices --------------------------------------
 ## Every valid correlation matrix of d variables equally likely: the

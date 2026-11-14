@@ -1,362 +1,131 @@
 # Validation redesign
 
-Working plan for the branch `validation-redesign`. It records the decisions
-taken so far. When the redesign is done, this file is replaced by the
-finished validation document.
+Working plan for the branch `validation-redesign`: what the validation is,
+the decisions behind it, and what is left. When the redesign is done, this
+file is replaced by the finished validation document. The plans before 14
+November 2026 (the ten-study structure, the run of 4 November 2026 and its
+documents in `docs/working/old_run/`) are in the git history, last in commit
+9ffd1bf.
 
-**14 November 2026: the validation is simplified** (next section) to five
-studies, ported and run in smoke mode the same day; the ten-study structure
-is kept further down as the state before the simplification.
+## What the validation is for
 
-## Why
+What someone needs to trust that each of the three priors works within the
+Bayesian framework, and nothing else:
 
-The current validation (studies 00–11, run of 4 November 2026) is correct,
-but it was built study by study:
+| Study | Question | Standard practice | Data |
+|---|---|---|---|
+| 1 | Does the code draw the prior it claims? | prior check against the exact distribution | none |
+| 2 | Are the Bayes factors computed correctly? | against routes that share no code with the package: numerical integration of a second derivation, a 200-bit ground truth, brute force, bridge sampling on the Stan model | none / few |
+| 3 | Are the posterior and the Bayes factor calibrated? | SBC with its divergence diagnostics (Talts et al., 2018); Bayes factor calibration (Schad et al., 2023), on data from each prior | B |
+| 4 | Does each prior meet the objective-Bayes criteria? | Bayarri, Berger, Forte & García-Donato (2012): predictive matching, information consistency, intrinsic consistency, model-selection consistency (fixed and growing k), invariance | none / D |
 
-- The number of simulated datasets per study was chosen by run time, not
-  from a target Monte Carlo error, and the docs report results without their
-  Monte Carlo standard errors (Morris, White & Crowther, 2019; Siepe et al.,
-  2024).
-- Several checks compare a maximum or a fixed number against a threshold
-  that does not take the Monte Carlo error into account (for example study
-  10, P4).
-- Each study generates its own data, also where designs overlap, so
-  comparisons across studies are not paired.
-- The order follows how the studies were built: correctness checks (01, 02,
-  05) are interleaved with behaviour studies (03, 04), the default-prior
-  criteria are split over 02 and 08, and study 10 mixes calibration with
-  coherence.
+How the priors behave in use (how often the test of a term finds an effect,
+confirms a null or stays undecided as k and n change; separating a null from
+a small effect; estimation against OLS) is a separate study, for later. Its
+code, with data set A and its factor extension, is in commit 9ffd1bf
+(`R/studies/05_behaviour.R`).
 
-## Simplification (14 November 2026)
+## Decisions
 
-### Why
-
-The ten studies do too much, and they do not test the three priors the same
-way. The point of the validation is to establish experimentally what each
-prior does, so every prior has to be computed by the same technique and
-checked by the same routes. The conditional test of one coefficient breaks
-that rule: only under flat partial r is it a Bayes factor of one model (it
-equals the Savage–Dickey ratio of the full model). Under flat R the
-restricted model collapses to the intercept-only model, and under flat R²
-the conditional test differs from Savage–Dickey (old study 10). A route that
-holds for one prior and not the others cannot be the method for any of them.
-
-### Decisions
-
-1. **Three ideas, nothing else**, each in the standard Bayesian sense:
-   - **Model comparison**: the Bayes factor between two models, the ratio of
-     their marginal likelihoods, each model with its own prior.
-   - **A term**: the model with the term against the model without it, each
-     with its own prior (the joint test). This is a model comparison, not a
-     separate technique; a term with several columns (a factor) is the same.
-   - **Estimation**: the posterior from flatcor's Stan model.
+1. **Three ideas, each in the standard Bayesian sense:** the Bayes factor
+   between two models (each with its own prior); a term as the model with it
+   against the model without it (a factor is the same); the posterior from
+   flatcor's Stan model.
 2. **One implementation for all three priors.** Each prior is R² ~ Beta(a, 1)
    with a uniform direction, and only a changes (flat partial r k/2, flat R
-   1/2, flat R² 1). So there are two implementations in all: the closed form
-   of the whole-model marginal likelihood (`log_bayes_factor_vs_intercept_only()`)
-   and the Stan model. Every check runs the same way for every prior.
-3. **The conditional test goes**, from the validation and from flatcor. So do
-   the Savage–Dickey coherence study and the support curves, which only exist
-   to back it.
-4. **Validate the way a prior is normally validated**, and nothing beyond it:
-   does the code draw the prior, are the Bayes factors right, are the
-   posterior and the Bayes factor calibrated, does the prior meet the
-   objective-Bayes criteria, and how does it behave on data with a known
-   truth.
-5. **Two reference methods: JZS and Zellner–Siow**, both from BayesFactor,
-   in studies 4 and 5 alongside the three priors. BIC and hyper-g/n (BAS)
-   go, so `BAS` can leave `renv.lock`.
-6. **Kept from the earlier decisions:** the frameworks (SimDesign, rsimsum,
-   SBC, bridgesampling, Rmpfr), the number of datasets set by a target Monte
-   Carlo error, a Monte Carlo SE on every number, checks relative to it,
-   shared datasets by seed, the layout, the notebook and the cluster setup.
-
-### The new structure
-
-| New | Question | Standard practice | From the ten studies | Data |
-|---|---|---|---|---|
-| 1 | Does the code draw the prior? | prior check | 1 | none |
-| 2 | Are the Bayes factors computed correctly? | against independent routes: numerical integration, a 200-bit ground truth, bridge sampling on the Stan model | 2, the whole-model routes only (the conditional checks go) | none / few |
-| 3 | Are the posterior and the Bayes factor calibrated? | SBC (Talts et al., 2018); Bayes factor calibration (Schad et al., 2023) | 3 + 4 | B |
-| 4 | Does each prior meet the objective-Bayes criteria? | Bayarri, Berger, Forte & García-Donato (2012): model-selection consistency (fixed and growing k), information consistency, predictive matching, invariance | 5 (invariance moves here from 2) | none / D |
-| 5 | How does it behave on data with a known truth? | operating characteristics: how often the test of a term finds an effect, confirms a null or stays undecided across k and n; how well it separates a null from a small effect; bias, coverage and prediction error of the estimates | 7 + 8 + 9, with the joint test | A (with factors) |
-
-Dropped: study 6 (coherence) and study 10 (variable selection); data set C
-goes with it.
-
-### What this changes in flatcor
-
-A new major release (2.0.0, since it removes exports), pinned in
-`renv.lock` before the studies are ported:
-
-- Removed: `log_bayes_factor_conditional()`, `support_per_partial_correlation()`,
-  `support_per_partial_r_squared()`, `support_regions()`, and the `test =`
-  argument.
-- `bayes_factor_per_term()` becomes the joint test only, a loop over
-  `bayes_factor_models()`. (Open: keep it as that convenience, or drop it
-  and show the loop in the README.)
-- Kept: `bayes_factor_models()`, `log_bayes_factor_vs_intercept_only()`,
-  `fit_regression()` with `loo()` and `pp_check()`, and
-  `draw_coefficients_from_prior()` (prior predictive checks).
-
-### What this changes in the argument
-
-The earlier headline (flat partial r confirms true nulls at the same rate
-for any k, flat R drifts) came from the conditional test. Under the joint
-test that question is open again: the earlier run only showed that the joint
-tests of flat R and flat R² separated nulls from small effects worse than JZS
-with correlated predictors (old study 06). Study 5 answers it. Until then
-the README, `docs/1_why_a_choice.md`, `docs/2_the_three_priors.md` and
-appendix A, section 10 (the conditional test) describe a method that is
-leaving, and appendix C describes ten studies; all are rewritten from the
-new results.
-
-## Decisions (before the simplification)
-
-1. **Established frameworks where they exist, all in R.**
-   - `SimDesign` (Chalmers & Adkins, 2020) for every simulation study:
-     design grids, generate–analyse–summarise, L'Ecuyer-CMRG random streams,
-     and SLURM array jobs (`runArraySimulation()`).
-   - `rsimsum` (Gasparini, 2018) for performance measures with their Monte
-     Carlo standard errors, including paired differences between methods.
-   - `SBC` (Modrák, Kim and others) for simulation-based calibration.
-   - `bridgesampling` as an independent route to the joint-model Bayes
-     factor.
-   - `Rmpfr` for a high-precision ground truth of the closed-form Bayes
-     factors.
-   - `BAS` (Clyde) for additional reference priors where `bas.lm` offers them
-     (to check: whether the robust and intrinsic priors are available for
-     linear models).
-   - No Python.
-2. **The number of datasets follows from a target Monte Carlo standard
-   error, fixed in advance** (Morris et al., 2019, Table 6), using the
-   worst-case variance where the value is unknown. No stopping rule that
-   depends on the results.
-3. **Every reported number carries its Monte Carlo standard error**, and every
-   check's threshold is set relative to that error.
-4. **Shared data-generating mechanisms**, defined by seed (a dataset ID maps to
-   its own random stream), so that all methods, and where useful several
-   studies, analyse the same datasets:
-   - **A. Fixed true effects**: a grid of *k*, *n*, predictor correlation,
-     the pattern of the other slopes and the slope of *x*₁. Used by the
-     studies on one coefficient, on factors and on estimation.
-   - **B. Drawn from each prior**: used by the calibration of the posterior
-     and of the Bayes factor.
-   - **C. Variable selection**: 12 candidates, 4 real.
-   - **D. Growing *k***: *k* rising with *n*.
-5. **The motivating simulation (current study 00) moves out of the
-   validation**, to `R/docs/motivating_simulation.R`, with its figures and
-   table in `docs/figures/`. It shows why there are three priors; it does
-   not validate anything. *Done.*
-6. **Order: correctness, then formal properties, then behaviour.**
-7. **The package lives in its own repository**,
+   1/2, flat R² 1). There are two implementations in all: the Bayes factor of
+   a model against the intercept-only model (the likelihood ratio averaged
+   over the prior by `integrate()`) and the Stan model. Every check runs the
+   same way for every prior; a route that works for some priors and not
+   others is used for none.
+3. **The conditional test and `bayes_factor_per_term()` are gone**, from the
+   validation and from flatcor (2.0.0). The support curves stay: they use no
+   prior.
+4. **Only what is needed to trust the prior** (above). Study 4 stays because
+   "objective default" is part of what flatcor offers. Studies on coherence
+   (Savage–Dickey), variable selection and behaviour are out.
+5. **Two reference methods, JZS and Zellner–Siow** (BayesFactor), in study 4
+   next to the three priors, and later in the behaviour study.
+6. **Established frameworks, all in R:** `SimDesign` for the simulations,
+   `SBC`, `bridgesampling`, `Rmpfr`. (`BAS` and `rsimsum` left `renv.lock`
+   with the studies that used them; the behaviour study can add `rsimsum`
+   back.)
+7. **The number of datasets follows from a target Monte Carlo SE, fixed in
+   advance** (Morris et al., 2019); every reported number carries its Monte
+   Carlo SE, and every check's threshold is relative to it.
+8. **Datasets are defined by their ID**: each has its own random stream, so
+   results do not depend on the machine, the order or the number of cores.
+9. **The package lives in its own repository**,
    [dm-k1/flatcor](https://github.com/dm-k1/flatcor), and this repository
-   validates a fixed release of it (v1.0.2, pinned in `renv.lock`; 1.0.1 fixed the sampler with one predictor and 1.0.2 the conditional test near r = 1, see "Status"). The
-   validation loads it with `library(flatcor)`; the internal functions some
-   checks need are taken from its namespace in `R/shared/settings.R`.
+   validates a fixed release of it: v2.0.0 (commit cec149c), pinned in
+   `renv.lock`. Internal functions some checks need are taken from its
+   namespace in `R/shared/settings.R`.
 
-## The ten-study structure (before the simplification)
+## Status (14 November 2026)
 
-| New | Question | From the current studies | Data |
-|---|---|---|---|
-| (motivation) | Why three priors? | 00 | own |
-| 1 | Is the prior sampled correctly? | 01, P-checks | none |
-| 2 | Are the Bayes factors computed correctly? | 02, A1–A4; 05; new: Rmpfr, bridgesampling | none / few |
-| 3 | Is the posterior calibrated? | 01, S (with `SBC`) | B |
-| 4 | Is the Bayes factor calibrated? | 10, part 1 | B |
-| 5 | Does each prior meet the default-prior criteria? | 02, B1–B5; 08 | none / D |
-| 6 | Is the test of one coefficient coherent with one model? | 10, parts 2–3 | from the prior |
-| 7 | How does the test of one coefficient behave? | 03, 04, 06 (merged) | A |
-| 8 | How does it behave for factors? | 11 | A, extended |
-| 9 | How good are the estimates? | 07 | A (the same datasets as 7) |
-| 10 | How does it select variables? | 09 | C |
+- flatcor 2.0.0 released and pinned. One route for every prior, checked
+  against `integrate()` of the g-prior form (at most 1.5e-7) and a nested
+  third route; the old closed forms were the less accurate side.
+- The four studies are written and run end to end in smoke mode, through
+  `run_all.R` and the notebook; appendix C describes them.
+- The container image for flatcor 2.0.0 and a new run-time estimate run on
+  GitHub Actions (workflows "Validation image" and "Run-time estimate").
+  **TO REFRESH:** `docs/working/run_time_estimate.md` once the estimate for
+  the four studies is in.
 
-## Steps
+## Still to do
 
-1. Install the frameworks and record them in `renv.lock`. *Done (30641ed).*
-2. Write the ADEMP description per study, with the target Monte Carlo SE and
-   the *n*<sub>sim</sub> that follows (`docs/appendix/C_study_design.md`). *Done; approved as drafted.*
-3. Shared data sets and study 7 as the worked sample (`precision.R`,
-   `data_sets.R`, `07_one_coefficient.R`). *Done.*
-4. Port the other studies in the new order. *Done; every port confirmed.*
-5. Restructure and present (see "Layout" below), and make it
-   cluster-ready: SLURM array scripts, a note on Apptainer, tests for seeding
-   and for resuming. *Done, except automated tests for seeding and resuming
-   (seeding is confirmed by hand: every study gives the same check lines on 1
-   and 4 cores).*
-6. Simplify (see "Simplification"):
-   1. flatcor 2.0.0: remove the conditional test and `bayes_factor_per_term()`
-      (the support curves stay: they use no prior); one route computes the
-      Bayes factor for every prior (the likelihood ratio averaged over
-      R-squared ~ Beta(a, 1) by integrate(), as BayesFactor integrates over
-      g). Released and pinned in `renv.lock` (v2.0.0, cec149c). *Done.*
-   2. Rewrite appendix C to the five studies. *Done.*
-   3. Port the studies to the five. *Done*: study 1 has the same four checks
-      for every prior; study 2 the same four routes for every prior
-      (`integrate()` of the g-prior form, the shared likelihood ratio against
-      its 200-bit series, brute force, bridge sampling); study 3 merges the
-      two calibrations, with the Bayes factor's null data drawn from the model
-      without x1 under its own prior (data set B, `x1 = "reduced"`); study 4
-      adds invariance, and check 4.1 integrates at n = k + 1 instead of
-      reading the package's shortcut; study 5 merges one coefficient, factors
-      (the others now explain a fixed R-squared of .5) and estimation, all
-      with model-against-model Bayes factors and the same checks for every
-      method. Studies 6 and 10 and data set C are gone; `run_all.R`, the
-      notebook, the SLURM array, the timing workflow and the cluster README
-      list the five.
-   4. Smoke-run all five. *Done* (14 November 2026): all five run end to end.
-      Then a new run-time estimate (the timing workflow), still to do.
-   Found while porting, for a flatcor 2.0.1 (not yet released): with zero
-   residual degrees of freedom the likelihood ratio drops the point v = 0
-   (0 x log 0), so check 4.1 gives 1.0033 instead of 1 at k = 1 (the
-   package's Bayes factors never reach this: they return 1 there); and the
-   compiled Stan model is kept in one folder for every version, so after a
-   reinstall a stale executable can crash (seen once; a recompile fixed it).
-7. Run the full validation, then rewrite the docs and the README from the
-   new results.
+1. The run-time estimate for the four studies (above).
+2. The full run of studies 1 to 4, each where it fits (`cluster/README.md`).
+3. Rewrite the docs from the results: `docs/3_results.md` (new), the README's
+   findings, and the placeholders marked **TO REFRESH** in the README,
+   `docs/2_the_three_priors.md` and appendices A and B.
+4. Not yet tested: automated tests for seeding and resuming (seeding is
+   confirmed by hand: the same check lines on 1 and 4 cores); the SLURM array
+   and the Apptainer commands on a real cluster (only mock SLURM variables so
+   far).
 
-## Status before the simplification (handoff, 4 November 2026)
+For a flatcor 2.0.1, found while porting, not yet released:
 
-Every study is written to the conventions of the sample (ADEMP header,
-SimDesign for repeated simulation, `n_sim_of()` targets, Monte Carlo SE on
-every estimate, checks relative to it, per-dataset streams from
-`with_stream_of()`, cache in `cache/study_NN/`, own SimDesign resume file),
-and every one runs end to end in smoke mode, through `run_all.R` and through
-the notebook. Smoke mode: `VALIDATION_SMOKE=1 Rscript R/studies/NN_*.R`
-(a corner of the design, 10 datasets; checks are shown but do not stop the
-run, and results and figures go to `cache/`).
+- With zero residual degrees of freedom the likelihood ratio drops the point
+  v = 0 (0 × log 0), so check 4.1 gives 1.0033 instead of 1 at k = 1. The
+  package's own Bayes factors never reach this (they return 1 there).
+- The compiled Stan model is kept in one folder for every version, so after
+  a reinstall a stale executable can crash (seen once; a recompile fixed it).
+- Stan's "proposal is about to be rejected" messages in a chain's first few
+  iterations (a step that takes R to 1 or sigma to 0; no divergent
+  transitions) could be silenced.
 
-| Study | File | 1 core = 4 cores | Notes |
-|---|---|---|---|
-| 1 | `01_prior_sampling.R` | yes | full run done: all 10 checks pass (66 s) |
-| 2 | `02_bayes_factors.R` | not needed (deterministic) | full run done: 47 of 47 checks pass after the changes below |
-| 3 | `03_posterior_calibration.R` | yes | SBC package, `future` multisession; the ECDF figure is one panel per prior |
-| 4 | `04_bayes_factor_calibration.R` | yes | |
-| 5 | `05_default_prior_criteria.R` | yes | |
-| 6 | `06_coherence.R` | yes | Stan inside SimDesign, one worker per 4 cores |
-| 7 | `07_one_coefficient.R` | yes | |
-| 8 | `08_factors.R` | yes | |
-| 9 | `09_estimation.R` | yes | about 6 h on 7 cores; a cluster job |
-| 10 | `10_variable_selection.R` | yes | |
+## Pitfalls already handled
 
-**Check 6.3 reframed** (5 November 2026): flat R-squared's conditional test
-is predicted to differ from Savage–Dickey, so 6.3 no longer applies the
-coherence test of 6.2 and expects it to fail. It passes when, at k = 8, flat
-R-squared's mean absolute difference from Savage–Dickey exceeds flat partial
-r's (Monte Carlo error alone, since flat partial r is coherent by
-construction) by more than 2 MCSE; k = 3 is reported.
+SimDesign masks a function named `summarise` and reserves all-capital names;
+every `runSimulation()` has its own resume file (`save_details`);
+`SimExtract()` needs a `summarise` function; Stan models are compiled into
+`cache/` (or a temporary folder), never into the installed package, which is
+read-only in an Apptainer image; each study caches per flatcor build
+(`cache/study_NN/flatcor_<build>/`), so results from another build are never
+reused.
 
-**Study 2 after its full runs** (resolved 5 November 2026):
-
-- *2.2, the 200-bit ground truth:* the first full run used one absolute
-  tolerance of 1e-6 and failed in 8 of 90 settings, all with log BF > 1,000:
-  where the evidence is astronomical (R-squared = .99999, n = 10^6, log BF
-  about 5.8 million) the closed forms of flat partial r (and of flat
-  R-squared at k = 2) are off by up to 3.1, a relative error of 5e-7;
-  `integrate()` agrees with the ground truth to 1e-9. 2.2 is now split as 2.1
-  is: 2.2a, ordinary evidence (|log BF| < 50) within 1e-6 (largest error
-  9e-13); 2.2b, all settings within a relative error of 1e-6 (largest
-  5.4e-7). Both pass. The split was made after seeing the result, and the
-  script's header says so. A more precise closed form at extreme evidence
-  would be a change to flatcor.
-- *2.6, bridge sampling:* in the first full run 8 of 9 cases passed; flat
-  R-squared at k = 1, n = 80 missed by 0.0047 against 3 x its error of
-  0.0012, with 13 divergent transitions. (An earlier note here said that
-  bridgesampling's error treats draws as independent: it does not, it uses
-  the spectral density of the posterior draws, Fruhwirth-Schnatter, 2004. It
-  does not allow for a biased sampler.) The fits now use adapt_delta = 0.99.
-  The cause was in flatcor's Stan model: at k = 1 it sampled a signed R on
-  (-1, 1), and under flat R-squared the density |R| vanishes at 0, a zero the
-  sampler had to cross at every change of sign. **flatcor 1.0.1** (pinned in
-  `renv.lock` since 5 November 2026) samples |R| and marginalises the sign;
-  prior and posterior are the same distributions (checked against 1.0.0 on
-  one-predictor data, KS <= .014, and against Beta(a, 1) for the prior),
-  and the divergent transitions are gone (47 -> 0 on null data).
-- Study 2 in full with flatcor 1.0.1: 47 of 47 checks pass, and none of the
-  nine bridge-sampling fits has a divergent transition. All ten studies run
-  in smoke mode with 1.0.1; nothing changes for k > 1 (the same draws for
-  the same seed).
-- **flatcor 1.0.2** (pinned in `renv.lock` since 5 November 2026): the
-  conditional test no longer stops under flat R or flat R-squared when the
-  partial correlation is so near 1 that f > 100, and with n - k < 10 it adds
-  a wide grid (error against adaptive integration 0.02 -> 2.5e-4); models
-  without an intercept stop with a message. Each study now caches per
-  flatcor build (cache/study_NN/flatcor_<build>/), so the full run cannot
-  reuse results from 1.0.1. Study 2 runs in smoke mode with the change.
-
-Known pitfalls, already handled in the ports: SimDesign masks a function named
-`summarise` and reserves all-capital names; give every `runSimulation()` its
-own resume file (`save_details`); `SimExtract()` needs a `summarise`
-function; `rsimsum` needs an `se` column for coverage; Stan models are
-compiled into `cache/` (or a temporary folder), never into the installed
-package, which is read-only in an Apptainer image.
-
-## Layout (built)
-
-The whole repository is the validation, so there is no `validation/` folder;
-the code is split by what it does.
+## Layout
 
 ```
 R/
   shared/           settings, precision targets, comparison methods
-  data/             the shared data sets A (and A with factors), B, C, D
-  studies/          the ten studies, 01-10
+  data/             the shared data sets B and D, and the ID-based streams
+  studies/          the four studies, 01-04
   notebook/         present.R, the notebook's helpers (they compute nothing)
-results/            studies/ holds one study_NN.rds per study: its tables,
-                    checks, figures and where, when and how long it ran
-                    (tracked); session_info/ holds each study's package
-                    versions; run_all.R adds run_summary.md over all studies
-figures/            every figure as .png (tracked)
-validation.ipynb    the notebook (R kernel): per study, its question, a PASS/FAIL
-                    table of its checks, its main tables (gt) and figures; a
-                    setting at the top chooses "results" (read the .rds only),
-                    "cached" (rerun, reuse cache/) or "fresh" (clear the cache
-                    and rerun), and smoke (the smoke test instead)
+  docs/             the motivating simulation and the figures of the docs
+results/            studies/study_NN.rds per study (tables, checks, figures,
+                    and where, when and how long it ran); session_info/;
+                    run_summary.md from run_all.R (tracked)
+figures/            every figure of the studies (tracked)
+validation.ipynb    the notebook (R kernel): per study its question, checks,
+                    tables and figures; reads results/ or reruns the studies
 run_all.R           the same without the notebook, one study after another
-cluster/            Dockerfile, slurm_array.sh (one study per SLURM array task)
-                    and README.md (running on a cluster, the image under Apptainer)
-docs/               parts 1 and 2, appendix/ (A-C, C the study designs), working/ (this plan)
-cache/              raw per-dataset results, logs, smoke results (gitignored)
+cluster/            Dockerfile, slurm_array.sh, the timing scripts, README.md
+docs/               parts 1 and 2, appendix/ (A-C), working/ (this plan)
+cache/              raw results, logs, smoke and timing runs (gitignored)
 ```
-
-Every script runs from the project folder (`Rscript R/studies/07_one_coefficient.R`).
-Each study script separates computing from presenting: it ends with
-`save_study_results()`, which writes `results/studies/study_NN.rds`; the
-notebook only presents. The notebook needs `gt` and `IRkernel` (both in
-`renv.lock`; `IRkernel::installspec()` registers the `ir` kernel for R 4.6;
-Positron's own R kernel also runs it). The old report (`report.qmd`,
-`report.html`) is removed: the notebook replaces it, and it remains on `main`.
-
-The earlier run's figures, summary and session information are in
-`docs/working/old_run/`, with the documents that describe that run; the
-README still shows one of its figures until the docs are rewritten from the
-new results (step 6).
-
-The container image is built by GitHub Actions (`.github/workflows/image.yml`)
-and published as `ghcr.io/dm-k1/flatcor-validation` only after all ten
-studies have run in smoke mode inside it; the first successful build (5
-November 2026, 22 minutes) is public and can be pulled without logging in.
-`cluster/slurm_array.sh` is tested only with mock SLURM variables (one smoke
-task), and the Apptainer commands of `cluster/README.md` have not yet run on a
-real cluster: the first smoke run there confirms them.
-
-How long the full run takes is measured, not guessed, by the workflow
-"Run-time estimate" (`.github/workflows/timing.yml`): every study in timing
-mode (full design, 2% and 5% of the datasets) on its own runner, scaled up by
-`cluster/estimate_run_time.R` (`cluster/README.md`, "How long it takes").
-The first estimate (run 42030390433, 5 November 2026, commit 3f9c104's
-method; the full table is `docs/working/run_time_estimate.md`): about 120 core hours on GitHub's runners in all, almost all of it in
-four studies: 08 (39), 09 (33), 04 (22) and 07 (20); every other study takes
-under 2. On 4 runner cores that is about 30 hours, on 32 about 4. Apple-silicon
-cores are faster, so the Mac (7 cores) may manage it in roughly 12 hours; the
-plan is to run the studies in order, each where it fits, and look at each
-before the next. The timing logs show Stan's "proposal is about to be
-rejected" messages; they come from a chain's first two or three iterations
-(a step that takes R_magnitude to 1 or sigma to 0), with 0 divergent
-transitions, and can be silenced in a later flatcor release. In the timing
-run's study 06, check 6.1 (logspline and kernel Savage-Dickey agree) failed
-with a largest difference of 2.9 on the log scale: to look into before or with
-study 06's full run.
 
 ## References
 
@@ -366,18 +135,12 @@ study 06's full run.
 - Chalmers, R. P., & Adkins, M. C. (2020). Writing effective and reliable
   Monte Carlo simulations with the SimDesign package. *The Quantitative
   Methods for Psychology*, *16*(4), 248–280.
-- Gasparini, A. (2018). rsimsum: Summarise results from Monte Carlo simulation
-  studies. *Journal of Open Source Software*, *3*(26), 739.
 - Morris, T. P., White, I. R., & Crowther, M. J. (2019). Using simulation
   studies to evaluate statistical methods. *Statistics in Medicine*, *38*(11),
   2074–2102. https://doi.org/10.1002/sim.8086
 - Schad, D. J., Nicenboim, B., Bürkner, P.-C., Betancourt, M., & Vasishth, S.
   (2023). Workflow techniques for the robust use of Bayes factors.
   *Psychological Methods*, *28*(6), 1404–1426.
-- Siepe, B. S., Bartoš, F., Morris, T. P., Boulesteix, A.-L., Heck, D. W., &
-  Pawel, S. (2024). Simulation studies for methodological research in
-  psychology: A standardized template for planning, preregistration, and
-  reporting. *Psychological Methods*. https://doi.org/10.1037/met0000695
 - Talts, S., Betancourt, M., Simpson, D., Vehtari, A., & Gelman, A. (2018).
   Validating Bayesian inference algorithms with simulation-based
   calibration. arXiv:1804.06788.
