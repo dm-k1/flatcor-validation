@@ -17,8 +17,9 @@ its own random stream, derived from its ID (`docs/appendix/C_study_design.md`).
 
 The workflow "Run-time estimate" (`.github/workflows/timing.yml`) measures this
 on GitHub's runners, for free on a public repository. It starts when that file
-changes on `validation-redesign`, and from Actions > Run-time estimate > Run
-workflow once it is on `main`. Each study runs in timing mode: its full design and
+or the studies' code changes on `validation-redesign` (a newer push cancels a
+run still going), and from Actions > Run-time estimate > Run workflow once it
+is on `main`. Each study runs in timing mode: its full design and
 full-length chains, on 2% and 5% of its datasets, each on its own 4-core runner.
 `cluster/estimate_run_time.R` separates the fixed part of a study's cost from
 the part per dataset, and reads off the full run. The run's summary page shows
