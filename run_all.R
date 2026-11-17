@@ -19,7 +19,7 @@ started <- Sys.time()
 if (length(requested) == 0) {
   targets::tar_make(store = store)
 } else {
-  targets::tar_make(names = tidyselect::ends_with(paste0("_", requested)), store = store)
+  targets::tar_make(names = tidyselect::ends_with(!!paste0("_", requested)), store = store)
 }
 
 ## ---- The figures, each script in its own R process ----------------------------------

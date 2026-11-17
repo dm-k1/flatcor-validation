@@ -24,7 +24,7 @@ started <- Sys.time()
 error <- tryCatch(
   {
     targets::tar_make(
-      names = tidyselect::ends_with(paste0("_", study)),
+      names = tidyselect::ends_with(!!paste0("_", study)),
       store = store,
       reporter = "silent"
     )
