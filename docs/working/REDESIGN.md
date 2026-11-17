@@ -109,6 +109,22 @@ Bayes factor is still valid because both models give them exactly the same
 prior, so the arbitrary constant cancels; the documentation states this as a
 condition.
 
+### What the bridgesampling authors say (read 17 November 2026)
+
+From Gronau et al. (2017), "A tutorial on bridge sampling", and Gronau,
+Singmann & Wagenmakers (2020), the package paper (its Discussion lists four
+points of practical advice). What flatcor and the studies take from it:
+
+| Point | What the authors say | What we do |
+|---|---|---|
+| Number of parameters | No stated limit. Bridge sampling "performs accurately even in high-dimensional parameter spaces" such as hierarchical models (2020, introduction). The normal proposal "might produce unstable estimates" for high-dimensional posteriors that are clearly not multivariate normal (2017). Their largest worked example has 96 parameters (2017: a hierarchical model, 30 participants x 3 parameters + 6 group-level), with 60,000 posterior draws; the package paper's examples are smaller (a GLMM with 31 random effects; factor models) | Our model has k + 3 parameters, so k up to about 90 stays within what the authors have shown. Beyond that we make no claim |
+| Draws needed | Testing needs "about an order of magnitude more posterior samples than estimation" (2020, rule of thumb in the first example and the Discussion); how many depends on the model and the accuracy wanted | 10 times the draws used for estimation: 4 chains of 10,000 instead of 1,000 |
+| Normal or Warp-III | Warp-III is always at least as precise as the normal method and takes about twice as long; it helps when the joint posterior (on the unconstrained scale) is skewed, and they suggest trying it "when in doubt" (2020, sections 2.1-2.2 and the Discussion). With several modes neither is sure to work | The normal method by default; Warp-III where the posterior is skewed (a candidate cause of the flat R-squared misses at k = 1, open question below) |
+| The error estimate | `error_measures()` gives an approximate relative mean-squared error (Frühwirth-Schnatter, 2004) that allows for autocorrelated MCMC draws; available for the normal method only, as for Warp-III it was unreliable in their experience. `repetitions` > 1 shows the variability from the proposal draws only, with the posterior draws fixed. Their "gold standard": repeat everything with fresh posterior draws and look at the spread of the Bayes factor itself (2020, section 2.3 and the Discussion) | The approximate error for every Bayes factor; repeated runs with fresh posterior draws in study 3a, to check that error |
+| Requirements | All normalising constants kept (in Stan `target +=` rather than `~`); no discrete parameters (marginalise them out); converged chains with enough representative draws; parameters on the real line (the package transforms bounded ones) | flatcor's model uses `target +=` throughout; the sign of R with one predictor is marginalised (`log_mix`); Stan's diagnostics are reported |
+| Improper priors | Not addressed in either paper | Our condition above (the same improper priors on intercept and noise in both models) is ours to state, with the standard argument (Jeffreys; Bayarri et al., 2012) |
+| The prior | Bayes factors depend on it; they point to default priors with properties such as model-selection and information consistency, citing Bayarri et al. (2012) | Study 3b checks exactly those properties |
+
 ## Decisions
 
 1. **Three things, each in the standard Bayesian sense:** the prior, the
@@ -127,10 +143,10 @@ condition.
 4. **Only what is needed to trust the prior** (above). Coherence
    (Savage–Dickey), variable selection and behaviour are out.
 5. **The range is stated.** Checks run where the tools are known to work,
-   and the validation says where that is. Growing k (Bayarri's
-   model-selection consistency as k grows with n) is tested at moderate k,
-   not at k = 500, because bridge sampling needs far more draws as the
-   number of parameters grows.
+   and the validation says where that is. For bridge sampling that is up to
+   about 96 parameters, the largest case its authors have shown (above), so
+   k up to about 90; growing k (Bayarri's model-selection consistency as k
+   grows with n) is tested within that range, not at k = 500.
 6. **Two reference methods, JZS and Zellner–Siow** (BayesFactor), next to
    the three priors in the default-prior checks and in study 2b (with OLS
    there), and later in the behaviour study.
@@ -174,15 +190,33 @@ condition.
 1. A Bayes factor function on the Stan model: fit the model with and without
    the term, `bridgesampling::bridge_sampler()` on each, return the Bayes
    factor with its error estimate.
-2. The intercept-only model (k = 0) for bridgesampling: the Stan model
-   currently needs k >= 1.
-3. Remove `log_bayes_factor_vs_intercept_only()`, the likelihood ratio code
-   (`R/likelihood.R`) and the tests built on them. The support curves use the
-   likelihood ratio; decide whether they stay.
-4. The two open items from 2.0.0: a separate folder for the compiled Stan
-   model per version (a stale executable crashed once after a reinstall);
-   optionally silence Stan's "proposal is about to be rejected" messages in a
-   chain's first iterations.
+2. The intercept-only model (K = 0) in the same Stan model: only the
+   intercept and sigma, with the prior on R and the direction skipped. Not a
+   limit of Stan, only of today's model file (it declares K >= 1). It is
+   needed wherever one side of a comparison has no predictors (Bayes factor
+   calibration in 3a, the Bayarri criteria in 3b, a one-predictor model
+   against none). Kept in Stan, not as a closed formula, so every model
+   takes the same route.
+3. Every normalising constant in the Stan model, as bridgesampling requires:
+   today it leaves out the 2a of R's density 2a R^(2a - 1) and the constant
+   of the direction's density (which differs with k). The posterior does not
+   need them; the marginal likelihood does. Study 2 worked around this by
+   writing the log density again in R; with the constants in the model,
+   bridgesampling works on the Stan fit directly.
+4. Remove `log_bayes_factor_vs_intercept_only()`, the likelihood ratio code
+   (`R/likelihood.R`) and the tests built on them, and the support curves
+   (`support_per_partial_correlation()`, `support_per_partial_r_squared()`,
+   `support_regions()`, `R/support_curve.R`). The support curves are
+   prior-free, so outside the three headings, and run on our own likelihood
+   ratio code (the version for several columns fails at about 90 columns);
+   computing them from Stan instead would need density estimates from draws
+   (noisy in the tails and at 0) and a parameter per term. They stay in the
+   git history (flatcor 2.0.0).
+5. A separate folder for the compiled Stan model per flatcor version (a
+   stale executable crashed once after a reinstall). Stan's "proposal is
+   about to be rejected" messages in a chain's first iterations are left as
+   they are: harmless (a rejected step at R = 1 or sigma = 0, no divergent
+   transitions), and not worth touching the model or the sampler for.
 
 **The validation, by cell** (from the current studies 01-04):
 
@@ -201,13 +235,22 @@ follow the new file names.
 
 **Open questions:**
 
-- How far the bridgesampling authors take it (number of parameters, draws
-  needed): look up Gronau et al. (2017, 2020) before fixing the range.
-- Bridge sampling missed twice for flat R² with one predictor (the timing run
-  of 248d5d6: off by 0.006 against 3 x its error 0.0019; and an earlier
-  smoke run): chance or a pattern.
-- The cost of Bayes factor calibration with bridge sampling: two fits per
-  dataset instead of one formula.
+- Resolved (17 November 2026): the two bridge-sampling misses for flat R²
+  with one predictor (timing run of 248d5d6; an earlier smoke run) were not
+  bias. 50 runs of that case (n = 80, 16,000 draws each) averaged -1.7303
+  (MCSE 0.0004) against the exact -1.7301, but spread with SD 0.0025 where
+  bridgesampling reported 0.0018: its approximate error is about 1.4 times
+  too small there, so 3 of 50 runs lay beyond 3 reported errors. The
+  repeated runs with fresh posterior draws in 3a (the authors' gold
+  standard) give the error that is reported; without per-row pass/fail this
+  cannot become a false failure. Only this case was run.
+- The cost of Bayes factor calibration (3a) and the Bayarri checks (3b) with
+  bridge sampling: each Bayes factor is now two Stan fits with 10 times the
+  estimation draws, where it was one formula. The current target, 20,000
+  datasets per cell for calibration (`R/shared/precision.R`), was set for
+  the formula. Once flatcor 3.0 works: time one Bayes factor, then set the
+  number of datasets (and cells) from the Monte Carlo SE that is really
+  needed.
 
 **Then:** the run-time estimate, the full run, and the docs from the
 results (`docs/3_results.md`, the README's findings, the placeholders marked
