@@ -39,7 +39,10 @@ precision_targets <- list(
   rate_draws        = list(mcse = 0.02, n_sim = 2000),
   ## growing k with a small true model: datasets per setting (bounded by the
   ## cost of the k = 500 regressions at n = 2,000)
-  growing_k_data    = list(mcse = NA, n_sim = 400))
+  growing_k_data    = list(mcse = NA, n_sim = 400),
+  ## estimation (study 2b): datasets per cell, so that a coverage near .95 has
+  ## MCSE <= .01
+  coverage_per_cell = list(mcse = 0.01, n_sim = n_sim_for_proportion(0.01, p = 0.95)))   # 475
 
 ## Smoke mode (VALIDATION_SMOKE=1; smoke_mode is set in R/shared/settings.R):
 ## every study runs end to end on a handful of datasets and a corner of its

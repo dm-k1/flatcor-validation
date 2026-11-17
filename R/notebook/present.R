@@ -18,11 +18,12 @@ if (!isTRUE(l10n_info()$`UTF-8`))
 
 ## The four studies, in the order of docs/appendix/C_study_design.md
 study_files <- c("01" = "01_prior_sampling", "02" = "02_bayes_factors", "03" = "03_calibration",
-                 "04" = "04_default_prior_criteria")
+                 "04" = "04_default_prior_criteria", "2b" = "2b_estimation")
 study_questions <- c("01" = "Does the code draw the prior it claims?",
                      "02" = "Are the Bayes factors computed correctly?",
                      "03" = "Are the posterior and the Bayes factor calibrated?",
-                     "04" = "Does each prior meet the default-prior criteria?")
+                     "04" = "Does each prior meet the default-prior criteria?",
+                     "2b" = "How close are the posterior estimates to a known truth?")
 
 ## Where the results are: the tracked folder, or cache/ for the smoke test
 ## (the same rule as R/shared/settings.R)
@@ -170,6 +171,8 @@ show_table <- function(data, title = NULL, note = NULL) {
 ## The checks of a study, PASS in green and FAIL in red
 show_checks <- function(result) {
   checks <- result$checks
+  if (nrow(checks) == 0)
+    return(show_text("No pass/fail checks: each estimate is shown with its reference and its Monte Carlo SE."))
   data <- data.frame(result = ifelse(checks$passed, "PASS", "FAIL"), check = checks$check,
                      details = checks$details)
   table <- gt(data) |>

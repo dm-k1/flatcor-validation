@@ -7,7 +7,7 @@
 ##  here.
 ##
 ##  Run from the project folder:
-##    Rscript run_all.R            all studies, 01 to 04 (hours: 03)
+##    Rscript run_all.R            all studies, 01 to 04 and 2b (hours: 03, 2b)
 ##    Rscript run_all.R quick      the correctness checks 01 and 02
 ##    Rscript run_all.R 03 04      a selection
 ##  (The motivating simulation is R/docs/motivating_simulation.R; it is not part
@@ -32,7 +32,7 @@
 ## In the order of docs/appendix/C_study_design.md: correctness (01-03), the
 ## default-prior criteria (04)
 all_studies <- c("01_prior_sampling", "02_bayes_factors", "03_calibration",
-                 "04_default_prior_criteria")
+                 "04_default_prior_criteria", "2b_estimation")
 quick_studies <- c("01_prior_sampling", "02_bayes_factors")
 
 ## ---- Which studies -------------------------------------------------------------
@@ -43,7 +43,7 @@ studies <- if (length(requested) == 0) all_studies else
     unknown <- setdiff(requested, substr(all_studies, 1, 2))
     if (length(unknown) > 0)
       stop("Unknown study number(s): ", paste(unknown, collapse = ", "),
-           ". Use 01 to 04, or 'quick'.")
+           ". Use 01 to 04, 2b, or 'quick'.")
     chosen
   }
 
