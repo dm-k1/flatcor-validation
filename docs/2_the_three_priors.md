@@ -1,6 +1,6 @@
 # 2. The three priors
 
-The fork of [`1_why_a_choice.md`](1_why_a_choice.md) leaves three priors, and
+The fork of [`1_why_a_choice.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/1_why_a_choice.md) leaves three priors, and
 they form one family: **$R^2 \sim \mathrm{Beta}(a, 1)$ with a uniform
 direction**, where the **direction** (= how the total is split over the
 predictors, in explained variance) is equally likely to be any split. They
@@ -8,7 +8,7 @@ differ only in the shape $a$. This document describes the family and what each
 prior expects, how the total is divided over the predictors, and what the
 package computes with them. How the priors become a density and a Bayes factor is derived in
 [appendix A](appendix/A_derivations.md); how they relate to other default
-priors is in [appendix B](appendix/B_relation_to_other_priors.md).
+priors is in [appendix B](https://github.com/dm-k1/Objective-bayes/blob/main/docs/appendix/B_relation_to_other_priors.md).
 
 ---
 
@@ -16,7 +16,7 @@ priors is in [appendix B](appendix/B_relation_to_other_priors.md).
 
 The three candidates, what each keeps flat and how each lines up with what
 random correlation matrices do, are compared in
-[`1_why_a_choice.md`](1_why_a_choice.md), section 3. In short: flat partial
+[`1_why_a_choice.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/1_why_a_choice.md), section 3. In short: flat partial
 r keeps each partial correlation flat and lets the total grow with $k$; flat
 R and flat R-squared keep the total fixed and let each partial correlation
 narrow. All three spread the weight evenly over what is possible (valid
@@ -51,7 +51,7 @@ The three shapes of $R^2 \sim \mathrm{Beta}(a, 1)$, side by side:
 
 | Prior | `prior =` | $a$ | At $k = 1$ | Per coefficient | Where it is derived |
 |---|---|---|---|---|---|
-| flat partial r | `"flat_partial_r"` | $k/2$ | Jeffreys | flat partial correlation, any $k$ | [appendix B](appendix/B_relation_to_other_priors.md), "How Beta(k/2, 1) was found" |
+| flat partial r | `"flat_partial_r"` | $k/2$ | Jeffreys | flat partial correlation, any $k$ | [appendix B](https://github.com/dm-k1/Objective-bayes/blob/main/docs/appendix/B_relation_to_other_priors.md), "How Beta(k/2, 1) was found" |
 | flat R | `"flat_r"` | ½ | Jeffreys | share ~ Beta(½, (k−1)/2) of the total | "The share per predictor" below |
 | flat R-squared | `"flat_r_squared"` | 1 | flat on $r^2$, not on $r$ | share ~ Beta(½, (k−1)/2) of the total | [appendix A](appendix/A_derivations.md), section 2 |
 
@@ -68,7 +68,7 @@ every $a$ (appendix A, section 7). Each prior has one property that singles it o
 
 | | Unique property | Shown in |
 |---|---|---|
-| flat partial r | the only `stan_lm` shape (η = 1) where every coefficient's partial correlation is Jeffreys' flat correlation, whatever $k$ is | [appendix B](appendix/B_relation_to_other_priors.md), "Why η = 1"; motivating simulation, check M2 |
+| flat partial r | the only `stan_lm` shape (η = 1) where every coefficient's partial correlation is Jeffreys' flat correlation, whatever $k$ is | [appendix B](https://github.com/dm-k1/Objective-bayes/blob/main/docs/appendix/B_relation_to_other_priors.md), "Why η = 1"; motivating simulation, check M2 |
 | flat R | the only g-mixture whose $R^2$ prior is the same for every $k$ *and* is Jeffreys' prior at $k = 1$ | appendix A, section 8 |
 | flat R-squared | the total explained share is flat on its own scale, for every $k$ | by construction; motivating simulation, check M4 |
 
@@ -134,7 +134,7 @@ prior each branch implies for one coefficient.
   check M2; validation study 1a, the partial correlations).
 - **Flat R and flat R-squared** ($a$ fixed): the total stays where it is and
   the share shrinks, so each coefficient's prior narrows as $k$ grows (the motivating
-  simulation, [`1_why_a_choice.md`](1_why_a_choice.md), section 3).
+  simulation, [`1_why_a_choice.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/1_why_a_choice.md), section 3).
 
 ---
 

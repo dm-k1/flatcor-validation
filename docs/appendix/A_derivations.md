@@ -6,7 +6,7 @@ This document covers all three priors: flat partial r
 a uniform direction and $a = k/2$, ½ or 1, and they differ only in factor 1
 below. Where a derivation is written out for one shape (flat R, $a = ½$, in
 sections 7 and 8), the general case follows the same steps. Why these priors:
-[`1_why_a_choice.md`](../1_why_a_choice.md) and
+[`1_why_a_choice.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/1_why_a_choice.md) and
 [`2_the_three_priors.md`](../2_the_three_priors.md).
 
 Checks are named by the study of the validation they belong to (3b.2 is study
@@ -30,7 +30,7 @@ $$
    predictors and the outcome.
 
 Factors 1 and 2 carry the judgements; the reasons are in
-[`1_why_a_choice.md`](../1_why_a_choice.md), section 3, and [`2_the_three_priors.md`](../2_the_three_priors.md), "Dividing the total". Factor 3 carries
+[`1_why_a_choice.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/1_why_a_choice.md), section 3, and [`2_the_three_priors.md`](../2_the_three_priors.md), "Dividing the total". Factor 3 carries
 none. It only converts units, so that the prior becomes a density per point of
 $\beta$, which is what estimation software needs.
 
@@ -153,7 +153,7 @@ $$
 
 For $k = 1$, factors 1 and 2 together give $\tfrac12 (1+f^2)^{-3/2}$ for flat
 R and flat partial r. This is the flat-correlation prior on the effect-size
-scale (figure 1 in `1_why_a_choice.md`), a $t$ distribution with 2 degrees
+scale (figure 1 in `1_why_a_choice.md`, in the paper repository Objective-bayes), a $t$ distribution with 2 degrees
 of freedom and scale $1/\sqrt2$ on $\beta/\sigma$. For flat R-squared they give
 $|f|(1+f^2)^{-2}$.
 
@@ -490,7 +490,7 @@ At $a = k/2$ the prior is the one obtained when every correlation matrix of
 $(y, x_1 \ldots x_k)$ is equally likely, and it is rstanarm `stan_lm`'s $R^2$
 prior with η = 1. Zellner–Siow (scale 1) is exactly $R^2 \sim$ Beta($k/2$, ½)
 (its row in the table above). How the three compare:
-[appendix B](B_relation_to_other_priors.md).
+[appendix B](https://github.com/dm-k1/Objective-bayes/blob/main/docs/appendix/B_relation_to_other_priors.md).
 
 ![](../figures/6_g_prior_family.png)
 
@@ -531,7 +531,7 @@ MacEachern (2016). Every prior with one scale shared by all coefficients has
 it, including the JZS default. Under flat R and flat R-squared the test also
 depends on how many other predictors there are, because the prior for one
 coefficient narrows as $k$ grows (the motivating simulation,
-[`1_why_a_choice.md`](../1_why_a_choice.md), section 3): these priors expect
+[`1_why_a_choice.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/1_why_a_choice.md), section 3): these priors expect
 each coefficient to take a small share of the total, on average $1/(3k)$ and
 $1/(2k)$ of the variance. How much both matter in practice is for the later
 study of how the priors behave in use.

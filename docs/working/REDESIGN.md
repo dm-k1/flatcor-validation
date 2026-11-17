@@ -196,7 +196,7 @@ points of practical advice). What flatcor and the studies take from it:
   document of what is tested. The old scripts in `R/studies/`, the shared
   `settings.R` and `precision.R`, appendix C (now `validation_tests.md`),
   SimDesign and the SLURM array are gone (in the git history); the
-  motivating simulation keeps its helpers in `R/docs/helpers.R`.
+  motivating simulation moved to the paper repository, Objective-bayes.
 - **Study 3a shares its data across the priors:** the same predictors, noise
   and model assignment for the three priors, only the effects drawn from
   each prior (common random numbers); intercept 0 and noise SD 1.
@@ -268,12 +268,12 @@ R/
                     prior, known slopes, set R², nested models, growing k) and the
                     building blocks (ID-based random streams); docs/validation_tests.md
   notebook/         present.R, the notebook's helpers (they compute nothing)
-  docs/             the motivating simulation, its helpers, and the figures of the docs
+  docs/             the figures of part 2 and appendix A
 figures/            one script per study, and the figures they draw (tracked)
 results/            studies/study_<cell>.rds per study: its tables and the setup of the run (tracked)
 validation.ipynb    the notebook (R kernel): per study its question, tables and figures
 cluster/            the container image (Dockerfile) and the run-time estimate
-docs/               parts 1 and 2, validation_tests.md, appendix/ (A, B), working/ (this plan)
+docs/               the three priors (2), validation_tests.md, appendix/A, working/ (this plan)
 _targets/, cache/   the pipeline's store, smoke and timing runs (gitignored)
 ```
 
