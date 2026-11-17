@@ -7,17 +7,15 @@
 # table appears on the run's summary page and as the artifact run-time-estimate.
 # Study 1a does not depend on the number of datasets and runs in full.
 #
-# It runs when this file or the studies' code changes on validation-redesign
-# or study-rework
-# (a newer push cancels a run still going on the same branch), and from Actions >
-# "Run-time estimate" > Run workflow once it is on main (GitHub offers that
-# button only for workflows on the default branch). On a public repository the
-# runners are free; it takes about as long as the slowest job.
+# It runs when this file or the studies' code changes on main (a newer push
+# cancels a run still going), and on demand (Actions > "Run-time estimate" >
+# Run workflow). On a public repository the runners are free; it takes about
+# as long as the slowest job.
 name: Run-time estimate
 
 on:
   push:
-    branches: [validation-redesign, study-rework]
+    branches: [main]
     paths:
       - .github/workflows/timing.yml
       - studies/**
@@ -42,23 +40,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # When the same push also rebuilds the image (renv.lock changed), time the
-  # new image, not the one before it.
+  # When an image build for this branch is still running (renv.lock changed in
+  # this push or a recent one), time the new image, not the one before it.
   image:
     runs-on: ubuntu-latest
     timeout-minutes: 320
     steps:
-      - name: Wait for this commit's image build, if there is one
+      - name: Wait for the branch's latest image build, if it is still running
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           sleep 60
           while true; do
             state=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
-              --commit "$GITHUB_SHA" --json status,conclusion \
+              --branch "$GITHUB_REF_NAME" --limit 1 --json status,conclusion \
               -q '.[0] // empty | "\(.status) \(.conclusion)"')
             case "$state" in
-              "") echo "No image build for this commit"; exit 0 ;;
+              "") echo "No image build for this branch"; exit 0 ;;
               "completed success") echo "Image built"; exit 0 ;;
               completed*) echo "Image build ended: $state"; exit 1 ;;
             esac

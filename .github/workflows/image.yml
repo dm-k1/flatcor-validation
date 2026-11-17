@@ -10,7 +10,7 @@ name: Validation image
 
 on:
   push:
-    branches: [main, validation-redesign, study-rework]
+    branches: [main]
     paths:
       - cluster/Dockerfile
       - cluster/Dockerfile.dockerignore

@@ -1,6 +1,6 @@
 # Validation redesign
 
-Working plan for the branch `validation-redesign`: what the validation is,
+Working plan of the validation redesign (on `main` since 17 November 2026): what the validation is,
 the decisions behind it, and what is left. When the redesign is done, this
 file is replaced by the finished validation document. Earlier plans are in
 the git history: the ten-study structure and the run of 4 November 2026 last
@@ -189,8 +189,8 @@ points of practical advice). What flatcor and the studies take from it:
 - cmdstanr can only give a model's log density (which bridgesampling needs)
   in the R session that compiled it, so flatcor compiles that version once
   per session, into a temporary folder (commit 9a80b87, on `main`).
-- **The studies follow the six cells** as a targets pipeline (branch
-  `targets-3a`, which builds on `study-rework`): `studies/<cell>/` with
+- **The studies follow the six cells** as a targets pipeline (on `main`):
+  `studies/<cell>/` with
   `design.R` and `code.R`, `_targets.R`, figure scripts in `figures/`,
   `run_all.R` as the run-all, and `docs/validation_tests.md` as the one
   document of what is tested. The old scripts in `R/studies/`, the shared
