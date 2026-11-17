@@ -131,7 +131,7 @@ prior each branch implies for one coefficient.
 - **Flat partial r** ($a = k/2$): the mixture is exactly a flat partial
   correlation, for every $k$. The total grows with $k$ just fast enough to
   keep each coefficient's partial correlation flat (motivating simulation,
-  check M2; validation study 1, check 1.4).
+  check M2; validation study 1a, the partial correlations).
 - **Flat R and flat R-squared** ($a$ fixed): the total stays where it is and
   the share shrinks, so each coefficient's prior narrows as $k$ grows (the motivating
   simulation, [`1_why_a_choice.md`](1_why_a_choice.md), section 3).
@@ -159,8 +159,8 @@ rather than left for the reader to find:
   model around it, and a large model claims a large total.
 - The amount of prior mass near zero sets the rate in the last row:
   $P(R^2 < 1/n) \approx n^{-a}$ for $R^2 \sim$ Beta($a$, 1). Validation
-  study 4 measures this rate as the slope of the evidence against $\log n$
-  (checks 4.4 to 4.6).
+  study 3b measures this rate as the slope of the evidence against $\log n$
+  (3b.3 to 3b.5).
 
 No branch has every property. The validation
 ([`validation.ipynb`](../validation.ipynb)) checks that each works correctly
@@ -174,9 +174,9 @@ as a Bayesian prior; how the trade-offs play out in use is a later study.
 | Question | Function | How it computes | Explained in |
 |---|---|---|---|
 | What are the coefficients? | `fit_regression()` | Stan, sampling $R$ and a direction (not the coefficients) | appendix A, section 6 |
-| Which of two models? (nested or not) | `bayes_factor_models()`, `log_bayes_factor_vs_intercept_only()` | each model against the intercept-only model, one integral over $R^2 \sim$ Beta($a$, 1) that needs only $R^2$, $n$, $k$; any two models by dividing | appendix A, sections 7–9 |
-| Is there evidence for this term? | `bayes_factor_models()`, with and without the term | the model with the term against the model without it | appendix A, sections 7–9 |
-| How does the data favour each value of a partial correlation? | `support_per_partial_correlation()`, `support_per_partial_r_squared()`, `support_regions()` | the likelihood alone, no prior | the package's documentation |
+| Which of two models? (nested or not) | `bayes_factor_models()` | each model fitted with the same Stan model, its marginal likelihood estimated by bridge sampling (bridgesampling); the Bayes factor is their ratio, with its Monte Carlo error. A model with no predictors is the intercept-only model | appendix A, sections 7–9 (what the Bayes factor is) |
+| Is there evidence for this term? | `bayes_factor_models()`, with and without the term | the model with the term against the model without it | appendix A, section 10 |
+| What does the prior claim? | `draw_coefficients_from_prior()` | the prior as a recipe: $R$, then a direction, then the coefficients | appendix A, section 5 |
 
 A term (one coefficient, or a factor's columns together) is tested as the
 model with it against the model without it, each with its own prior. That

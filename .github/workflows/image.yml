@@ -1,8 +1,8 @@
 # Builds the validation's container image (cluster/Dockerfile: R, the packages
-# of renv.lock and CmdStan), runs every study in smoke mode inside it, and only
+# of renv.lock and CmdStan), runs the whole pipeline in smoke mode inside it, and only
 # then publishes it to the GitHub container registry as
 #   ghcr.io/dm-k1/flatcor-validation:<branch>   (and :sha-<commit>; :latest on main)
-# so that a cluster can pull it with Apptainer (cluster/README.md).
+# so that any machine can run the validation in the same environment (cluster/README.md).
 #
 # It runs when the environment changes (the Dockerfile, renv.lock, this file)
 # and on demand (Actions > "Validation image" > Run workflow).
@@ -10,7 +10,7 @@ name: Validation image
 
 on:
   push:
-    branches: [main, validation-redesign]
+    branches: [main, validation-redesign, study-rework]
     paths:
       - cluster/Dockerfile
       - cluster/Dockerfile.dockerignore
@@ -54,19 +54,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Smoke test every study inside the image
-        # Each study runs end to end on a corner of its design and 10 datasets.
-        # A study that stops with an error fails the job; checks that fail are
-        # expected in smoke mode and do not.
+      - name: Smoke test the whole pipeline inside the image
+        # The pipeline runs end to end on a corner of each design and a handful
+        # of datasets (run_all.R with VALIDATION_SMOKE=1). An error fails the job.
         run: |
-          docker run --rm -v "$PWD":/project -e VALIDATION_SMOKE=1 -e VALIDATION_CORES=4 \
-            flatcor-validation:test bash -c '
-              set -e
-              for study in R/studies/[0-9][0-9]_*.R; do
-                echo "::group::$study"
-                Rscript "$study"
-                echo "::endgroup::"
-              done'
+          docker run --rm -v "$PWD":/project -e VALIDATION_SMOKE=1 \
+            flatcor-validation:test Rscript run_all.R
 
       - uses: docker/login-action@v3
         with:

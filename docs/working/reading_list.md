@@ -7,11 +7,11 @@ citations were checked against the publisher or a library record.
 
 What the project now claims (see [appendix B](../appendix/B_relation_to_other_priors.md),
 "What is new here, and what is not"): the three priors are one family,
-$R^2 \sim$ Beta($a$, 1) with a uniform direction, computed by one route and
-validated side by side in the same way, and each works correctly as a
-Bayesian prior (the validation, studies 1 to 4). What the results add beyond
+$R^2 \sim$ Beta($a$, 1) with a uniform direction, computed with one Stan
+model and validated side by side in the same way, and each works correctly
+as a Bayesian prior (the validation, studies 1a to 3b). What the results add beyond
 that is **TO REFRESH** after the full run. The earlier claims about the
-conditional test went with that test in flatcor 2.0.0; the entries that bore
+conditional test went with that test (removed in flatcor 2.0.0); the entries that bore
 on them are kept in section 4, for the later behaviour study.
 
 ---
@@ -24,16 +24,16 @@ on them are kept in section 4, for the later behaviour study.
 | 2 | Liang, F., Paulo, R., Molina, G., Clyde, M. A., & Berger, J. O. (2008). Mixtures of *g* priors for Bayesian variable selection. *Journal of the American Statistical Association*, *103*(481), 410–423. | The *g*-prior mixtures the three priors belong to, Zellner–Siow, and information consistency. Look for: their conditions for information consistency (compare with *n* ≥ *k* + 3 here) and model-selection consistency. | not read |
 | 3 | Gabry, J., & Goodrich, B. Estimating regularized linear models with rstanarm (`stan_lm` vignette). https://mc-stan.org/rstanarm/articles/lm.html | That flat partial r is `stan_lm` with η = 1, and how they derive *R*² ~ Beta(*K*/2, η). | not read |
 | 4 | Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2022). Bayesian regression using a prior on the model fit: The R2-D2 shrinkage prior. *Journal of the American Statistical Association*, *117*(538), 862–874. https://doi.org/10.1080/01621459.2020.1825449 | The comparison with R2-D2 in appendix B. | not read |
-| 5 | Rouder, J. N., & Morey, R. D. (2012). Default Bayes factors for model selection in regression. *Multivariate Behavioral Research*, *47*(6), 877–903. https://doi.org/10.1080/00273171.2012.734737 | The source of the JZS regression default in BayesFactor and JASP, the reference method of study 4. Look for: how their Bayes factor is computed (`integrate()` over *g*), as flatcor's route mirrors it. | not read |
+| 5 | Rouder, J. N., & Morey, R. D. (2012). Default Bayes factors for model selection in regression. *Multivariate Behavioral Research*, *47*(6), 877–903. https://doi.org/10.1080/00273171.2012.734737 | The source of the JZS regression default in BayesFactor and JASP, a reference method in studies 2b and 3b. Look for: how their Bayes factor is computed (`integrate()` over *g*), and its stated precision. | not read |
 
 ## 2. Know well enough to defend the validation
 
 | # | Reference | Why, and what to look for | Status |
 |---|---|---|---|
-| 6 | Bayarri, M. J., Berger, J. O., Forte, A., & García-Donato, G. (2012). Criteria for Bayesian model choice with application to variable selection. *Annals of Statistics*, *40*(3), 1550–1577. | The criteria checked in study 4, and the robust prior. Look for: the exact definitions of each criterion, so that "met" in the docs means what the paper means. | not read |
-| 7 | Talts, S., Betancourt, M., Simpson, D., Vehtari, A., & Gelman, A. (2018). Validating Bayesian inference algorithms with simulation-based calibration. arXiv:1804.06788. | The calibration of the posterior in study 3. | not read |
-| 8 | Schad, D. J., Nicenboim, B., Bürkner, P.-C., Betancourt, M., & Vasishth, S. (2023). Workflow techniques for the robust use of Bayes factors. *Psychological Methods*, *28*(6), 1404–1426. https://doi.org/10.1037/met0000472 | The calibration of the Bayes factor in study 3. | not read |
-| 9 | Johnson, V. E., & Rossell, D. (2010). On the use of non-local prior densities in Bayesian hypothesis tests. *Journal of the Royal Statistical Society: Series B*, *72*(2), 143–170. https://doi.org/10.1111/j.1467-9868.2009.00730.x | Why evidence for a true null grows only as a power of *n* under local priors; the frame for study 4's rates (*a* log *n*). Look for: the rate result and its conditions. | not read |
+| 6 | Bayarri, M. J., Berger, J. O., Forte, A., & García-Donato, G. (2012). Criteria for Bayesian model choice with application to variable selection. *Annals of Statistics*, *40*(3), 1550–1577. | The criteria checked in studies 1b and 3b, and the robust prior. Look for: the exact definitions of each criterion, so that "met" in the docs means what the paper means. | not read |
+| 7 | Talts, S., Betancourt, M., Simpson, D., Vehtari, A., & Gelman, A. (2018). Validating Bayesian inference algorithms with simulation-based calibration. arXiv:1804.06788. | The calibration of the posterior in study 2a. | not read |
+| 8 | Schad, D. J., Nicenboim, B., Bürkner, P.-C., Betancourt, M., & Vasishth, S. (2023). Workflow techniques for the robust use of Bayes factors. *Psychological Methods*, *28*(6), 1404–1426. https://doi.org/10.1037/met0000472 | The calibration of the Bayes factor in study 3a. | not read |
+| 9 | Johnson, V. E., & Rossell, D. (2010). On the use of non-local prior densities in Bayesian hypothesis tests. *Journal of the Royal Statistical Society: Series B*, *72*(2), 143–170. https://doi.org/10.1111/j.1467-9868.2009.00730.x | Why evidence for a true null grows only as a power of *n* under local priors; the frame for study 3b's rates (*a* log *n*). Look for: the rate result and its conditions. | not read |
 | 10 | Mulder, J., Berger, J. O., Peña, V., & Bayarri, M. J. (2021). On the prevalence of information inconsistency in normal linear models. *TEST*, *30*(1), 103–132. | That the information-consistency statements in appendix A agree with it. | not read |
 | 11 | Lewandowski, D., Kurowicka, D., & Joe, H. (2009). Generating random correlation matrices based on vines and extended onion method. *Journal of Multivariate Analysis*, *100*(9), 1989–2001. | The LKJ distribution and its vine construction: why each partial correlation is flat under LKJ(1). | not read |
 | 12 | Ly, A., Verhagen, J., & Wagenmakers, E.-J. (2016). Harold Jeffreys's default Bayes factor hypothesis tests: Explanation, extension, and application in psychology. *Journal of Mathematical Psychology*, *72*, 19–32. | Jeffreys' flat prior on a correlation, the starting point of all three priors at *k* = 1. | not read |
@@ -48,7 +48,7 @@ on them are kept in section 4, for the later behaviour study.
 ## 4. For the later behaviour study
 
 How the test of one coefficient behaves as predictors are added, and the
-claims about the conditional test that flatcor 2.0.0 no longer has.
+claims about the conditional test, which flatcor no longer has.
 
 | # | Reference | Why, and what to look for | Status |
 |---|---|---|---|

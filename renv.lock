@@ -2972,65 +2972,6 @@
       "Maintainer": "Lionel Henry <lionel@posit.co>",
       "Repository": "CRAN"
     },
-    "SimDesign": {
-      "Package": "SimDesign",
-      "Version": "2.28",
-      "Source": "Repository",
-      "Title": "Structure for Organizing Monte Carlo Simulation Designs",
-      "Authors@R": "c(person(\"Phil\", \"Chalmers\", email = \"rphilip.chalmers@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID=\"0000-0001-5332-2810\")), person(\"Matthew\", \"Sigal\", role = c(\"ctb\")), person(\"Ogreden\", family=\"Oguzhan\", role = c(\"ctb\")), person(\"Mikko\", family=\"R<U+00F6>nkk<U+00F6>\", role = c(\"aut\")), person(\"Moritz\", family=\"Ketzer\", role = c(\"ctb\")))",
-      "Description": "Provides tools to safely and efficiently organize and execute  Monte Carlo simulation experiments in R. The package controls the structure and back-end of Monte Carlo simulation experiments by utilizing a generate-analyse-summarise workflow. The workflow safeguards against  common simulation coding issues, such as automatically re-simulating non-convergent results,  prevents inadvertently overwriting simulation files, catches error and warning messages during execution, implicitly supports parallel processing with high-quality random number  generation, and provides tools for managing high-performance computing (HPC) array jobs submitted to schedulers such as SLURM. For a pedagogical introduction to the package see Sigal and Chalmers (2016) <doi:10.1080/10691898.2016.1246953>. For a more in-depth overview of  the package and its design philosophy see Chalmers and Adkins (2020) <doi:10.20982/tqmp.16.4.p248>.",
-      "VignetteBuilder": "knitr",
-      "Depends": [
-        "R (>= 4.1.0)"
-      ],
-      "Imports": [
-        "methods",
-        "testthat",
-        "parallel",
-        "parallelly",
-        "dplyr",
-        "sessioninfo",
-        "beepr",
-        "pbapply (>= 1.3-0)",
-        "future",
-        "future.apply",
-        "progressr",
-        "R.utils",
-        "codetools",
-        "clipr",
-        "e1071",
-        "qs2",
-        "stats"
-      ],
-      "Suggests": [
-        "knitr",
-        "ggplot2",
-        "tidyr",
-        "purrr",
-        "shiny",
-        "copula",
-        "extraDistr",
-        "renv",
-        "cli",
-        "job",
-        "future.batchtools",
-        "FrF2",
-        "rmarkdown",
-        "RPushbullet",
-        "mirai",
-        "httr"
-      ],
-      "License": "GPL (>= 2)",
-      "ByteCompile": "yes",
-      "LazyData": "true",
-      "URL": "http://philchalmers.github.io/SimDesign/, https://github.com/philchalmers/SimDesign/wiki",
-      "Encoding": "UTF-8",
-      "Config/roxygen2/version": "8.1.0",
-      "NeedsCompilation": "no",
-      "Author": "Phil Chalmers [aut, cre] (ORCID: <https://orcid.org/0000-0001-5332-2810>), Matthew Sigal [ctb], Ogreden Oguzhan [ctb], Mikko R<U+00F6>nkk<U+00F6> [aut], Moritz Ketzer [ctb]",
-      "Maintainer": "Phil Chalmers <rphilip.chalmers@gmail.com>",
-      "Repository": "CRAN"
-    },
     "SBC": {
       "Package": "SBC",
       "Version": "0.5.0.0",
@@ -3974,22 +3915,24 @@
     },
     "flatcor": {
       "Package": "flatcor",
-      "Version": "2.0.0",
+      "Version": "2.0.0.9000",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "dm-k1",
       "RemoteRepo": "flatcor",
-      "RemoteRef": "v2.0.0",
-      "RemoteSha": "cec149c46df92f8920dafb6532fa4d799cd8121f",
+      "RemoteRef": "main",
+      "RemoteSha": "9a80b87521c01ecd07e47fa5eed751926a0d377f",
       "Requirements": [
         "MASS",
         "R",
         "bayesplot",
+        "bridgesampling",
         "loo",
         "posterior",
         "stats",
-        "tools"
+        "tools",
+        "utils"
       ]
     },
     "IRdisplay": {
@@ -5091,6 +5034,161 @@
       "URL": "https://forgemia.inra.fr/sylvain.jasson/gmp",
       "Author": "Antoine Lucas [aut, cre] (ORCID: <https://orcid.org/0000-0002-8059-9767>), Immanuel Scholz [aut], Rainer Boehme [ctb], Sylvain Jasson [ctb], Martin Maechler [ctb]",
       "Repository": "CRAN"
+    },
+    "targets": {
+      "Package": "targets",
+      "Version": "1.12.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "R6",
+        "base64url",
+        "callr",
+        "cli",
+        "codetools",
+        "data.table",
+        "igraph",
+        "knitr",
+        "prettyunits",
+        "ps",
+        "rlang",
+        "secretbase",
+        "stats",
+        "tibble",
+        "tidyselect",
+        "tools",
+        "utils",
+        "vctrs",
+        "yaml"
+      ]
+    },
+    "crew": {
+      "Package": "crew",
+      "Version": "1.3.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "R6",
+        "cli",
+        "collections",
+        "data.table",
+        "later",
+        "mirai",
+        "nanonext",
+        "processx",
+        "promises",
+        "ps",
+        "rlang",
+        "stats",
+        "tibble",
+        "tidyselect",
+        "tools",
+        "utils"
+      ]
+    },
+    "base64url": {
+      "Package": "base64url",
+      "Version": "1.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "backports"
+      ]
+    },
+    "igraph": {
+      "Package": "igraph",
+      "Version": "2.3.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Matrix",
+        "R",
+        "cli",
+        "cpp11",
+        "grDevices",
+        "graphics",
+        "lifecycle",
+        "magrittr",
+        "methods",
+        "pkgconfig",
+        "rlang",
+        "stats",
+        "utils",
+        "vctrs"
+      ]
+    },
+    "prettyunits": {
+      "Package": "prettyunits",
+      "Version": "1.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R"
+      ]
+    },
+    "secretbase": {
+      "Package": "secretbase",
+      "Version": "1.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R"
+      ]
+    },
+    "collections": {
+      "Package": "collections",
+      "Version": "0.3.12",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": []
+    },
+    "later": {
+      "Package": "later",
+      "Version": "1.4.8",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "Rcpp",
+        "rlang"
+      ]
+    },
+    "mirai": {
+      "Package": "mirai",
+      "Version": "2.7.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "nanonext"
+      ]
+    },
+    "nanonext": {
+      "Package": "nanonext",
+      "Version": "1.10.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R"
+      ]
+    },
+    "promises": {
+      "Package": "promises",
+      "Version": "1.5.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "R6",
+        "fastmap",
+        "later",
+        "lifecycle",
+        "magrittr",
+        "otel",
+        "rlang"
+      ]
     }
   }
 }

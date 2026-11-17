@@ -28,17 +28,18 @@ side: does each work correctly within the Bayesian framework?
 
 ### What the validation finds
 
-> **TO REFRESH from the full run:** a short summary of the four studies'
-> results (prior sampling, Bayes factors, calibration, default-prior
-> criteria) for each prior, with the figure that shows them best.
+> **TO REFRESH from the full run:** a short summary of the six studies'
+> results for each prior, with the figure that shows them best.
 
 The validation is what someone needs to trust that each prior works within
-the Bayesian framework: four studies (the prior is drawn correctly, the
-Bayes factors are right, the posterior and Bayes factors are calibrated, the
-default-prior criteria hold) that treat the three priors the same way (one
-technique, the same checks), each with the number of datasets set by a
-target Monte Carlo error
-([`docs/appendix/C_study_design.md`](docs/appendix/C_study_design.md)); the
+the Bayesian framework. Three things are validated for every prior, prior
+sampling, posterior estimation and Bayes factors, each in two ways: is it
+computed correctly, and does it behave the way a default prior should? That
+gives six studies, one per cell, each with checks the field already uses
+(simulation-based calibration, Bayes factor calibration, the Bayarri et al.
+criteria), the same for the three priors, and each reports its estimates
+against what is expected with their Monte Carlo errors
+([`docs/validation_tests.md`](docs/validation_tests.md)); the
 results are in [`validation.ipynb`](validation.ipynb). How the test of one
 coefficient behaves as $k$ grows, the question above, is for a later study
 of how the priors behave in use.
@@ -49,11 +50,11 @@ of how the priors behave in use.
 |---|---|---|
 | 1 | [`docs/1_why_a_choice.md`](docs/1_why_a_choice.md) | **Why a choice is needed**: what adding predictors does to valid correlation matrices, and the three intuitive choices of what stays flat |
 | 2 | [`docs/2_the_three_priors.md`](docs/2_the_three_priors.md) | **The three priors**: the family $R^2 \sim$ Beta($a$, 1), what each keeps flat and expects, how the total is divided, what the package computes |
-| 3 | [`validation.ipynb`](validation.ipynb) | **The validation**: four studies, each with its question, PASS/FAIL checks, tables and figures |
+| 3 | [`validation.ipynb`](validation.ipynb) | **The validation**: six studies, each with its question, its estimates against what is expected, and figures |
+| | [`docs/validation_tests.md`](docs/validation_tests.md) | **What the validation tests**: per study, what is tested, what is expected and why, with what Monte Carlo error, how the data are made, and the reasons for each choice |
 | | `docs/3_results.md` | What the validation shows and the recommendation: to be written from the results of the redesigned validation |
-| A | [`docs/appendix/A_derivations.md`](docs/appendix/A_derivations.md) | How the prior calculates: the density factor by factor, the Stan model, the Bayes factors, the default-prior criteria |
+| A | [`docs/appendix/A_derivations.md`](docs/appendix/A_derivations.md) | How the prior calculates: the density factor by factor, the Stan model, the Bayes factors and the g-prior forms behind them, the default-prior criteria |
 | B | [`docs/appendix/B_relation_to_other_priors.md`](docs/appendix/B_relation_to_other_priors.md) | How the three relate to JZS, `stan_lm`, R2-D2 and other priors; what is new here and what is not |
-| C | [`docs/appendix/C_study_design.md`](docs/appendix/C_study_design.md) | The design of the four studies (aims, data, estimands, methods, performance) and the number of datasets each needs |
 
 Working notes, not part of the reading path, are in [`docs/working/`](docs/working/):
 the plan of the validation redesign, the reading list and the run-time estimate.
@@ -87,10 +88,10 @@ P(beta) = P(total) x P(this combination | total) x unit conversion
 - Flat partial r is the prior of rstanarm's `stan_lm` with η = 1, the only
   shape for which every coefficient's partial correlation is flat.
 
-The package provides estimation with Stan (with `loo()`, `pp_check()` and
-bayesplot), and Bayes factors between any two linear models, computed from
-only $R^2$, $n$ and $k$ of each; a term is tested as the model with it
-against the model without it
+The package does everything with one Stan model: estimation (with `loo()`,
+`pp_check()` and bayesplot), and the Bayes factor between any two linear
+models, from each model's marginal likelihood estimated by bridge sampling;
+a term is tested as the model with it against the model without it
 ([`docs/2_the_three_priors.md`](docs/2_the_three_priors.md), "What the package
 computes with them").
 
@@ -132,6 +133,10 @@ computes with them").
 - **Flat R-squared with one predictor is not Jeffreys' prior.** Its prior on
   $r$ has density $|r|$, which gives little weight to correlations near zero.
 - **Information consistency needs $n \ge k + 3$**, for all three priors.
+- **Bayes factors are estimates.** Each comes with a Monte Carlo error
+  (bridge sampling's approximate error, which can be optimistic; rerunning
+  with other seeds shows the spread), and models up to about 90 predictors
+  stay within the sizes bridge sampling has been shown to work for.
 - **Main effects with interactions.** Testing a term by comparing the model
   with and without it, while an interaction with it stays in the model, is
   subject to the usual marginality caveats.
@@ -156,8 +161,8 @@ and models without an intercept.
 
 ## Open questions
 
-- **Proofs.** The consistency criteria are checked numerically (study 4), in
-  the settings it covers. None is proven analytically
+- **Proofs.** The consistency criteria are checked numerically (study 3b),
+  in the settings it covers. None is proven analytically
   here, and non-nested models are not covered.
 - **The empirical question between the branches:** how explained variance
   grows with the number of predictors in published regressions. Flat partial r
@@ -183,25 +188,27 @@ installs flatcor at the pinned version, with the other packages), or use the
 container image of `cluster/Dockerfile`, which GitHub Actions builds and
 publishes as `ghcr.io/dm-k1/flatcor-validation`. Then open
 [`validation.ipynb`](validation.ipynb), or run `Rscript run_all.R`;
-[`cluster/README.md`](cluster/README.md) describes a run on a cluster.
+[`cluster/README.md`](cluster/README.md) describes running it elsewhere and how long it takes.
 
 ## What's where
 
 | Path | What it is |
 |---|---|
 | `docs/1_why_a_choice.md`, `docs/2_the_three_priors.md` | Parts 1 and 2 of the reading path (see "Reading order") |
-| `docs/appendix/` | Appendices A (derivations), B (relation to other priors) and C (the design of the four studies) |
+| `docs/appendix/` | Appendices A (derivations), B (relation to other priors) and C (the design of the six studies) |
 | `docs/figures/` | The figures of the docs |
 | `docs/working/` | Working notes: the plan of the redesign (`REDESIGN.md`), the reading list, the run-time estimate |
 | `R/docs/` | The code behind the docs: the motivating simulation and the figures of parts 1 and 2 |
 | `R/shared/` | The settings, precision targets and comparison methods every study uses |
-| `R/data/` | The shared simulated data sets (B and D), each dataset with its own random stream |
-| `R/studies/` | The four validation studies: correctness (01-03), the default-prior criteria (04) |
+| `R/data/` | One file per data set (what each is and which study needs it: `docs/validation_tests.md`, "The data sets"), each dataset with its own random stream |
+| `studies/` | The six validation studies, one folder per cell (1a, 1b prior sampling; 2a, 2b posterior estimation; 3a, 3b Bayes factors), each with `design.R` and `code.R` |
+| `_targets.R` | The pipeline that runs the studies (targets): only what is not done yet, saving every piece as it finishes |
+| `figures/` (scripts) | One script per study that draws its figures from its results file |
 | `R/notebook/` | The notebook's helpers: they present the results, they compute nothing |
-| `validation.ipynb` | The validation notebook (R kernel): per study its question, checks, tables and figures; it reads `results/` or reruns the studies |
-| `run_all.R` | Runs the studies one after another, without the notebook |
-| `results/`, `figures/` | The results of a run, tracked: each study's tables, checks and setup in `results/studies/study_NN.rds`, the run's summary and session information from `run_all.R` in `results/`, and every figure in `figures/` |
-| `cluster/` | Running the validation on a cluster: a SLURM array script and how to use the container with Apptainer |
+| `validation.ipynb` | The validation notebook (R kernel): per study its question, tables and figures; it reads `results/` or reruns the studies |
+| `run_all.R` | Runs the pipeline, then the figures, without the notebook |
+| `results/`, `figures/` | The results of a run, tracked: each study's tables and setup in `results/studies/study_<cell>.rds`, and every figure in `figures/` |
+| `cluster/` | The container image (`Dockerfile`) and the run-time estimate |
 | `renv.lock`, `cluster/Dockerfile` | The pinned environment: the R packages, and R with packages and CmdStan as a container |
 
 ## History
@@ -218,8 +225,11 @@ publishes as `ghcr.io/dm-k1/flatcor-validation`. Then open
   flat R²) are built and validated as equals. An earlier validation (run of
   4 November 2026, in the git history up to commit 9ffd1bf) recommended flat
   partial r, which is now the default. The validation is then redesigned
-  around target Monte Carlo errors and, with flatcor 2.0.0, simplified to
-  four studies that treat the three priors the same way. The superseded scripts (by-hand
+  around target Monte Carlo errors, then reduced to what is needed to trust
+  each prior: prior sampling, posterior estimation and Bayes factors, each
+  computed correctly and behaving like a default, six studies with the
+  field's standard checks. flatcor 3.0 does all of it with one Stan model and
+  bridge sampling, without Bayes factor formulas of its own. The superseded scripts (by-hand
   tutorials, the brms version of the prior, earlier approaches) were in
   `archive/` and remain in the git history up to commit a2886a7.
 

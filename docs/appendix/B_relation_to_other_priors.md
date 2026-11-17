@@ -16,12 +16,11 @@ R: $R^2 \sim$ Beta(½, $b$) is a *g*-mixture for every $k$ and every $b$
 three priors come from is described in
 [`1_why_a_choice.md`](../1_why_a_choice.md), sections 2 and 3 (the motivating simulation).
 
-Checks are named by study and number in the validation (check 2.1 is study
-2, check 1; [appendix C](C_study_design.md) gives each study's design), or
-by their name in the motivating simulation (M0 to M4,
+Checks are named by the study of the validation they belong to (3b.5 is
+study 3b, item 5; [`validation_tests.md`](../validation_tests.md) gives each study's design),
+or by their name in the motivating simulation (M0 to M4,
 [`R/docs/motivating_simulation.R`](../../R/docs/motivating_simulation.R)).
-Numbers marked **TO REFRESH** come from runs before the simplification of 14
-November 2026.
+Places marked **TO REFRESH** are to be filled in from the full run.
 
 ## The family: mixtures of *g*-priors
 
@@ -211,7 +210,7 @@ simplification, commit 21d42dc; **TO REFRESH** if cited):
 
 **What is not new.** A Bayes factor for one partial correlation with a flat
 prior on it is the test of Kucharský et al. (2026) with α = 1. flatcor
-2.0.0 does not offer such a test: it tests a coefficient by comparing the
+does not offer such a test: it tests a coefficient by comparing the
 models with and without it, each with its own prior.
 
 Which extension describes real research better is partly an empirical
@@ -303,7 +302,7 @@ round(rbind(flat_r = summarise_correlation(correlation_flat_r),
 
 ## How fast evidence for a true null grows
 
-Validation study 4 (checks 4.4 to 4.6) measures the rate at which the evidence for a true null grows
+Validation study 3b (3b.3 to 3b.5) measures the rate at which the evidence for a true null grows
 with the sample size: against the intercept-only model, log BF₀₁ grows like
 $a \log n$, so BF₀₁ grows like $n^{a}$. That is the polynomial rate of every
 *local* prior (= a prior on the effect whose density is positive at zero), and
@@ -347,8 +346,9 @@ The following points are not new, and are cited as such:
 The following points were not found in the literature searched:
 
 - **The three priors as one family**, $R^2 \sim$ Beta($a$, 1) with
-  $a = k/2$, ½ or 1, computed by one route and validated side by side in
-  the same way, on the Bayarri et al. criteria among others.
+  $a = k/2$, ½ or 1, computed with one Stan model (the Bayes factor by
+  bridge sampling) and validated side by side in the same way, on the
+  Bayarri et al. criteria among others.
 - **TO REFRESH** after the full run and the later behaviour study: what the
   results add that was not found in the literature. The earlier claims about
   the conditional test (that under flat partial r it is the Bayes factor of

@@ -1,145 +1,43 @@
 ## =====================================================================
-##  Run the validation studies, each in its own R process, and summarise
+##  Run the whole validation: the pipeline (_targets.R), then the figures
 ##
-##  In one sentence: run the chosen studies in order, keep a log per study,
-##  and write one summary of every PASS/FAIL check with the run's setup
-##  (commit, R, CmdStan, cores), so a run anywhere can be compared with a run
-##  here.
+##    Rscript run_all.R                  every study, then every figure
+##    Rscript run_all.R 3a               one study (its targets end in _3a), then the figures
+##    VALIDATION_SMOKE=1 Rscript run_all.R   the smoke test (results in cache/)
 ##
-##  Run from the project folder:
-##    Rscript run_all.R            all studies, 01 to 04 and 2b (hours: 03, 2b)
-##    Rscript run_all.R quick      the correctness checks 01 and 02
-##    Rscript run_all.R 03 04      a selection
-##  (The motivating simulation is R/docs/motivating_simulation.R; it is not part
-##  of the validation.)
-##  Cores: all but one by default; set VALIDATION_CORES to choose
-##  (e.g. VALIDATION_CORES=32 on a cloud machine).
-##
-##  The studies are R/studies/NN_*.R; each saves its tables and checks to
-##  results/studies/study_NN.rds and its figures to figures/, and its R and package
-##  versions to results/session_info/study_NN.txt.
-##  This script writes the full output of each study to cache/logs/<study>.log
-##  (gitignored), and to results/:
-##    run_summary.md      every study in results/studies/ (its checks, and
-##                        where, when and how long it ran), then this run
-##  The notebook validation.ipynb presents the same results.
-##  A study that fails does not stop the others. VALIDATION_SMOKE=1 runs every
-##  study on a corner of its design and 10 datasets, to test the code; its
-##  results, figures and summary then go to cache/ instead.
-##  The exit status is 1 if any study failed.
+##  The pipeline runs only what is not done yet: a run that stopped continues
+##  where it was. Each study writes results/studies/study_<cell>.rds; each
+##  script in figures/ reads those files and writes its figures. The
+##  notebook (validation.ipynb) presents the same results.
 ## =====================================================================
-
-## In the order of docs/appendix/C_study_design.md: correctness (01-03), the
-## default-prior criteria (04)
-all_studies <- c("01_prior_sampling", "02_bayes_factors", "03_calibration",
-                 "04_default_prior_criteria", "2b_estimation")
-quick_studies <- c("01_prior_sampling", "02_bayes_factors")
-
-## ---- Which studies -------------------------------------------------------------
+smoke <- identical(Sys.getenv("VALIDATION_SMOKE"), "1")
 requested <- commandArgs(trailingOnly = TRUE)
-studies <- if (length(requested) == 0) all_studies else
-  if (identical(requested, "quick")) quick_studies else {
-    chosen <- all_studies[substr(all_studies, 1, 2) %in% requested]
-    unknown <- setdiff(requested, substr(all_studies, 1, 2))
-    if (length(unknown) > 0)
-      stop("Unknown study number(s): ", paste(unknown, collapse = ", "),
-           ". Use 01 to 04, 2b, or 'quick'.")
-    chosen
-  }
+store <- if (smoke) file.path("cache", "targets_smoke") else "_targets"
 
-smoke_mode     <- identical(Sys.getenv("VALIDATION_SMOKE"), "1")
-results_folder <- if (smoke_mode) file.path("cache", "smoke_results") else "results"
-logs_folder    <- file.path("cache", "logs")
-for (folder in c(results_folder, logs_folder)) dir.create(folder, recursive = TRUE, showWarnings = FALSE)
-
-## ---- The setup of this run ----------------------------------------------------
-git_commit <- tryCatch(system2("git", c("rev-parse", "--short", "HEAD"), stdout = TRUE, stderr = FALSE),
-                       error = function(e) character(0), warning = function(w) character(0))
-git_dirty  <- tryCatch(length(system2("git", c("status", "--porcelain", "--", "R"),
-                                      stdout = TRUE, stderr = FALSE)) > 0,
-                       error = function(e) NA, warning = function(w) NA)
-cmdstan_version <- if (requireNamespace("cmdstanr", quietly = TRUE))
-  tryCatch(as.character(cmdstanr::cmdstan_version()), error = function(e) "not installed") else
-  "cmdstanr not installed"
-cores <- Sys.getenv("VALIDATION_CORES", as.character(max(1, parallel::detectCores() - 1)))
-setup <- c(
-  started  = format(Sys.time(), "%Y-%m-%d %H:%M %Z"),
-  commit   = if (length(git_commit) == 1) paste0(git_commit, if (isTRUE(git_dirty)) " (with uncommitted changes)") else "unknown",
-  R        = R.version.string,
-  CmdStan  = cmdstan_version,
-  machine  = paste(Sys.info()[["sysname"]], Sys.info()[["machine"]]),
-  cores    = cores,
-  studies  = paste(substr(studies, 1, 2), collapse = " "),
-  smoke    = if (smoke_mode) "yes (results are not results)" else "no")
-
-## ---- Run each study in its own process -----------------------------------------
-## A fresh process per study: no objects carried over, as when run by hand.
-run_study <- function(study) {
-  log_file <- file.path(logs_folder, paste0(study, ".log"))
-  message(sprintf("[%s] %s ...", format(Sys.time(), "%H:%M"), study))
-  started <- Sys.time()
-  status  <- system2(file.path(R.home("bin"), "Rscript"), file.path("R", "studies", paste0(study, ".R")),
-                     stdout = log_file, stderr = log_file,
-                     env = paste0("VALIDATION_CORES=", cores))
-  minutes <- as.numeric(difftime(Sys.time(), started, units = "mins"))
-  log_lines <- readLines(log_file, warn = FALSE)
-  checks <- grep("^\\[(PASS|FAIL)\\]", log_lines, value = TRUE)
-  message(sprintf("        exit %d, %.1f minutes, %d checks passed, %d failed", status, minutes,
-                  sum(startsWith(checks, "[PASS]")), sum(startsWith(checks, "[FAIL]"))))
-  list(study = study, exit_status = status, minutes = minutes,
-       passed = sum(startsWith(checks, "[PASS]")), failed = grep("^\\[FAIL\\]", checks, value = TRUE))
+## ---- The studies -------------------------------------------------------------------
+started <- Sys.time()
+if (length(requested) == 0) {
+  targets::tar_make(store = store)
+} else {
+  targets::tar_make(names = tidyselect::ends_with(paste0("_", requested)), store = store)
 }
 
-outcomes <- list()
-for (study in studies) outcomes[[study]] <- run_study(study)
+## ---- The figures, each script in its own R process ----------------------------------
+results_folder <- if (smoke) file.path("cache", "smoke_results") else "results"
+results_folder <- file.path(results_folder, "studies")
+for (script in list.files("figures", pattern = "[.]R$", full.names = TRUE)) {
+  study <- sub("^([0-9][a-z]).*", "\\1", basename(script))
+  if (!file.exists(file.path(results_folder, sprintf("study_%s.rds", study)))) next
+  status <- system2(file.path(R.home("bin"), "Rscript"), script)
+  message(sprintf("%s: %s", script, if (status == 0) "done" else "stopped (see above)"))
+}
 
-## ---- Summary --------------------------------------------------------------------
-## The studies may run at different times and on different machines
-## (cluster/README.md), so the summary covers every study whose results file is
-## in results/studies/, each with its own setup; this run's setup and outcomes
-## follow below it.
-study_status <- function(outcome)
-  if (is.na(outcome$exit_status)) "skipped" else
-  if (outcome$exit_status == 0 && length(outcome$failed) == 0) "pass" else "FAIL"
-saved <- lapply(sort(list.files(file.path(results_folder, "studies"), pattern = "^study_[0-9]+[.]rds$",
-                                full.names = TRUE)), readRDS)
-or_blank <- function(value) if (is.null(value) || is.na(value)) "" else as.character(value)
-saved_rows <- vapply(saved, function(result) {
-  setup <- result$setup
-  sprintf("| %s | %s | %d | %d | %s | %s | %s | %s | %s |", result$study,
-          if (all(result$checks$passed)) "pass" else "FAIL",
-          sum(result$checks$passed), sum(!result$checks$passed), or_blank(setup$finished),
-          or_blank(setup$commit), or_blank(setup$processor %||% setup$machine),
-          or_blank(setup$cores), or_blank(setup$minutes))
-}, character(1))
-saved_failed <- unlist(lapply(saved, function(result) {
-  failed <- result$checks[!result$checks$passed, , drop = FALSE]
-  if (nrow(failed)) sprintf("%s: %s (%s)", result$study, failed$check, failed$details)
-}))
-summary_lines <- c(
-  "# Validation results",
-  "",
-  "One row per study in `results/studies/`, with where and when it ran.",
-  "",
-  "| Study | Status | Checks passed | Checks failed | Finished | Commit | Processor | Cores | Minutes |",
-  "|---|---|---|---|---|---|---|---|---|",
-  saved_rows,
-  "",
-  "Every check is judged relative to its Monte Carlo error (docs/appendix/C_study_design.md).",
-  "Package versions per study: `session_info/`.")
-if (length(saved_failed) > 0)
-  summary_lines <- c(summary_lines, "", "## Failed checks", "", paste0("- ", saved_failed))
-summary_lines <- c(summary_lines, "", "## The last run", "",
-  paste0("- **", names(setup), ":** ", setup),
-  "",
-  "| Study | Status | Minutes | Checks passed | Checks failed |",
-  "|---|---|---|---|---|",
-  vapply(outcomes, function(o) sprintf("| %s | %s | %.1f | %d | %d |", o$study, study_status(o),
-                                       o$minutes, o$passed, length(o$failed)), character(1)),
-  "",
-  "Full output: `cache/logs/` on the machine that ran it.")
-writeLines(summary_lines, file.path(results_folder, "run_summary.md"))
-cat("\n", paste(summary_lines, collapse = "\n"), "\n", sep = "")
-
-any_failed <- any(vapply(outcomes, study_status, character(1)) != "pass")
-quit(status = if (any_failed) 1 else 0)
+## ---- Which results there are -------------------------------------------------------
+for (file in sort(list.files(results_folder, pattern = "^study_.*[.]rds$", full.names = TRUE))) {
+  setup <- readRDS(file)$setup
+  cat(sprintf(
+    "%s: finished %s, commit %s, flatcor %s%s\n", basename(file), setup$finished, setup$commit,
+    setup$flatcor, if (isTRUE(setup$smoke)) " (smoke test)" else ""
+  ))
+}
+cat(sprintf("Run took %.1f minutes.\n", as.numeric(difftime(Sys.time(), started, units = "mins"))))

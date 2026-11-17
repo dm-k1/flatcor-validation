@@ -1,13 +1,14 @@
 # Estimates how long the full validation takes, before renting anything for it.
 #
-# Every study runs in timing mode (R/shared/settings.R) inside the published
+# Every study runs in timing mode (R/shared/pipeline.R) inside the published
 # image: the full design and full-length chains, on two fractions of its
 # datasets, each on its own runner (4 cores). cluster/estimate_run_time.R then
 # fits the fixed part and the part per dataset and reads off the full run; the
 # table appears on the run's summary page and as the artifact run-time-estimate.
-# Studies 01 and 02 do not depend on the number of datasets and run in full.
+# Study 1a does not depend on the number of datasets and runs in full.
 #
 # It runs when this file or the studies' code changes on validation-redesign
+# or study-rework
 # (a newer push cancels a run still going on the same branch), and from Actions >
 # "Run-time estimate" > Run workflow once it is on main (GitHub offers that
 # button only for workflows on the default branch). On a public repository the
@@ -16,10 +17,11 @@ name: Run-time estimate
 
 on:
   push:
-    branches: [validation-redesign]
+    branches: [validation-redesign, study-rework]
     paths:
       - .github/workflows/timing.yml
-      - R/studies/**
+      - studies/**
+      - _targets.R
       - R/shared/**
       - R/data/**
       - cluster/time_study.R
@@ -70,12 +72,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        study: ["03", "04", "2b"]
+        study: ["1b", "2a", "2b", "3a", "3b"]
         fraction: ${{ fromJSON(inputs.fractions || '["0.02", "0.05"]') }}
         include:
-          - study: "01"
-            fraction: "1"
-          - study: "02"
+          - study: "1a"
             fraction: "1"
     name: study ${{ matrix.study }} at ${{ matrix.fraction }}
     steps:
@@ -84,7 +84,7 @@ jobs:
       - name: Time the study
         run: |
           docker run --rm -v "$PWD":/project \
-            -e VALIDATION_TIMING=${{ matrix.fraction }} -e VALIDATION_CORES=4 \
+            -e VALIDATION_TIMING=${{ matrix.fraction }} \
             ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
             Rscript cluster/time_study.R ${{ matrix.study }}
 

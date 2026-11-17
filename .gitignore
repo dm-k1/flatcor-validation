@@ -22,3 +22,6 @@ cache/
 
 # Stray R graphics output
 Rplots.pdf
+
+# The targets store (results of the pipeline, re-created by tar_make())
+_targets/

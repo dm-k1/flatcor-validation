@@ -5,16 +5,15 @@
 # the container runs, so results are written straight into it.
 #
 # GitHub Actions builds, smoke-tests and publishes this image as
-# ghcr.io/dm-k1/flatcor-validation (.github/workflows/image.yml; pull it
-# with Apptainer as in cluster/README.md). To build it yourself (20-40
+# ghcr.io/dm-k1/flatcor-validation (.github/workflows/image.yml;
+# cluster/README.md). To build it yourself (20-40
 # minutes: packages and CmdStan compile from source):
 #   docker build -f cluster/Dockerfile -t flatcor-validation .
 # (from the project folder; Docker reads cluster/Dockerfile.dockerignore
 # next to this file, which needs BuildKit, the default since Docker 23)
 # Run every study, or a selection (see run_all.R):
 #   docker run --rm -v "$PWD":/project flatcor-validation
-#   docker run --rm -v "$PWD":/project flatcor-validation Rscript run_all.R quick
-#   docker run --rm -v "$PWD":/project -e VALIDATION_CORES=32 flatcor-validation
+#   docker run --rm -v "$PWD":/project flatcor-validation Rscript run_all.R 1a
 
 # R version as recorded in renv.lock
 FROM rocker/r-ver:4.6.1
@@ -22,7 +21,7 @@ FROM rocker/r-ver:4.6.1
 # System libraries that the R packages compile against (graphics, fonts,
 # networking; GMP and MPFR for Rmpfr; libnode for V8; ZeroMQ for pbdZMQ;
 # the list follows remotes::system_requirements() for the packages in
-# renv.lock) and git (run_all.R records the commit)
+# renv.lock) and git (each results file records the commit)
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git curl make cmake g++ \
       libcurl4-openssl-dev libssl-dev libxml2-dev libicu-dev libuv1-dev \

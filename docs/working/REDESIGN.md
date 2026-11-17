@@ -26,27 +26,35 @@ behave the way a default prior should?
 | **Computed correctly?** | Stan's prior-only draws against the exact prior: R ~ Beta(2a, 1), direction uniform (prior check) | SBC (Talts et al., 2018; `SBC` package, Modrák et al., 2023), with Stan's diagnostics: divergent transitions, R-hat, effective sample size (Vehtari et al., 2021) | bridge sampling with its own error estimate and repeated runs (Gronau et al., 2017, 2020); Bayes factor calibration on data from each prior (Schad et al., 2023) |
 | **Behaves like a default?** | invariance: rescaling or recoding the predictors changes nothing (Bayarri et al., 2012) | behaviour in estimation: bias and coverage of a slope, prediction error against OLS, on data with a known truth | predictive matching, information consistency, intrinsic consistency, model-selection consistency (Bayarri et al., 2012) |
 
-Each cell is one study file in `R/studies/`, named after its heading (1-3)
+Each cell is one study folder in `studies/`, named after its heading (1-3)
 and row (a: computed correctly; b: behaves like a default), so the folder
-reads like the table and each file answers one question:
+reads like the table:
 
 ```
-R/studies/
-  1a_prior_sampling.R      prior, computed correctly: Stan's prior-only draws = the exact prior
-  1b_invariance.R          prior, behaves like a default: rescaling or recoding changes nothing
-  2a_posterior.R           posterior, computed correctly: SBC and Stan's diagnostics
-  2b_estimation.R          posterior, behaves like a default: bias, coverage, prediction against OLS
-  3a_bayes_factors.R       Bayes factor, computed correctly: bridge sampling's error, calibration
-  3b_default_criteria.R    Bayes factor, behaves like a default: the Bayarri criteria
+studies/
+  1a_prior_sampling/      prior, computed correctly: Stan's prior-only draws = the exact prior
+  1b_invariance/          prior, behaves like a default: rescaling or recoding changes nothing
+  2a_posterior/           posterior, computed correctly: SBC and Stan's diagnostics
+  2b_estimation/          posterior, behaves like a default: bias, coverage, prediction against OLS
+  3a_bayes_factors/       Bayes factor, computed correctly: calibration, bridge sampling's error
+  3b_default_criteria/    Bayes factor, behaves like a default: the Bayarri criteria
 ```
 
-Checks are numbered within their file (3b.1, 3b.2, ...), so a check's number
-says which cell it belongs to. The cells differ in cost (1a and 1b take
-minutes, 2a, 3a and 3b hours), and as separate files they run as separate
-cluster jobs. Invariance sits under the prior because it holds by how the
-prior is built, although it is tested on the posterior and the Bayes
-factor. The notebook follows the same structure: three sections, each with
-a "computed correctly" and a "behaves like a default" part.
+Each folder holds `design.R` (the design: cells, numbers of datasets) and
+`code.R` (the steps: generate, analyse, summarise, save). What each study
+tests, what it expects and why, with what Monte Carlo error, how its data are
+made and the reasons for every choice are in one document,
+[`docs/validation_tests.md`](../validation_tests.md). The pipeline
+[`_targets.R`](../../_targets.R) runs the studies (targets): every piece of
+work is saved as it finishes, a stopped run continues where it was, and only
+what is not done yet or has changed reruns. Each study writes its tables to
+`results/studies/study_<cell>.rds`; the figures are a separate step, one
+script per study in `figures/`, that reads those files. `Rscript run_all.R`
+runs the pipeline and then the figures. Items are numbered within their
+study (3b.1, 3b.2, ...), so a number says which cell it belongs to.
+Invariance sits under the prior because it holds by how the prior is built,
+although it is tested on the Bayes factor. The notebook follows the same
+structure.
 
 No diagnostics of our own: every check is one of the standards above. What
 is ours is the choice of settings (n, k, R²), the expected values and the
@@ -80,14 +88,13 @@ whether the estimates are sensible; the software gives no verdict per row.
   with dozens of estimates some lie beyond 2 MCSE by chance (as check 4.8
   at few draws, and a bridge-sampling difference of 0.006 against a
   threshold of 0.0057, did in the timing run of 248d5d6).
-- Study 2b already reports this way; the other cells change with the
-  rework, and `record_check()`/`report_checks()` and the notebook's checks
-  table shrink to the tripwires.
+- Every study reports this way. No study has a tripwire yet; the notebook
+  shows any that a study records.
 
 How the priors behave in use beyond estimation (how often the test of a
 term finds an effect, confirms a null or stays undecided) is a separate
-study, for later. Its earlier code, with data set A's factor extension, is
-in commit 9ffd1bf (`R/studies/05_behaviour.R`, parts A and B).
+study, for later. Its earlier code, with a factor extension of the data, is
+in commit 9ffd1bf (`R/studies/05_behaviour.R` there, parts A and B).
 
 ## The software: flatcor
 
@@ -150,8 +157,14 @@ points of practical advice). What flatcor and the studies take from it:
 6. **Two reference methods, JZS and Zellner–Siow** (BayesFactor), next to
    the three priors in the default-prior checks and in study 2b (with OLS
    there), and later in the behaviour study.
-7. **Established frameworks, all in R:** `SimDesign` for the simulations,
-   `SBC`, `bridgesampling`, `cmdstanr`.
+7. **Established frameworks, all in R:** `targets` (with `crew` for parallel
+   workers) runs the studies, `SBC`, `bridgesampling`, `cmdstanr`. Not
+   SimDesign: it loads RcppParallel, whose TBB library breaks cmdstanr's
+   log density, which bridge sampling needs; and targets keeps the steps
+   readable, saves every piece as it finishes and resumes a stopped run.
+   One backend for all Stan work: cmdstanr (rstan is about 1.6 times slower
+   per Bayes factor here; flatcor supports both through its `backend`
+   argument).
 8. **The number of datasets follows from a target Monte Carlo SE, fixed in
    advance** (Morris et al., 2019); every reported number carries its Monte
    Carlo SE and is shown against its expected value (the reporting rule
@@ -164,74 +177,44 @@ points of practical advice). What flatcor and the studies take from it:
 
 ## Status (17 November 2026)
 
-- flatcor 2.0.0 is released and pinned. Its Stan model already samples all
-  three priors in R; SBC passes for all three (k up to 30) without divergent
-  transitions.
-- Its Bayes factors are its own formulas, which this plan replaces. The
-  timing run of commit 248d5d6 found studies 1-3 passing and study 4 stuck at
-  growing k (flat R with about 90 or more predictors: a Bessel function
-  underflows).
-- The Kummer-series route is on the local flatcor branch `kummer-series`,
-  uncommitted. It passes flatcor's 124 tests but fails 15 of study 2's 792
-  settings (R² = .9999, n = 10⁵) and runs out of memory on check 4.3. Not to
-  be released.
-- The studies in `R/studies/` (01-04) and the notebook still follow the
-  previous plan; they are reworked below.
-- Study 2b is written (`R/studies/2b_estimation.R`, ported from part C of
-  the old behaviour study, with data set A in `R/data/data_set_A.R`), passes
-  its smoke test, and is in `run_all.R`, the SLURM array (task 5), the timing
-  workflow and the notebook. It uses only Stan fits, so it does not wait for
-  the flatcor rework.
+- **flatcor 3.0** (in development) is on flatcor's `main` (commit 9a80b87)
+  and pinned in `renv.lock`: one Stan model for the three priors, with the
+  intercept-only model (K = 0) and every normalising constant;
+  `bayes_factor_models()` by bridgesampling (4 chains of 10,000 draws per
+  model); the formula Bayes factors, the likelihood ratio code and the
+  support curves removed; the compiled model in a folder per version. Its
+  tests check the intercept-only model against its closed form and each
+  prior against an independent reference (g-mixture or direction form).
+  The Kummer-series route stays in a git stash on flatcor, not released.
+- cmdstanr can only give a model's log density (which bridgesampling needs)
+  in the R session that compiled it, so flatcor compiles that version once
+  per session, into a temporary folder (commit 9a80b87, on `main`).
+- **The studies follow the six cells** as a targets pipeline (branch
+  `targets-3a`, which builds on `study-rework`): `studies/<cell>/` with
+  `design.R` and `code.R`, `_targets.R`, figure scripts in `figures/`,
+  `run_all.R` as the run-all, and `docs/validation_tests.md` as the one
+  document of what is tested. The old scripts in `R/studies/`, the shared
+  `settings.R` and `precision.R`, appendix C (now `validation_tests.md`),
+  SimDesign and the SLURM array are gone (in the git history); the
+  motivating simulation keeps its helpers in `R/docs/helpers.R`.
+- **Study 3a shares its data across the priors:** the same predictors, noise
+  and model assignment for the three priors, only the effects drawn from
+  each prior (common random numbers); intercept 0 and noise SD 1.
+- **From the old study 4, dropped:** whether information consistency starts
+  exactly at n = k + 3 (it needs R-squared within 10^-8 of 1 at n = k + 2,
+  beyond what a sampler resolves; appendix A, section 11, keeps the
+  derivation). Growing k now stops at k = 90.
+- **Smoke test of the whole pipeline:** **TO REFRESH**.
 
 ## Still to do
 
-**flatcor (a new major version: the formula Bayes factors go):**
-
-1. A Bayes factor function on the Stan model: fit the model with and without
-   the term, `bridgesampling::bridge_sampler()` on each, return the Bayes
-   factor with its error estimate.
-2. The intercept-only model (K = 0) in the same Stan model: only the
-   intercept and sigma, with the prior on R and the direction skipped. Not a
-   limit of Stan, only of today's model file (it declares K >= 1). It is
-   needed wherever one side of a comparison has no predictors (Bayes factor
-   calibration in 3a, the Bayarri criteria in 3b, a one-predictor model
-   against none). Kept in Stan, not as a closed formula, so every model
-   takes the same route.
-3. Every normalising constant in the Stan model, as bridgesampling requires:
-   today it leaves out the 2a of R's density 2a R^(2a - 1) and the constant
-   of the direction's density (which differs with k). The posterior does not
-   need them; the marginal likelihood does. Study 2 worked around this by
-   writing the log density again in R; with the constants in the model,
-   bridgesampling works on the Stan fit directly.
-4. Remove `log_bayes_factor_vs_intercept_only()`, the likelihood ratio code
-   (`R/likelihood.R`) and the tests built on them, and the support curves
-   (`support_per_partial_correlation()`, `support_per_partial_r_squared()`,
-   `support_regions()`, `R/support_curve.R`). The support curves are
-   prior-free, so outside the three headings, and run on our own likelihood
-   ratio code (the version for several columns fails at about 90 columns);
-   computing them from Stan instead would need density estimates from draws
-   (noisy in the tails and at 0) and a parameter per term. They stay in the
-   git history (flatcor 2.0.0).
-5. A separate folder for the compiled Stan model per flatcor version (a
-   stale executable crashed once after a reinstall). Stan's "proposal is
-   about to be rejected" messages in a chain's first iterations are left as
-   they are: harmless (a rejected step at R = 1 or sigma = 0, no divergent
-   transitions), and not worth touching the model or the sampler for.
-
-**The validation, by cell** (from the current studies 01-04):
-
-| Now | Becomes |
-|---|---|
-| 01 prior sampling | `1a_prior_sampling.R`, on Stan's prior-only draws |
-| 04's invariance check (4.11) | `1b_invariance.R` |
-| 03.1 SBC and 03.2 divergences | `2a_posterior.R` |
-| 03.3 Bayes factor calibration | `3a_bayes_factors.R`, with bridge sampling, plus bridge sampling's own error and repeated runs |
-| 04 without 4.11 | `3b_default_criteria.R`, with bridge sampling; growing k at moderate k |
-| 02 Bayes factors against independent routes | gone: it checked our formulas. An independent route for bridge sampling (such as flat partial r's g-integral) is not needed; Bayes factor calibration shows whether the Bayes factors are right end to end |
-| (commit 9ffd1bf, `05_behaviour.R`, part C) | `2b_estimation.R`: done |
-
-`run_all.R`, `cluster/slurm_array.sh`, the timing workflow and the notebook
-follow the new file names.
+1. The run-time estimate for the six studies; with it, set the provisional
+   numbers of datasets of 3a and 3b (their `design.R`).
+2. The full run (`Rscript run_all.R`; `cluster/README.md`).
+3. The docs from the results: `docs/3_results.md` (new), the README's
+   findings, and the places marked **TO REFRESH** in the README,
+   `docs/2_the_three_priors.md`, appendices A and B,
+   `docs/validation_tests.md` and `docs/working/run_time_estimate.md`.
 
 **Open questions:**
 
@@ -246,48 +229,52 @@ follow the new file names.
   cannot become a false failure. Only this case was run.
 - The cost of Bayes factor calibration (3a) and the Bayarri checks (3b) with
   bridge sampling: each Bayes factor is now two Stan fits with 10 times the
-  estimation draws, where it was one formula. The current target, 20,000
-  datasets per cell for calibration (`R/shared/precision.R`), was set for
-  the formula. Once flatcor 3.0 works: time one Bayes factor, then set the
-  number of datasets (and cells) from the Monte Carlo SE that is really
-  needed.
-
-**Then:** the run-time estimate, the full run, and the docs from the
-results (`docs/3_results.md`, the README's findings, the placeholders marked
-**TO REFRESH** in the README, `docs/2_the_three_priors.md` and appendices A
-and B; appendix A's derivation of the likelihood ratio and appendix C's
-description of study 2 change with this plan).
+  estimation draws, where it was one formula (about 40 s for n = 60, k = 3
+  on this Mac). The numbers are now provisional (in each study's `design.R`):
+  1,000 datasets per cell for calibration, 100 per setting and n for the
+  rates, 50 per setting for growing k. The run-time estimate sets them.
 
 ## Pitfalls already handled
 
-SimDesign masks a function named `summarise` and reserves all-capital names;
-every `runSimulation()` has its own resume file (`save_details`);
-`SimExtract()` needs a `summarise` function; Stan models are compiled into
-`cache/` (or a temporary folder), never into the installed package, which is
-read-only in an Apptainer image; each study caches per flatcor build
-(`cache/study_NN/flatcor_<build>/`), so results from another build are never
-reused.
+cmdstanr gives a model's log density (for bridgesampling) only in the R
+session that compiled it, so flatcor compiles that version per session into
+a temporary folder; that compile fails once RcppParallel is loaded (SimDesign
+and rstan load it), so the pipeline loads neither. Stan models are compiled
+into `cache/` or a temporary folder, never into the installed package, which
+is read-only in a container. The pipeline's store (`_targets/`) records which
+version of the code and of flatcor each result came from, and reruns what is
+outdated.
 
-## Layout (current; changes with the rework)
+## Code style
+
+Every R file follows the tidyverse style (styler) and passes lintr with
+the project's `.lintr` (lines up to 100 characters; names may end in a
+capital symbol, as `log_BF10`; "no visible binding" is off,
+because the pipeline sources the files together). Within a function, a
+blank line and a short comment separate each step; longer calls put one
+argument per line. Check with `lintr::lint_dir()`. Run styler in a UTF-8
+locale (`LC_ALL=en_US.UTF-8`): in an ASCII locale it writes characters such
+as ² as `<U+00B2>`.
+
+## Layout
 
 ```
+_targets.R          the pipeline: the steps of every study, in order
+run_all.R           runs the pipeline, then the figures
+studies/            one folder per study (1a-3b): design.R and code.R
 R/
-  shared/           settings, precision targets, comparison methods
-  data/             the shared data sets B and D, and the ID-based streams
-  studies/          the four studies, 01-04 (previous plan); one file per
-                    cell after the rework (1a-3b, above)
+  shared/           pipeline helpers, the reporting rule, the results file, comparison methods
+  data/             one file per data set (prior-only designs, example data, data from the
+                    prior, known slopes, set R², nested models, growing k) and the
+                    building blocks (ID-based random streams); docs/validation_tests.md
   notebook/         present.R, the notebook's helpers (they compute nothing)
-  docs/             the motivating simulation and the figures of the docs
-results/            studies/study_NN.rds per study (tables, checks, figures,
-                    and where, when and how long it ran); session_info/;
-                    run_summary.md from run_all.R (tracked)
-figures/            every figure of the studies (tracked)
-validation.ipynb    the notebook (R kernel): per study its question, checks,
-                    tables and figures; reads results/ or reruns the studies
-run_all.R           the same without the notebook, one study after another
-cluster/            Dockerfile, slurm_array.sh, the timing scripts, README.md
-docs/               parts 1 and 2, appendix/ (A-C), working/ (this plan)
-cache/              raw results, logs, smoke and timing runs (gitignored)
+  docs/             the motivating simulation, its helpers, and the figures of the docs
+figures/            one script per study, and the figures they draw (tracked)
+results/            studies/study_<cell>.rds per study: its tables and the setup of the run (tracked)
+validation.ipynb    the notebook (R kernel): per study its question, tables and figures
+cluster/            the container image (Dockerfile) and the run-time estimate
+docs/               parts 1 and 2, validation_tests.md, appendix/ (A, B), working/ (this plan)
+_targets/, cache/   the pipeline's store, smoke and timing runs (gitignored)
 ```
 
 ## References
@@ -295,9 +282,10 @@ cache/              raw results, logs, smoke and timing runs (gitignored)
 - Bayarri, M. J., Berger, J. O., Forte, A., & García-Donato, G. (2012).
   Criteria for Bayesian model choice with application to variable
   selection. *The Annals of Statistics*, *40*(3), 1550–1577.
-- Chalmers, R. P., & Adkins, M. C. (2020). Writing effective and reliable
-  Monte Carlo simulations with the SimDesign package. *The Quantitative
-  Methods for Psychology*, *16*(4), 248–280.
+- Landau, W. M. (2021). The targets R package: A dynamic Make-like
+  function-oriented pipeline toolkit for reproducibility and
+  high-performance computing. *Journal of Open Source Software*, *6*(57),
+  2959.
 - Gronau, Q. F., Sarafoglou, A., Matzke, D., Ly, A., Boehm, U., Marsman, M.,
   Leslie, D. S., Forster, J. J., Wagenmakers, E.-J., & Steingroever, H.
   (2017). A tutorial on bridge sampling. *Journal of Mathematical

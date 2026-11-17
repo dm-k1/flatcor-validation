@@ -7,7 +7,7 @@
 ##  prior: it draws correlation matrices of (y, x1 ... xk) with every valid
 ##  matrix equally likely, and looks at what k does. Only then does it show
 ##  the three intuitive ways of deciding what should stay flat, which are the
-##  three priors the validation (R/studies/) compares. It explains the
+##  three priors the validation (studies/) compares. It explains the
 ##  project and validates nothing, so it lives here with the code behind the
 ##  docs.
 ##
@@ -44,16 +44,18 @@
 ## =====================================================================
 library(ggplot2)
 library(patchwork)
-source("R/shared/settings.R")             # parallel_map(), save_figure(), record_check()
-figures_folder <- file.path("docs", "figures")   # save_figure() writes here, next to the docs' figures
+source("R/docs/helpers.R") # parallel_map(), save_figure(), record_check()
+figures_folder <- file.path("docs", "figures") # save_figure() writes here
 
 set.seed(2026)
-number_of_draws       <- 200000
+number_of_draws <- 200000
 numbers_of_predictors <- c(1:10, 15, 20, 30, 40, 50)
-quantities <- c(marginal_r = "marginal r of y with x1", partial_r = "partial r of y with x1, given the others",
-                R = "R", r_squared = "R-squared")
+quantities <- c(
+  marginal_r = "marginal r of y with x1", partial_r = "partial r of y with x1, given the others",
+  R = "R", r_squared = "R-squared"
+)
 versions <- c("partial r flat", "R flat", "R-squared flat")
-version_colours <- setNames(c("#0072B2", "#D55E00", "#009E73"), versions)   # Okabe-Ito
+version_colours <- setNames(c("#0072B2", "#D55E00", "#009E73"), versions) # Okabe-Ito
 
 
 ## ---- The vine method (LKJ), the reference for check M0 ----------------------
@@ -63,16 +65,20 @@ version_colours <- setNames(c("#0072B2", "#D55E00", "#009E73"), versions)   # Ok
 ## step down by 1/2 per level, ending at Beta(eta, eta)), then convert them
 ## into ordinary correlations.
 draw_lkj_correlation_matrix <- function(dimension, eta = 1) {
-  partial <- matrix(0, dimension, dimension); correlation <- diag(dimension)
+  partial <- matrix(0, dimension, dimension)
+  correlation <- diag(dimension)
   beta_parameter <- eta + (dimension - 1) / 2
   for (level in seq_len(dimension - 1)) {
     beta_parameter <- beta_parameter - 0.5
     for (i in (level + 1):dimension) {
       partial[level, i] <- 2 * rbeta(1, beta_parameter, beta_parameter) - 1
       value <- partial[level, i]
-      if (level > 1) for (l in (level - 1):1)
-        value <- value * sqrt((1 - partial[l, i]^2) * (1 - partial[l, level]^2)) +
-                 partial[l, i] * partial[l, level]
+      if (level > 1) {
+        for (l in (level - 1):1) {
+          value <- value * sqrt((1 - partial[l, i]^2) * (1 - partial[l, level]^2)) +
+            partial[l, i] * partial[l, level]
+        }
+      }
       correlation[level, i] <- correlation[i, level] <- value
     }
   }
@@ -113,20 +119,26 @@ summarise_matrix <- function(correlations) {
 ## each parallel task is worth its overhead
 chunks <- split(seq_len(number_of_draws), ceiling(seq_len(number_of_draws) / 5000))
 draws <- do.call(rbind, lapply(numbers_of_predictors, function(k) {
-  values <- do.call(rbind, parallel_map(chunks, function(chunk) t(vapply(chunk, function(draw) {
-    correlations <- draw_uniform_correlation_matrix(k + 1)
-    c(summarise_matrix(correlations),
-      summarise_matrix(with_total_R(correlations, runif(1))),
-      summarise_matrix(with_total_R(correlations, sqrt(runif(1)))))
-  }, numeric(9)))))
+  values <- do.call(rbind, parallel_map(chunks, function(chunk) {
+    t(vapply(chunk, function(draw) {
+      correlations <- draw_uniform_correlation_matrix(k + 1)
+      c(
+        summarise_matrix(correlations),
+        summarise_matrix(with_total_R(correlations, runif(1))),
+        summarise_matrix(with_total_R(correlations, sqrt(runif(1))))
+      )
+    }, numeric(9)))
+  }))
   do.call(rbind, lapply(seq_along(versions), function(v) {
-    data.frame(k = k, version = versions[v], marginal_r = values[, 3 * v - 2],
-               partial_r = values[, 3 * v - 1], r_squared = values[, 3 * v],
-               R = sqrt(values[, 3 * v]))
+    data.frame(
+      k = k, version = versions[v], marginal_r = values[, 3 * v - 2],
+      partial_r = values[, 3 * v - 1], r_squared = values[, 3 * v],
+      R = sqrt(values[, 3 * v])
+    )
   }))
 }))
 draws$version <- factor(draws$version, levels = versions)
-uniform <- subset(draws, version == "partial r flat")   # part 1: the matrices as drawn
+uniform <- subset(draws, version == "partial r flat") # part 1: the matrices as drawn
 
 
 ## ---- Checks ------------------------------------------------------------------------
@@ -134,44 +146,76 @@ uniform <- subset(draws, version == "partial r flat")   # part 1: the matrices a
 critical_for <- function(tests) sqrt(-log(0.01 / tests / 2) / 2) / sqrt(number_of_draws)
 critical_distance <- critical_for(length(numbers_of_predictors))
 ks_distance <- function(values, cdf, ...) suppressWarnings(ks.test(values, cdf, ...)$statistic)
-per_k <- function(data, statistic) vapply(numbers_of_predictors, function(k)
-  statistic(data[data$k == k, ], k), numeric(1))
+per_k <- function(data, statistic) {
+  vapply(numbers_of_predictors, function(k) {
+    statistic(data[data$k == k, ], k)
+  }, numeric(1))
+}
 
 ## M0. the Wishart route against the vine method, on the quantities used here
 ## (a two-sample KS test, 20,000 vine matrices per k)
 m0 <- sapply(c(1, 3, 8), function(k) {
-  vine <- do.call(rbind, parallel_map(split(1:20000, rep(1:4, each = 5000)), function(chunk)
-    t(vapply(chunk, function(draw) summarise_matrix(draw_lkj_correlation_matrix(k + 1)), numeric(3)))))
+  vine <- do.call(rbind, parallel_map(split(1:20000, rep(1:4, each = 5000)), function(chunk) {
+    summaries <- vapply(chunk, function(draw) {
+      summarise_matrix(draw_lkj_correlation_matrix(k + 1))
+    }, numeric(3))
+    t(summaries)
+  }))
   wishart <- uniform[uniform$k == k, c("marginal_r", "partial_r", "r_squared")]
-  min(vapply(1:3, function(j) suppressWarnings(ks.test(vine[, j], wishart[[j]])$p.value), numeric(1)))
+  p_values <- vapply(1:3, function(j) {
+    suppressWarnings(ks.test(vine[, j], wishart[[j]])$p.value)
+  }, numeric(1))
+  min(p_values)
 })
-record_check("M0. Wishart route = vine method (k = 1, 3, 8; marginal r, partial r, R^2)",
-             min(m0) > 0.01 / 9, sprintf("smallest two-sample KS p = %.3f (Bonferroni over 9: .0011)", min(m0)))
+record_check(
+  "M0. Wishart route = vine method (k = 1, 3, 8; marginal r, partial r, R^2)",
+  min(m0) > 0.01 / 9, sprintf("smallest two-sample KS p = %.3f (Bonferroni over 9: .0011)", min(m0))
+)
 
-m1 <- per_k(uniform, function(d, k) ks_distance((d$marginal_r + 1) / 2, "pbeta", (k + 1) / 2, (k + 1) / 2))
+m1 <- per_k(uniform, function(d, k) {
+  ks_distance((d$marginal_r + 1) / 2, "pbeta", (k + 1) / 2, (k + 1) / 2)
+})
 m2 <- per_k(uniform, function(d, k) ks_distance(d$partial_r, "punif", -1, 1))
 m3 <- per_k(uniform, function(d, k) ks_distance(d$r_squared, "pbeta", k / 2, 1))
-m4 <- c(per_k(subset(draws, version == "R flat"), function(d, k) ks_distance(d$R, "punif")),
-        per_k(subset(draws, version == "R-squared flat"), function(d, k) ks_distance(d$r_squared, "punif")))
-record_check("M1. marginal r ~ Beta(d/2, d/2) on (-1, 1), every k", max(m1) < critical_distance,
-             sprintf("largest KS distance %.4f; critical %.4f", max(m1), critical_distance))
-record_check("M2. partial r flat on (-1, 1), every k", max(m2) < critical_distance,
-             sprintf("largest KS distance %.4f; critical %.4f", max(m2), critical_distance))
-record_check("M3. R-squared ~ Beta(k/2, 1), every k", max(m3) < critical_distance,
-             sprintf("largest KS distance %.4f; critical %.4f", max(m3), critical_distance))
-record_check("M4. R flat (R flat), R-squared flat (R-squared flat), every k",
-             max(m4) < critical_for(2 * length(numbers_of_predictors)),
-             sprintf("largest KS distance %.4f; critical %.4f", max(m4), critical_for(2 * length(numbers_of_predictors))))
+m4 <- c(
+  per_k(subset(draws, version == "R flat"), function(d, k) ks_distance(d$R, "punif")),
+  per_k(subset(draws, version == "R-squared flat"), function(d, k) {
+    ks_distance(d$r_squared, "punif")
+  })
+)
+record_check(
+  "M1. marginal r ~ Beta(d/2, d/2) on (-1, 1), every k", max(m1) < critical_distance,
+  sprintf("largest KS distance %.4f; critical %.4f", max(m1), critical_distance)
+)
+record_check(
+  "M2. partial r flat on (-1, 1), every k", max(m2) < critical_distance,
+  sprintf("largest KS distance %.4f; critical %.4f", max(m2), critical_distance)
+)
+record_check(
+  "M3. R-squared ~ Beta(k/2, 1), every k", max(m3) < critical_distance,
+  sprintf("largest KS distance %.4f; critical %.4f", max(m3), critical_distance)
+)
+record_check(
+  "M4. R flat (R flat), R-squared flat (R-squared flat), every k",
+  max(m4) < critical_for(2 * length(numbers_of_predictors)),
+  sprintf(
+    "largest KS distance %.4f; critical %.4f",
+    max(m4), critical_for(2 * length(numbers_of_predictors))
+  )
+)
 
 
 ## ---- Table ---------------------------------------------------------------------
-summary_table <- do.call(rbind, lapply(split(draws, list(draws$version, draws$k)), function(d) data.frame(
-  version              = d$version[1],
-  k                    = d$k[1],
-  P_abs_marginal_r_0.3 = mean(abs(d$marginal_r) > 0.3),
-  P_abs_partial_r_0.3  = mean(abs(d$partial_r) > 0.3),
-  median_R2            = median(d$r_squared),
-  P_R2_above_0.5       = mean(d$r_squared > 0.5))))
+summary_table <- do.call(rbind, lapply(split(draws, list(draws$version, draws$k)), function(d) {
+  data.frame(
+    version              = d$version[1],
+    k                    = d$k[1],
+    P_abs_marginal_r_0.3 = mean(abs(d$marginal_r) > 0.3),
+    P_abs_partial_r_0.3  = mean(abs(d$partial_r) > 0.3),
+    median_R2            = median(d$r_squared),
+    P_R2_above_0.5       = mean(d$r_squared > 0.5)
+  )
+}))
 summary_table <- summary_table[order(summary_table$version, summary_table$k), ]
 rownames(summary_table) <- NULL
 cat("\nRandom valid correlation matrices (", number_of_draws, " per k)\n", sep = "")
@@ -182,31 +226,43 @@ for (v in versions) {
 
 share <- function(v, column) sprintf("%.2f", summary_table[summary_table$version == v, column])
 table_k <- summary_table$k[summary_table$version == versions[1]]
-writeLines(c(
-  "## The motivating simulation",
-  "",
-  sprintf("%s correlation matrices of (y, x1 ... xk) per k.",
-          format(number_of_draws, big.mark = ",", scientific = FALSE)),
-  "",
-  "**Part 1. What k does**, with every valid matrix equally likely: the marginal r",
-  "narrows towards 0, the partial r stays flat, and R-squared grows towards 1.",
-  "",
-  "| k | P(\\|marginal r\\| > .3) | P(\\|partial r\\| > .3) | median R² | P(R² > .5) |",
-  "|---|---|---|---|---|",
-  sprintf("| %d | %s | %s | %s | %s |", table_k, share(versions[1], "P_abs_marginal_r_0.3"),
-          share(versions[1], "P_abs_partial_r_0.3"), share(versions[1], "median_R2"),
-          share(versions[1], "P_R2_above_0.5")),
-  "",
-  "**Part 2. Three choices of what stays flat.** Keep the partial r flat and R-squared",
-  "grows with k; keep R or R-squared flat and the partial r narrows with k.",
-  "",
-  "| k | P(\\|partial r\\| > .3), partial r flat | R flat | R-squared flat | P(R² > .5), partial r flat | R flat | R-squared flat |",
-  "|---|---|---|---|---|---|---|",
-  sprintf("| %d | %s | %s | %s | %s | %s | %s |", table_k,
-          share(versions[1], "P_abs_partial_r_0.3"), share(versions[2], "P_abs_partial_r_0.3"),
-          share(versions[3], "P_abs_partial_r_0.3"), share(versions[1], "P_R2_above_0.5"),
-          share(versions[2], "P_R2_above_0.5"), share(versions[3], "P_R2_above_0.5"))),
-  file.path(figures_folder, "motivation_table.md"))
+writeLines(
+  c(
+    "## The motivating simulation",
+    "",
+    sprintf(
+      "%s correlation matrices of (y, x1 ... xk) per k.",
+      format(number_of_draws, big.mark = ",", scientific = FALSE)
+    ),
+    "",
+    "**Part 1. What k does**, with every valid matrix equally likely: the marginal r",
+    "narrows towards 0, the partial r stays flat, and R-squared grows towards 1.",
+    "",
+    "| k | P(\\|marginal r\\| > .3) | P(\\|partial r\\| > .3) | median R² | P(R² > .5) |",
+    "|---|---|---|---|---|",
+    sprintf(
+      "| %d | %s | %s | %s | %s |", table_k, share(versions[1], "P_abs_marginal_r_0.3"),
+      share(versions[1], "P_abs_partial_r_0.3"), share(versions[1], "median_R2"),
+      share(versions[1], "P_R2_above_0.5")
+    ),
+    "",
+    "**Part 2. Three choices of what stays flat.** Keep the partial r flat and R-squared",
+    "grows with k; keep R or R-squared flat and the partial r narrows with k.",
+    "",
+    paste(
+      "| k | P(\\|partial r\\| > .3), partial r flat | R flat | R-squared flat |",
+      "P(R² > .5), partial r flat | R flat | R-squared flat |"
+    ),
+    "|---|---|---|---|---|---|---|",
+    sprintf(
+      "| %d | %s | %s | %s | %s | %s | %s |", table_k,
+      share(versions[1], "P_abs_partial_r_0.3"), share(versions[2], "P_abs_partial_r_0.3"),
+      share(versions[3], "P_abs_partial_r_0.3"), share(versions[1], "P_R2_above_0.5"),
+      share(versions[2], "P_R2_above_0.5"), share(versions[3], "P_R2_above_0.5")
+    )
+  ),
+  file.path(figures_folder, "motivation_table.md")
+)
 
 
 ## ---- Histogram densities, drawn as a line through the bin centres ----------------
@@ -239,20 +295,26 @@ save_figure(
     plot_layout(guides = "collect") +
     plot_annotation(
       title = "Every valid correlation matrix equally likely: what adding predictors does",
-      subtitle = paste0(format(number_of_draws, big.mark = ",", scientific = FALSE),
-                        " matrices of (y, x1 ... xk) per k. At k = 1 the four are one quantity; ",
-                        "as k grows the marginal r narrows, the partial r stays flat and R and R-squared grow")) &
+      subtitle = paste0(
+        format(number_of_draws, big.mark = ",", scientific = FALSE),
+        " matrices of (y, x1 ... xk) per k. At k = 1 the four are one quantity; ",
+        "as k grows the marginal r narrows, the partial r stays flat and R and R-squared grow"
+      )
+    ) &
     theme(legend.position = "bottom"),
-  "motivation_what_k_does", width = 14, height = 4.5)
+  "motivation_what_k_does",
+  width = 14, height = 4.5
+)
 
 
 ## ---- Figure 2: the three choices overlaid (part 2) ----------------------------------
 ## One row per quantity, each on its own range; a few k to keep it readable
 version_panel <- function(column) {
-  bins <- densities(subset(draws, k %in% c(1, 2, 5, 10, 50)), column, ranges[[column]], c("version", "k"))
+  shown <- subset(draws, k %in% c(1, 2, 5, 10, 50))
+  bins <- densities(shown, column, ranges[[column]], c("version", "k"))
   ggplot(bins, aes(value, density, colour = version)) +
     geom_line(linewidth = 0.8) +
-    facet_wrap(~ k, nrow = 1, labeller = labeller(k = function(k) paste("k =", k))) +
+    facet_wrap(~k, nrow = 1, labeller = labeller(k = function(k) paste("k =", k))) +
     coord_cartesian(xlim = ranges[[column]], ylim = c(0, 4)) +
     scale_colour_manual(values = version_colours) +
     labs(x = quantities[[column]], y = "density", colour = NULL) +
@@ -263,29 +325,44 @@ save_figure(
     plot_layout(guides = "collect") +
     plot_annotation(
       title = "Three choices of what stays flat: the others move as k grows",
-      subtitle = "The same matrices in every version; only the size of y's correlations differs") &
+      subtitle = "The same matrices in every version; only the size of y's correlations differs"
+    ) &
     theme(legend.position = "bottom"),
-  "motivation_partial_r_R_R2_by_k", width = 13, height = 9)
+  "motivation_partial_r_R_R2_by_k",
+  width = 13, height = 9
+)
 
 
 ## ---- Figure 3: the three choices against k (part 2) ---------------------------------
 trend <- rbind(
-  data.frame(summary_table[c("version", "k")], measure = "P(|partial r| > .3)",
-             value = summary_table$P_abs_partial_r_0.3),
-  data.frame(summary_table[c("version", "k")], measure = "P(R-squared > .5)",
-             value = summary_table$P_R2_above_0.5))
+  data.frame(summary_table[c("version", "k")],
+    measure = "P(|partial r| > .3)",
+    value = summary_table$P_abs_partial_r_0.3
+  ),
+  data.frame(summary_table[c("version", "k")],
+    measure = "P(R-squared > .5)",
+    value = summary_table$P_R2_above_0.5
+  )
+)
 save_figure(
   ggplot(trend, aes(k, value, colour = version)) +
     geom_line(linewidth = 0.9) +
     geom_point(size = 2) +
-    facet_wrap(~ measure) +
+    facet_wrap(~measure) +
     scale_x_log10(breaks = c(1, 2, 5, 10, 20, 50)) +
     scale_y_continuous(limits = c(0, 1)) +
     scale_colour_manual(values = version_colours) +
-    labs(x = "number of predictors (k, log scale)", y = "share of correlation matrices", colour = NULL,
-         title = "Keep the partial r flat and R-squared grows; keep R or R-squared flat and the partial r narrows") +
+    labs(
+      x = "number of predictors (k, log scale)", y = "share of correlation matrices", colour = NULL,
+      title = paste(
+        "Keep the partial r flat and R-squared grows;",
+        "keep R or R-squared flat and the partial r narrows"
+      )
+    ) +
     theme_minimal(base_size = 12) +
     theme(legend.position = "bottom"),
-  "motivation_three_versions_against_k", width = 11, height = 5)
+  "motivation_three_versions_against_k",
+  width = 11, height = 5
+)
 
 report_checks()

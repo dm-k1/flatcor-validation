@@ -218,12 +218,12 @@ matrices: flat partial r does, flat R does only at $k = 1$, and flat
 R-squared does not. That is an argument about where the prior comes from. It
 does not yet show that flat partial r makes the better default. Two questions
 come first, for each of the three: does it work correctly as a Bayesian prior
-(the code draws it, its Bayes factors are right, its posterior and Bayes
-factors are calibrated, it meets the criteria for a default prior), and how
-does it behave as a test and an estimate as predictors are added? The
+(the software draws it, its posterior and its Bayes factors are computed
+correctly, and it behaves the way a default prior should), and how does it
+behave as a test as predictors are added? The
 validation answers the first for all three, in the same way for each
-([`validation.ipynb`](../validation.ipynb); the designs are in [appendix
-C](appendix/C_study_design.md)); the second is a later study. Under flat R
+([`validation.ipynb`](../validation.ipynb); what each study tests is in
+[`validation_tests.md`](validation_tests.md)); the second is a later study. Under flat R
 and flat R-squared, one consequence of section 3 is already predictable: a
 prior that narrows each partial correlation as $k$ grows expects each
 coefficient to be a smaller part of the total, so its test of one coefficient

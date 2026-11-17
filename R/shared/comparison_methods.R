@@ -12,43 +12,117 @@
 ##    JZS default      Cauchy prior, scale sqrt(2)/4 ("medium")
 ##    Zellner-Siow     Cauchy prior, scale 1 (R-squared ~ Beta(k/2, 1/2))
 ##
-##  Every Bayes factor is a comparison of two models, each with its own prior.
-##  The references appear in study 4 (and later in the behaviour study).
+##  Every Bayes factor is a comparison of two models, each with its own
+##  prior. For the three priors it is flatcor's: each model fitted with its
+##  Stan model, its marginal likelihood estimated by bridge sampling. The
+##  references appear in studies 2b and 3b.
 ## =====================================================================
 
-## ---- Method names and colours (the same in every study) --------------------
-contenders <- c(`flat partial r` = "flat_partial_r", `flat R` = "flat_r",
-                `flat R-squared` = "flat_r_squared")
+
+## ---- Method names and colours (the same in every study) -----------------------------
+
+contenders <- c(
+  `flat partial r` = "flat_partial_r",
+  `flat R` = "flat_r",
+  `flat R-squared` = "flat_r_squared"
+)
 model_methods <- c(names(contenders), "JZS default", "Zellner-Siow")
 
-## Colour for the figures: one colour per prior, the references in grey.
-method_colour_of <- function(method)
-  if (startsWith(method, "flat partial r")) "#0072B2" else
-  if (startsWith(method, "flat R-squared")) "#009E73" else
-  if (startsWith(method, "flat R"))         "#D55E00" else
-  if (startsWith(method, "JZS"))            "grey25"  else
-  if (startsWith(method, "Zellner"))        "grey60"  else "black"
+## Colour for the figures: one colour per prior, the references in grey
+method_colours <- c(
+  `flat partial r` = "#0072B2",
+  `flat R-squared` = "#009E73",
+  `flat R` = "#D55E00",
+  `JZS` = "grey25",
+  `Zellner` = "grey60"
+)
+method_colour_of <- function(method) {
+  starts <- names(method_colours)[startsWith(method, names(method_colours))]
+  if (length(starts) == 0) "black" else method_colours[[starts[1]]]
+}
 
+## The colour scale for a figure, with the methods in a fixed order
 method_scales <- function(methods) {
   methods <- unique(as.character(methods))
-  group <- match(sapply(methods, method_colour_of),
-                 c("#0072B2", "#D55E00", "#009E73", "grey25", "grey60", "black"))
-  methods <- methods[order(group)]
-  list(scale_colour_manual(values = setNames(sapply(methods, method_colour_of), methods),
-                           breaks = methods, name = NULL),
-       theme(legend.position = "bottom", legend.key.width = unit(2.5, "lines")),
-       guides(colour = guide_legend(nrow = 1, override.aes = list(alpha = 1))))
+  order_of_colours <- c("#0072B2", "#D55E00", "#009E73", "grey25", "grey60", "black")
+  methods <- methods[order(match(sapply(methods, method_colour_of), order_of_colours))]
+
+  list(
+    scale_colour_manual(
+      values = setNames(sapply(methods, method_colour_of), methods),
+      breaks = methods,
+      name = NULL
+    ),
+    theme(legend.position = "bottom", legend.key.width = unit(2.5, "lines")),
+    guides(colour = guide_legend(nrow = 1, override.aes = list(alpha = 1)))
+  )
 }
 
-## ---- Whole models: log Bayes factor against the intercept-only model --------
-## simple = FALSE returns the log Bayes factor (simple = TRUE overflows to Inf)
-log_bayes_factor_model <- function(method, r_squared, n, k) {
-  if (k == 0) return(0)
-  if (method %in% names(contenders))
-    return(log_bayes_factor_vs_intercept_only(r_squared, n, k, prior = contenders[[method]]))
-  switch(method,
-    `JZS default`  = BayesFactor::linearReg.R2stat(n, k, r_squared, rscale = sqrt(2) / 4, simple = FALSE)$bf,
-    `Zellner-Siow` = BayesFactor::linearReg.R2stat(n, k, r_squared, rscale = 1, simple = FALSE)$bf,
-    stop("Unknown method: ", method))
+
+## ---- The Bayes factor between two models -------------------------------------------
+
+## Draws per model for a Bayes factor: ten times the estimation draws (the
+## bridgesampling authors' rule), fewer in the smoke test
+bayes_factor_draws <- if (identical(Sys.getenv("VALIDATION_SMOKE"), "1")) 1000 else 10000
+
+## An lm() fit of the outcome on the columns of predictors (none: intercept only)
+lm_of <- function(predictors, outcome) {
+  if (ncol(predictors) == 0) {
+    return(lm(outcome ~ 1))
+  }
+  colnames(predictors) <- paste0("x", seq_len(ncol(predictors)))
+  lm(outcome ~ ., data = data.frame(predictors, outcome = outcome))
 }
 
+## The log BF of model A (columns predictors_a) against model B
+## (predictors_b), for one method, with its approximate Monte Carlo SE and,
+## for the three priors, the divergent transitions of the two Stan fits.
+## `seed` fixes the Stan fits (derive it from the dataset's ID).
+log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome, seed) {
+  # the three priors: flatcor
+  if (method %in% names(contenders)) {
+    result <- suppressWarnings(flatcor::bayes_factor_models(
+      lm_of(predictors_a, outcome),
+      lm_of(predictors_b, outcome),
+      prior = contenders[[method]],
+      iter_sampling = bayes_factor_draws,
+      seed = seed
+    ))
+    return(c(
+      log_bf = result$log_bayes_factor,
+      error = result$error,
+      divergent = sum(result$divergent)
+    ))
+  }
+
+  # the references: BayesFactor's regression Bayes factor of each model
+  # against the intercept-only model, from R-squared, n and k
+  scale <- switch(method,
+    `JZS default` = sqrt(2) / 4,
+    `Zellner-Siow` = 1,
+    stop("Unknown method: ", method)
+  )
+  log_bf_against_intercept <- function(predictors) {
+    if (ncol(predictors) == 0) {
+      return(c(bf = 0, error = 0))
+    }
+    r_squared <- summary(lm_of(predictors, outcome))$r.squared
+    bf <- BayesFactor::linearReg.R2stat(
+      length(outcome), ncol(predictors), r_squared,
+      rscale = scale,
+      simple = FALSE
+    )
+    c(bf = bf$bf, error = bf$properror)
+  }
+  a <- log_bf_against_intercept(predictors_a)
+  b <- log_bf_against_intercept(predictors_b)
+
+  c(
+    log_bf = a[["bf"]] - b[["bf"]],
+    error = sqrt(a[["error"]]^2 + b[["error"]]^2),
+    divergent = 0
+  )
+}
+
+## A seed for the Stan fits, from a dataset's ID and a label
+seed_of <- function(...) abs(digest::digest2int(paste(...))) %% .Machine$integer.max

@@ -9,10 +9,9 @@ sections 7 and 8), the general case follows the same steps. Why these priors:
 [`1_why_a_choice.md`](../1_why_a_choice.md) and
 [`2_the_three_priors.md`](../2_the_three_priors.md).
 
-Checks are named by study and number in the validation (check 2.1 is study
-2, check 1; [appendix C](C_study_design.md) gives each study's design).
-Numbers marked **TO REFRESH** come from runs before the simplification of 14
-November 2026 and are to be replaced with those of the full run.
+Checks are named by the study of the validation they belong to (3b.2 is study
+3b, item 2; [`validation_tests.md`](../validation_tests.md) gives each study's design).
+Places marked **TO REFRESH** are to be filled in from the full run.
 
 The prior is a product of three factors:
 
@@ -37,18 +36,22 @@ $\beta$, which is what estimation software needs.
 
 For any shape $a$, the Bayes factor of a model against the intercept-only
 model is the likelihood ratio of the model's $k$ columns against none,
-averaged over factor 1 (section 7, step 4): one route, the same for all three
-priors, which is how the package computes it. For flat R it is also the
+averaged over factor 1 (section 7, step 4). For flat R it is also the
 one-predictor Bayes factor averaged over every direction the effect could take
-(steps 1 to 3), a second derivation that the validation uses as a check.
+(steps 1 to 3), and every prior can be written as a mixture of g-priors
+(section 8). These derivations say what the Bayes factor is; the package does
+not compute it from them. flatcor estimates each model's marginal likelihood
+from its Stan model (section 6) by bridge sampling, and divides (section 7,
+"How the package computes it"); the formulas serve as independent references
+in flatcor's tests.
 
 | Sections | What | Used by |
 |---|---|---|
 | 1–5 | the density, factor by factor | `draw_coefficients_from_prior()` |
-| 6 | how estimation samples it | `fit_regression()` |
-| 7, 9 | the Bayes factor for whole models | `bayes_factor_models()`, `log_bayes_factor_vs_intercept_only()` |
-| 8 | the same prior as a mixture of g-priors | the reference of check 2.1 |
-| 10 | testing a term; the likelihood ratio behind every Bayes factor; the support curves | `bayes_factor_models()`, `support_per_partial_correlation()`, `support_per_partial_r_squared()` |
+| 6 | how estimation samples it, and the marginal likelihood | `fit_regression()`, `bayes_factor_models()` |
+| 7, 9 | the Bayes factor for whole models, and how the package computes it | `bayes_factor_models()` |
+| 8 | the same prior as a mixture of g-priors | the references in flatcor's tests |
+| 10 | testing a term; the likelihood ratio behind the Bayes factor | `bayes_factor_models()` |
 | 11–12 | the default-prior criteria; assumptions and limits | |
 
 How this document fits into the project: [the README](../../README.md).
@@ -248,13 +251,16 @@ close to 0; there the direction is undefined and the sampler can struggle.
 
 The same Stan model serves all three priors, because the prior enters only
 through factor 1. The data value `r_squared_shape` is $a$, and one line adds
-`target += (2 * r_squared_shape - 1) * log(R_magnitude)` (nothing for $a = ½$).
-Factors 2 and 3 are the same for all three.
+`target += log(2 * r_squared_shape) + (2 * r_squared_shape - 1) * log(R_magnitude)`.
+Factors 2 and 3 are the same for all three. Every density is written with all
+its normalising constants (including that of $z$'s density, which depends on
+$k$), so that the model's marginal likelihood can be estimated from it
+(section 7). With no predictors ($K = 0$) it is the intercept-only model.
 
-In these coordinates the prior has no peak. Study 1 (`R/studies/01_prior_sampling.R`)
-checks that the prior is reproduced for $k$ = 1, 3 and 8 for each prior
-(checks 1.1–1.4), and study 3 that the posterior is calibrated
-(simulation-based calibration, all three priors).
+In these coordinates the prior has no peak. Study 1a (`studies/1a_prior_sampling/`)
+checks that the prior is reproduced for $k$ = 1, 3 and 8 for each prior, and
+study 2a that the posterior is calibrated (simulation-based calibration, all
+three priors).
 
 ---
 
@@ -264,9 +270,10 @@ This section derives the Bayes factor of the model with $k$ predictors against
 the intercept-only model,
 $\mathrm{BF}_k = p(y \mid k \text{ predictors}) / p(y \mid \text{intercept only})$.
 Steps 1 to 3 derive it for flat R ($a = ½$) through g-priors; section 8
-extends that derivation to every $a \le k/2$, and study 2 uses it as an
-independent check (check 2.1). Step 4 gives the route the package uses, the
-same for every $a$.
+extends that derivation to every $a \le k/2$. Step 4 gives the same Bayes
+factor for every $a$ as one integral over the effect size. The package
+estimates it by bridge sampling instead ("How the package computes it",
+below); these formulas are its independent references.
 
 The idea of steps 1 to 3 is to fix a direction first. Along one direction the model is a
 regression on a single constructed predictor, whose Bayes factor is known.
@@ -359,7 +366,7 @@ The data enter only through $R^2$, $n$ and $k$. For $k = 1$ there are only two
 directions, both with $c^2 = 1$, and the formula reduces to the one-predictor
 flat-correlation Bayes factor.
 
-### Step 4: the route the package uses, for every shape a
+### Step 4: the same Bayes factor for every shape a
 
 The whole-model Bayes factor is also the likelihood ratio of the model's $k$
 columns against none, for a length $f$ of their effect in noise units with a
@@ -376,45 +383,25 @@ $$
 \boxed{\;\mathrm{BF}_k = \int_0^\infty e^{-nf^2/2}\, {}_1F_1\!\left(\tfrac{n-1}{2}; \tfrac k2; \tfrac{n R^2 f^2}{2}\right) p_a(f)\, df\;}
 $$
 
-Only $p_a$ differs between the priors. The package evaluates this integral by
-one call to `stats::integrate()` (adaptive quadrature) over $\log f$, centred
-on the peak of the integrand, as BayesFactor computes its regression Bayes
-factor by `integrate()` over $\log g$:
+Only $p_a$ differs between the priors. At $n = k + 1$ every model fits the
+data exactly ($R^2 = 1$), and the data say nothing about the effect; the
+Bayes factor is then 1 for any proper prior on it (predictive matching,
+Bayarri et al., 2012).
 
-- the peak is found on a coarse grid in $\log f$ from $10^{-8}$ to $10^{8}$
-  and refined by `optimize()`; its width comes from the curvature there, and
-  the integral is split at the peak $\pm$ 1, 4, 10 and 30 widths
-  (relative tolerance $10^{-10}$);
-- the likelihood ratio is computed as the integral over $v$ of section 10,
-  by Simpson's rule on 241 points from $\max(0, \text{peak} - 12\text{ widths})$
-  to the peak $+ 12$ widths, with the average over directions in closed form
-  (section 10); this stays accurate for large $n$, where the ${}_1F_1$ itself
-  is hard to evaluate;
-- at $n = k + 1$ every model fits the data exactly ($R^2 = 1$), and the data
-  say nothing about the effect; the Bayes factor is then 1 for any proper
-  prior on it (predictive matching, Bayarri et al., 2012), and the package
-  returns 1 directly.
+### How the package computes it
 
-On 174 settings ($n$ = 3 to $10^6$, $k$ = 1 to 50, $R^2$ from $10^{-6}$ to
-.999999), this route is within $2\times10^{-7}$ on the log scale of adaptive
-integration of flat partial r's g-prior form. For flat R and flat R-squared it
-agrees with the closed forms that flatcor used up to 1.0.2 within their own
-error (up to $3\times10^{-5}$ and $5\times10^{-4}$), and refining those, or a
-third route, gives this route's value. Study 2 checks it against four routes
-that share no code with it (checks 2.1 to 2.4). **TO REFRESH:** the largest
-errors from the full run.
-
-In the code ([`R/bayes_factor.R`](https://github.com/dm-k1/flatcor/blob/main/R/bayes_factor.R)
-and [`R/likelihood.R`](https://github.com/dm-k1/flatcor/blob/main/R/likelihood.R) in flatcor;
-`log_bayes_factor_vs_intercept_only(..., prior)` calls the first, internal):
-
-| Code | Formula |
-|---|---|
-| `log_bayes_factor_shape_vs_intercept_only()` | $\log \mathrm{BF}_k$, the integral over $\log f$ |
-| `log_likelihood_ratio_block()` | $\log p(y \mid f) / p(y \mid 0)$ |
-| `log_peak_integral_block()` | $\log \int_0^\infty v^m e^{-v^2/2}\, \mathrm E_c\, e^{bvc}\, dv$ |
-| `log_direction_average()` | $\log \mathrm E_c\, e^{tc}$ |
-| `log_scaled_bessel_i()` | $\log I_\nu(t)\, e^{-t}$, with its large-argument expansion |
+The package does not evaluate these formulas. `bayes_factor_models()` fits
+each of the two models with the Stan model of section 6 (the chosen prior,
+the same improper priors on the intercept and the noise in both), estimates
+each model's marginal likelihood from its posterior draws by bridge sampling
+(bridgesampling; Gronau, Singmann & Wagenmakers, 2020), and divides. A model
+with no predictors is the intercept-only model, so the Bayes factor against it
+is the same call. The result is an estimate with a Monte Carlo error, which the
+package reports (bridge sampling's approximate error of the log Bayes factor).
+Following the bridgesampling authors, each model gets ten times the draws used
+for estimation. The formulas of this section and section 8 are independent
+references for it in flatcor's tests; validation study 3a checks it end to end
+by calibration.
 
 ---
 
@@ -469,8 +456,8 @@ $$
 \mathrm{BF}_k = \int_0^\infty (1+g)^{(n-1-k)/2}\,\bigl(1+g(1-R^2)\bigr)^{-(n-1)/2}\, p(g)\, dg ,
 $$
 
-Study 2, check 2.1, evaluates it with `integrate()` and compares it with the
-package's route (section 7, step 4), for every prior.
+flatcor's tests evaluate it with `integrate()` as an independent reference for
+the package's Bayes factor (section 7, "How the package computes it").
 
 The table places the three priors among the other mixtures by their median
 implied $R^2$ before any data are seen ($n = 100$):
@@ -491,12 +478,12 @@ Zellner–Siow, but their implied $R^2$ still changes with $k$.
 The whole family follows from the same construction. With
 $R^2 \sim$ Beta($a$, 1) and a uniform direction, the prior is the g-mixture
 with $B \sim$ Beta($a$, $k/2 - a$) and the same $W$, for $a \le k/2$ (the
-reference of study 2, check 2.1):
+reference in flatcor's tests):
 
 | Prior | $B$ | A g-mixture? |
 |---|---|---|
 | flat R ($a = ½$) | Beta(½, (k−1)/2) | for every $k$ |
-| flat R-squared ($a = 1$) | Beta(1, $k/2 - 1$) | for $k \ge 3$; at $k = 2$, $B \equiv 1$ and it is flat partial r; at $k = 1$ no ($a > k/2$: it would need $B > 1$), so check 2.1 integrates over the effect itself there |
+| flat R-squared ($a = 1$) | Beta(1, $k/2 - 1$) | for $k \ge 3$; at $k = 2$, $B \equiv 1$ and it is flat partial r; at $k = 1$ no ($a > k/2$: it would need $B > 1$); there the integral over the effect itself (section 7, step 4) is the reference |
 | flat partial r ($a = k/2$) | $B \equiv 1$: $g/n \sim$ Inverse-Gamma(1, ½) for every $k$ | for every $k$ |
 
 At $a = k/2$ the prior is the one obtained when every correlation matrix of
@@ -523,16 +510,14 @@ The evidence for one coefficient, or for a block of columns such as a factor,
 is this ratio for the models with and without it. Each model uses the prior
 with the covariance of its own predictors and its own $k$.
 
-Everything except the length $f$ of the effect integrates out exactly
-(section 10), so the Bayes factor needs no MCMC. Study 2 checks it against a
-brute-force Bayes factor that draws from the prior and uses no formula (check
-2.3), and against bridge sampling on the Stan model (check 2.4).
-
-In the code, this is `bayes_factor_models()`.
+In the package, `bayes_factor_models()` estimates each model's marginal
+likelihood by bridge sampling and divides (section 7, "How the package
+computes it"); the intercept-only model's marginal likelihood cancels, so it
+is never needed for comparing two models with predictors.
 
 ---
 
-## 10. Testing a term, and the likelihood ratio behind every Bayes factor
+## 10. Testing a term, and the likelihood ratio behind the Bayes factor
 
 A term (one coefficient, or a factor's or an interaction's columns together)
 is tested by comparing the models with and without it (section 9), each with
@@ -553,8 +538,8 @@ study of how the priors behave in use.
 
 ### The likelihood ratio of an effect's size
 
-Every Bayes factor of the package averages one likelihood ratio over the
-prior. Take $q$ columns of a model with $k$ predictor columns ($q = k$: the
+Every Bayes factor here is one likelihood ratio averaged over the prior,
+which is why it depends on the data only through $R^2$, $n$ and $k$. Take $q$ columns of a model with $k$ predictor columns ($q = k$: the
 whole model; $q = 1$: one coefficient). Let $f$ be the length of their effect
 in noise units (its $f^2$ is the variance they add beyond the other
 predictors, divided by $\sigma^2$), with its direction within the $q$ columns
@@ -581,29 +566,12 @@ $$
 = \Gamma\!\left(\tfrac q2\right) \left(\tfrac t2\right)^{1 - q/2} I_{q/2-1}(t),
 $$
 
-a Bessel function ($\cosh t$ for $q = 1$, the two signs). With very strong
-evidence it needs an expansion: above $t = 10^4$, R's `besselI()` loses
-accuracy, and beyond about $10^5$ it returns 0, so in that range the
-large-argument expansion
-$I_\nu(t)\,e^{-t} = (2\pi t)^{-1/2}\bigl(1 - \tfrac{4\nu^2-1}{8t} +
-\tfrac{(4\nu^2-1)(4\nu^2-9)}{2(8t)^2} - \dots\bigr)$ is used; its error on the
-log scale at $t = 10^4$ is below $10^{-12}$ up to 15 columns. Study 2,
-check 2.2, compares the ratio with its ${}_1F_1$ series summed in 200-bit
-arithmetic, for $q = 1$ and $q = k$.
+a Bessel function ($\cosh t$ for $q = 1$, the two signs).
 
 With $q = k$, averaged over the prior on $f$, this is the whole-model Bayes
 factor (section 7, step 4).
 
-The **support curve** (= this likelihood ratio itself, as a function of the
-effect size, with no prior) is available as
-`support_per_partial_correlation()` for one column (signed, over the partial
-correlation) and `support_per_partial_r_squared()` for any number of columns
-(over their partial $R^2$), with `support_regions()` for the effect sizes the
-data can and cannot tell apart from zero. Averaged over the prior, the curve
-for all $k$ columns gives the whole-model Bayes factor
-([`tests/testthat/test-support-curve.R`](https://github.com/dm-k1/flatcor/blob/main/tests/testthat/test-support-curve.R) in flatcor).
-
-Study 3 checks that each prior's Bayes factor for a term is calibrated on
+Study 3a checks that each prior's Bayes factor for a term is calibrated on
 data drawn from that prior: among datasets with a given BF₁₀, the share
 without the term is 1/(1 + BF₁₀).
 
@@ -613,21 +581,20 @@ without the term is 1/(1 + BF₁₀).
 
 Bayarri, Berger, Forte and García-Donato (2012) list seven criteria that a
 default prior for model choice should meet. The table gives the status for
-each of the three priors. "Checked" means a numerical check in
-study 4 (`R/studies/04_default_prior_criteria.R`), which runs every check for
-each prior with a fixed and a growing number of predictors, in the settings it
-covers; none of the criteria is proven analytically here. **TO REFRESH:** the
-slopes in row 2 are from the run of 4 November 2026; replace them with the
-full run's.
+each of the three priors. "Checked" means a numerical check in study 3b
+(`studies/3b_default_criteria/`; invariance in study 1b), with flatcor's
+Bayes factor by bridge sampling, in the settings it covers (growing $k$ up to
+90); none of the criteria is proven analytically here. **TO REFRESH:** the
+results in the table, from the full run.
 
 | # | Criterion | Meaning | Flat partial r | Flat R | Flat R-squared |
 |---|---|---|---|---|---|
 | 1 | Basic | the prior on the tested coefficients is proper, and not arbitrarily vague | **met**, by construction | **met** | **met** |
-| 2 | Model selection consistency | the true model's posterior probability goes to 1 as $n$ grows | checked (4.4–4.7): null rate $\tfrac q2 \log n$ in every case | checked (4.4–4.7): $\tfrac12 \log n$ against the intercept-only model, $\tfrac q2 \log n$ otherwise; slopes 0.51, 0.48, 0.50 against the intercept-only model and 0.56, 1.58, 2.97 against the model with $x_1$ | checked (4.4–4.7): $\log n$ against the intercept-only model, $\tfrac q2 \log n$ otherwise; slopes 1.01, 0.96, 0.99 against the intercept-only model and 0.55, 1.55, 2.95 against the model with $x_1$ |
-| 3 | Information consistency | BF → ∞ as $R^2 \to 1$ | **met for $n \ge k + 3$**: checked (4.2, 4.3) | **met for $n \ge k + 3$**: checked (4.2, 4.3) | **met for $n \ge k + 3$**: checked (4.2, 4.3) |
-| 4 | Intrinsic consistency | the prior converges to a fixed proper prior as $n$ grows | **met**: checked (4.8) | **met**: checked (4.8) | **met**: checked (4.8) |
-| 5 | Predictive matching | on minimal samples ($n = k + 1$) BF = 1 with the null and between models of equal size | **met**: checked (4.1) | **met**: checked (4.1) | **met**: checked (4.1) |
-| 6 | Measurement invariance | units of the data do not change the answer | **met**, by construction, checked (4.11) | **met**, checked (4.11) | **met**, checked (4.11) |
+| 2 | Model selection consistency | the true model's posterior probability goes to 1 as $n$ grows | checked (3b.3–3b.6, 3b.8–3b.9): expected null rate $\tfrac q2 \log n$ in every case. **TO REFRESH:** slopes | checked (same): expected $\tfrac12 \log n$ against the intercept-only model, $\tfrac q2 \log n$ otherwise. **TO REFRESH:** slopes | checked (same): expected $\log n$ against the intercept-only model, $\tfrac q2 \log n$ otherwise. **TO REFRESH:** slopes |
+| 3 | Information consistency | BF → ∞ as $R^2 \to 1$ | **met for $n \ge k + 3$** (derived below); checked (3b.2) | **met for $n \ge k + 3$**; checked (3b.2) | **met for $n \ge k + 3$**; checked (3b.2) |
+| 4 | Intrinsic consistency | the prior converges to a fixed proper prior as $n$ grows | checked (3b.7) | checked (3b.7) | checked (3b.7) |
+| 5 | Predictive matching | on minimal samples ($n = k + 1$) BF = 1 with the null and between models of equal size | **met** (section 7); checked (3b.1) | **met**; checked (3b.1) | **met**; checked (3b.1) |
+| 6 | Measurement invariance | units of the data do not change the answer | **met**, by construction; checked (1b) | **met**; checked (1b) | **met**; checked (1b) |
 | 7 | Group invariance | the common parameters get the right-Haar prior, and the prior respects the invariance | **met** | **met** | **met** |
 
 Dimensional matching follows from predictive matching for all three priors:
@@ -646,9 +613,9 @@ $B \sim$ Beta($a$, $k/2-a$) the bounds $0 < B \le 1$ give the same order). The
 integrand therefore behaves like $g^{(n-1-k)/2 - 2}$, which diverges if and
 only if $(n-1-k)/2 - 2 \ge -1$, that is, $n \ge k + 3$. On the effect scale
 this is the same tail, $p(f) \approx 2a f^{-3}$ for every $a$ (section 2).
-Check 4.3 tests the boundary: at $n = k + 2$ the evidence levels off (for
-flat R, $\log\mathrm{BF} \to 0.91$ for $k = 1$), and at $n = k + 3$ it keeps
-growing.
+The boundary itself is not checked numerically: at $n = k + 2$ the evidence
+levels off only at $R^2$ within $10^{-8}$ of 1, beyond what a sampler can
+resolve.
 
 Criterion 2 is checked for nested models only; non-nested comparisons are
 listed as open in the [README](../../README.md#open-questions).

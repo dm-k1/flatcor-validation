@@ -1,0 +1,17 @@
+linters: linters_with_defaults(
+    line_length_linter(100),
+    object_length_linter(40),
+    object_name_linter(styles = c("snake_case", "symbols"), regexes = c(
+      symbol_suffix = "^[a-z][a-z0-9_]*_[A-Z][A-Za-z0-9]*(_[a-z0-9]+)*$",
+      random_seed = "^\\.Random\\.seed$"
+    )),
+    commented_code_linter = NULL,
+    object_usage_linter = NULL
+  )
+exclusions: list("cache", "renv")
+encoding: "UTF-8"
+# object_usage_linter is off: the pipeline (_targets.R) sources the files
+# together, so a function in one file uses objects defined in another, and
+# dplyr refers to columns by name; both read as false "no visible binding".
+# Names may end in a capital symbol: a statistic (log_BF10, with_total_R),
+# as written in the docs.
