@@ -119,6 +119,14 @@ The smoke test runs every step and every figure on a small part of each
 design, from scratch, with its results in `cache/` (never mixed with real
 ones).
 
+Every run ends with a check of its outputs
+([`R/shared/check_results.R`](R/shared/check_results.R)): a results file
+for every study run, all with the run's flatcor; no empty table, no NaN,
+Inf or NA in any table, except blanks that are there by design (listed in
+that file, each with its reason); and every figure script done. The smoke
+test, and so every push to `main`, fails when the check finds a problem; a
+real run reports it in its log.
+
 or open [`validation.ipynb`](validation.ipynb), which runs through
 `run_all.R` too. A stopped run continues where it was. It refuses to
 continue with another flatcor than the one it started with (each results

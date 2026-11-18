@@ -169,11 +169,13 @@ repeat {
 
 ## ---- The figures, each script in its own R process ----------------------------------
 results_folder <- file.path(results_root, "studies")
+failed_figures <- character(0)
 for (script in list.files(file.path("R", "3_figures"), pattern = "[.]R$", full.names = TRUE)) {
   study <- sub("^([0-9][a-z]).*", "\\1", basename(script))
   if (!file.exists(file.path(results_folder, sprintf("study_%s.rds", study)))) next
   status <- system2(file.path(R.home("bin"), "Rscript"), script)
   message(sprintf("%s: %s", script, if (status == 0) "done" else "stopped (see above)"))
+  if (status != 0) failed_figures <- c(failed_figures, script)
 }
 
 ## ---- Which results there are -------------------------------------------------------
@@ -185,4 +187,11 @@ for (file in sort(list.files(results_folder, pattern = "^study_.*[.]rds$", full.
     if (isTRUE(setup$smoke)) " (smoke test)" else ""
   ))
 }
+
+## ---- Every output there, every number a number (R/shared/check_results.R) -----------
+source(file.path("R", "shared", "check_results.R"))
+studies_run <- if (length(requested) > 0) requested else
+  sub("^([0-9][a-z]).*", "\\1", list.files(file.path("R", "2_studies")))
+check_results(results_folder, studies_run, flatcor_commit, failed_figures, smoke)
+
 cat(sprintf("Run took %.1f minutes.\n", as.numeric(difftime(Sys.time(), started, units = "mins"))))
