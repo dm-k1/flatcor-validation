@@ -1,7 +1,8 @@
 ## =====================================================================
 ##  Scales the timing runs up to the full run
 ##
-##    Rscript R/timing/estimate_run_time.R [folder]      (default cache/timing)
+##    Rscript R/timing/estimate_run_time.R [folder] [--reference=<seconds>]
+##                                                      (default cache/timing)
 ##
 ##  reads the time_<cell>_at_<fraction>.rds files of R/timing/time_study.R and
 ##  prints a Markdown table: per study, the core hours of the full run (elapsed
@@ -17,10 +18,21 @@
 ##  The hours on more cores divide the core hours by the cores, as if every
 ##  study used them all equally well; more cores rarely do, so read them as
 ##  lower bounds.
+##
+##  Machines differ: GitHub's runners alone have several processors. Each
+##  timing run also records the reference task (reference_task.R) on its
+##  runner; when all runs have it, every timing is counted in multiples of
+##  its own runner's reference before the lines are drawn, so a faster or
+##  slower runner divides out. The result is read off for a target machine:
+##  its reference seconds from --reference (run reference_task.R there), or
+##  else the median of the runners'.
 ## =====================================================================
 
-folder <- commandArgs(trailingOnly = TRUE)[1]
+arguments <- commandArgs(trailingOnly = TRUE)
+folder <- arguments[!startsWith(arguments, "--")][1]
 if (is.na(folder)) folder <- file.path("cache", "timing")
+reference_argument <- grep("^--reference=", arguments, value = TRUE)
+target_reference <- as.numeric(sub("^--reference=", "", reference_argument))
 files <- list.files(folder, pattern = "^time_.*[.]rds$", recursive = TRUE, full.names = TRUE)
 if (length(files) == 0) stop("No timing runs in ", folder)
 
@@ -31,9 +43,25 @@ runs <- do.call(rbind, lapply(files, function(file) {
     ## the share of the full run's datasets this run used (1 for study
     ## 1a, which does not depend on them, and for a run at fraction 1)
     scale = if (run$study == "1a") 1 else run$fraction,
-    elapsed_hours = run$elapsed_seconds / 3600, failed = !is.na(run$error)
+    elapsed_hours = run$elapsed_seconds / 3600, failed = !is.na(run$error),
+    reference_seconds = if (is.null(run$reference_seconds)) NA_real_ else run$reference_seconds
   )
 }))
+
+runs$timed_hours <- runs$elapsed_hours # as measured, for the table
+
+## In reference units when every successful run has the reference task:
+## each run's hours times target / its own reference
+with_reference <- all(!is.na(runs$reference_seconds[!runs$failed]))
+if (with_reference) {
+  if (length(target_reference) == 0) {
+    target_reference <- stats::median(runs$reference_seconds[!runs$failed])
+    target_name <- "a typical GitHub runner (the median reference)"
+  } else {
+    target_name <- "the machine given with --reference"
+  }
+  runs$elapsed_hours <- runs$elapsed_hours * target_reference / runs$reference_seconds
+}
 
 estimates <- do.call(rbind, lapply(split(runs, runs$study), function(study_runs) {
   study <- study_runs$study[1]
@@ -67,7 +95,7 @@ estimates <- do.call(rbind, lapply(split(runs, runs$study), function(study_runs)
       "scaled up (overestimate)"
     },
     core_hours = cpu[1],
-    timed_minutes = sum(study_runs$elapsed_hours) * 60
+    timed_minutes = sum(study_runs$timed_hours) * 60
   )
 }))
 
@@ -96,6 +124,18 @@ cat(sprintf(
   paste(unique(na.omit(runs$cpu_model)), collapse = "; "), runs$cores[1],
   paste(sort(unique(runs$fraction[runs$fraction < 1])), collapse = ", ")
 ))
+if (with_reference) {
+  cat(sprintf(
+    paste(
+      "Corrected for the runners' speed with the reference task (%.0f to %.0f s on",
+      "the runners); read off for %s: %.0f s.\n\n"
+    ),
+    min(runs$reference_seconds, na.rm = TRUE), max(runs$reference_seconds, na.rm = TRUE),
+    target_name, target_reference
+  ))
+} else {
+  cat("Not corrected for the runners' speed: not every run has the reference task.\n\n")
+}
 cat(paste0("| ", paste(names(table), collapse = " | "), " |\n"))
 cat(paste0("|", paste(rep("---", ncol(table)), collapse = "|"), "|\n"))
 cat(paste0("| ", apply(table, 1, paste, collapse = " | "), " |", collapse = "\n"), "\n\n")
@@ -107,6 +147,6 @@ cat(
   "The hours on more cores are lower bounds: they assume every core is used as well as",
   "in the timing run. A study runs on all its cores at once, so the whole validation on one",
   "machine takes the sum of the column; on several machines, one study each, it takes",
-  "about as long as the slowest study. Apple-silicon cores are faster than these, often by",
-  "a factor of 1.5 to 2.\n"
+  "about as long as the slowest study. For another machine, run R/timing/reference_task.R",
+  "there and give its seconds with --reference.\n"
 )

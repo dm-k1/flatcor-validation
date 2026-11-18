@@ -48,6 +48,19 @@ Rscript R/timing/estimate_run_time.R
 
 Timing runs write only to `cache/timing/`, so they never mix with a real run.
 
+**For your own machine.** GitHub's runners differ (several processor types),
+so every timing run first times a reference task: one fixed flatcor Bayes
+factor (`R/timing/reference_task.R`, about a minute). The estimate counts each
+timing in multiples of its own runner's reference, so a faster or slower
+runner divides out. To read the estimate off for the machine you plan to
+use, run the reference task there and give its seconds to the estimate (the
+artifact `run-time-estimate` holds the timing runs, in `timing/`):
+
+```bash
+Rscript R/timing/reference_task.R          # e.g. "8.9 seconds" on an M-series Mac
+Rscript R/timing/estimate_run_time.R timing --reference=8.9
+```
+
 ## On a cluster
 
 The run uses one machine with many cores: the pipeline starts a worker for

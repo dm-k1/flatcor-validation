@@ -5,6 +5,9 @@
 # datasets, each on its own runner (4 cores). R/timing/estimate_run_time.R then
 # fits the fixed part and the part per dataset and reads off the full run; the
 # table appears on the run's summary page and as the artifact run-time-estimate.
+# Each job first times a reference task (R/timing/reference_task.R: one fixed
+# flatcor Bayes factor), so the estimate can divide out how fast its runner
+# was; GitHub's runners have several kinds of processors.
 # Studies 1a (it does not depend on the number of datasets) and 1b (20 per
 # prior, too few to scale) run in full. The fractions, 4% and 6%, give exact
 # numbers of datasets for every study (3b: 2 and 3 per growing-k cell, 4 and

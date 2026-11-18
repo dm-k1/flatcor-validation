@@ -19,6 +19,11 @@ stopifnot(
   "set VALIDATION_TIMING to the fraction of datasets, as in 0.04" = !is.na(fraction)
 )
 
+## the reference task first, on this machine (R/timing/reference_task.R), so
+## the estimate can divide out how fast this machine is
+source(file.path("R", "timing", "reference_task.R"))
+reference <- tryCatch(reference_seconds(), error = function(e) NA_real_)
+
 store <- file.path("cache", "timing", paste0("store_", study, "_", fraction))
 started <- Sys.time()
 error <- tryCatch(
@@ -50,6 +55,7 @@ saveRDS(
     cores = parallelly::availableCores(),
     cpu_model = cpu_model,
     elapsed_seconds = elapsed,
+    reference_seconds = reference,
     error = error
   ),
   file.path("cache", "timing", sprintf("time_%s_at_%s.rds", study, fraction))
