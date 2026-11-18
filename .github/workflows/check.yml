@@ -7,7 +7,8 @@
 #   smoke       the smoke test (VALIDATION_SMOKE=1 Rscript run_all.R: a corner
 #               of every study, from scratch, and every figure) inside the
 #               published image, so with exactly the packages and CmdStan of
-#               the real run (about half an hour)
+#               the real run (about 40 minutes); skipped when this commit's
+#               own image build already ran it before publishing
 #
 # On a public repository the runners are free. The run-time estimate
 # (timing.yml) is separate and runs on demand only.
@@ -72,27 +73,39 @@ jobs:
     timeout-minutes: 150
     steps:
       # when renv.lock changed in this push or a recent one, the image is
-      # still being built: smoke-test the new image, not the one before it
+      # still being built: smoke-test the new image, not the one before it.
+      # An image build smoke-tests the pipeline itself before it publishes:
+      # if that build was for this very commit, the test has already run.
       - name: Wait for the branch's latest image build, if it is still running
+        id: image
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           sleep 60
           while true; do
-            state=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
-              --branch "$GITHUB_REF_NAME" --limit 1 --json status,conclusion \
-              -q '.[0] // empty | "\(.status) \(.conclusion)"')
-            case "$state" in
-              "") echo "No image build for this branch"; break ;;
-              "completed success") echo "Image built"; break ;;
-              completed*) echo "Image build ended: $state"; exit 1 ;;
+            build=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
+              --branch "$GITHUB_REF_NAME" --limit 1 --json status,conclusion,headSha \
+              -q '.[0] // empty | "\(.status) \(.conclusion) \(.headSha)"')
+            read -r status conclusion sha <<< "$build"
+            case "$status $conclusion" in
+              " ") echo "No image build for this branch"; break ;;
+              "completed success")
+                echo "Image built"
+                if [ "$sha" = "$GITHUB_SHA" ]; then
+                  echo "That build smoke-tested this commit already"
+                  echo "already_tested=true" >> "$GITHUB_OUTPUT"
+                fi
+                break ;;
+              completed*) echo "Image build ended: $status $conclusion"; exit 1 ;;
             esac
             sleep 60
           done
 
       - uses: actions/checkout@v4
+        if: steps.image.outputs.already_tested != 'true'
 
       - name: Smoke test
+        if: steps.image.outputs.already_tested != 'true'
         run: |
           docker run --rm -v "$PWD":/project \
             -e VALIDATION_SMOKE=1 \
