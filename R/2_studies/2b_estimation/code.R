@@ -150,7 +150,8 @@ prediction_2b <- function(estimates) {
   })
 }
 
-## One table: every estimate against its reference
+## One table: every estimate against its reference, with its Δ, target
+## Monte Carlo SE and whether it is reached (R/shared/rounds.R)
 results_table_2b <- function(bias_and_coverage, prediction) {
   bias <- transmute(
     bias_and_coverage, k, n, rho, others, cell, method,
@@ -172,7 +173,8 @@ results_table_2b <- function(bias_and_coverage, prediction) {
     mutate(
       method = factor(method, levels = methods_2b),
       distance_in_mcse = (estimate - expected) / mcse
-    )
+    ) |>
+    with_targets(deltas_2b)
 }
 
 ## Stan's divergent transitions, per prior

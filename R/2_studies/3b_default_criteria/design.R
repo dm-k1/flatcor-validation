@@ -44,7 +44,14 @@ if (smoke) {
   rate_cells_3b <- subset(rate_cells_3b, q == 1 & n %in% c(50, 200) & setting != "alternative")
 }
 
-rate_datasets_3b <- datasets(100, in_smoke = 2)   # per cell (set by cost; provisional)
+## How many (docs/validation_tests.md, "How many datasets"): the rate slopes'
+## Δ is 10% of each row's expected rate (1/2, q/2 or a); the alternative's
+## (3b.6, a direction) is .05 per log n, 10% of the smallest rate, 1/2. The
+## first round is the Chow-Robbins rule's; later rounds add datasets to every
+## n of a slope until it reaches its target (R/shared/rounds.R).
+relative_delta_3b  <- 0.1
+direction_delta_3b <- 0.05
+first_round_rates_3b <- datasets(50, in_smoke = 2)   # per cell
 
 
 ## ---- 3b.7 intrinsic consistency (the prior as a recipe; no Bayes factors) --------
@@ -65,7 +72,9 @@ if (smoke) {
   growing_cells_3b <- subset(growing_cells_3b, n %in% c(50, 100) & growth == "k = n / 4")
 }
 
-growing_datasets_3b <- datasets(50, in_smoke = 2)   # per cell (set by cost; provisional)
+## How many: the slopes' Δ is .05 per log n (a direction, as 3b.6); first
+## round and later rounds as for the rates
+first_round_growing_3b <- datasets(50, in_smoke = 2)   # per cell
 
 
 ## ---- For every part ----------------------------------------------------------------

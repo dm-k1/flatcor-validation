@@ -1,6 +1,7 @@
 ## =====================================================================
 ##  The results file of a study: results/studies/study_<cell>.rds
-##  (cache/smoke_results/studies/ for the smoke test), with the study's
+##  (cache/smoke_results/studies/ for the smoke test, cache/timing/results/
+##  for a timing run, so neither mixes with real results), with the study's
 ##  tables and the setup of the run. The notebook and the figure scripts
 ##  read only these files.
 ## =====================================================================
@@ -8,7 +9,15 @@
 ## Writes the file and returns its path (a targets "file" target)
 save_study_results_file <- function(study, tables) {
   smoke <- identical(Sys.getenv("VALIDATION_SMOKE"), "1")
-  folder <- file.path(if (smoke) file.path("cache", "smoke_results") else "results", "studies")
+  timing <- !is.na(suppressWarnings(as.numeric(Sys.getenv("VALIDATION_TIMING", NA))))
+  root <- if (smoke) {
+    file.path("cache", "smoke_results")
+  } else if (timing) {
+    file.path("cache", "timing", "results")
+  } else {
+    "results"
+  }
+  folder <- file.path(root, "studies")
   dir.create(folder, recursive = TRUE, showWarnings = FALSE)
   file <- file.path(folder, sprintf("study_%s.rds", study))
 

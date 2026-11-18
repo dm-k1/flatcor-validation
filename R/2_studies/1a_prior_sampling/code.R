@@ -58,7 +58,8 @@ quantities_1a <- function(draws, covariance) {
 
 ## flatcor's Stan model with the data switched off (prior_only = 1, with
 ## proper stand-ins for the intercept and the noise), lengthened until every
-## quantity reaches the target effective sample size
+## percentile of every quantity has a Monte Carlo SE of at most Δ / 1.96,
+## Δ = delta_share_1a x the quantity's SD (docs/validation_tests.md)
 sample_setting_1a <- function(setting, predictors, model) {
   covariance <- covariance_of(predictors)
   stan_data <- list(
@@ -73,9 +74,22 @@ sample_setting_1a <- function(setting, predictors, model) {
   )
   seed <- seed_of("1a", setting$prior, setting$design)
 
-  # lengthen the chains until the smallest ESS reaches the target
-  iterations <- ceiling(1.2 * target_ess_1a / 4)
-  for (attempt in 1:4) {
+  # the largest Monte Carlo SE of a percentile, as a share of its target
+  # (the MCSE shrinks with the square root of the draws)
+  share_of_target <- function(quantities) {
+    max(vapply(quantities, function(x) {
+      mcse <- vapply(
+        percentiles_1a,
+        function(p) posterior::mcse_quantile(x, probs = p),
+        numeric(1)
+      )
+      max(mcse) / target_mcse(delta_share_1a * sd(as.vector(x)))
+    }, numeric(1)))
+  }
+
+  # lengthen the chains until every percentile reaches its target
+  iterations <- ceiling(start_draws_1a / 4)
+  for (attempt in 1:6) {
     fit <- model$sample(
       data = stan_data,
       chains = 4,
@@ -87,10 +101,11 @@ sample_setting_1a <- function(setting, predictors, model) {
       show_messages = FALSE
     )
     draws <- fit$draws(c("b", "sigma"))
-    ess <- vapply(quantities_1a(draws, covariance), posterior::ess_bulk, numeric(1))
-    smallest_ess <- min(ess)
-    if (smallest_ess >= target_ess_1a) break
-    iterations <- ceiling(iterations * 1.2 * target_ess_1a / smallest_ess)
+    quantities <- quantities_1a(draws, covariance)
+    smallest_ess <- min(vapply(quantities, posterior::ess_bulk, numeric(1)))
+    share <- share_of_target(quantities)
+    if (share <= 1) break
+    iterations <- ceiling(iterations * 1.2 * share^2)
   }
 
   list(
@@ -139,18 +154,27 @@ compare_quantity_1a <- function(x, name, setting, a, recipe) {
     critical <- 1.63 / sqrt(ess)
     against <- sprintf("Beta(%g, 1)", a)
   }
+  # Δ: 10% of the quantity's SD under the prior (the recipe's, or Beta(a, 1)'s)
+  prior_sd <- if (startsWith(name, "partial")) {
+    sd(reference)
+  } else {
+    sqrt(a / ((a + 1)^2 * (a + 2)))
+  }
+
+  quantiles <- expectation_rows(
+    prior = setting$prior,
+    design = setting$design,
+    variable = name,
+    percentile = 100 * percentiles_1a,
+    quantity = paste("quantile of", name),
+    expected = expected,
+    estimate = estimate,
+    mcse = mcse
+  )
+  quantiles$delta <- delta_share_1a * prior_sd
 
   list(
-    quantiles = expectation_rows(
-      prior = setting$prior,
-      design = setting$design,
-      variable = name,
-      percentile = 100 * percentiles_1a,
-      quantity = paste("quantile of", name),
-      expected = expected,
-      estimate = estimate,
-      mcse = mcse
-    ),
+    quantiles = with_targets(quantiles),
     ks = data.frame(
       prior = setting$prior,
       design = setting$design,

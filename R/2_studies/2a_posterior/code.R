@@ -104,7 +104,8 @@ rank_summaries_2a <- function(stats) {
     group_by(prior, k, n, variable) |>
     group_modify(summarise_ranks) |>
     ungroup() |>
-    mutate(distance_in_mcse = (estimate - expected) / mcse)
+    mutate(distance_in_mcse = (estimate - expected) / mcse) |>
+    with_targets(deltas_2a)
 }
 
 ## Stan's divergent transitions, per prior and setting

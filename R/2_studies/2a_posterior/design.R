@@ -21,8 +21,17 @@ iterations_2a <- if (smoke) {
 }
 
 
-## ---- How many --------------------------------------------------------------------
-fits_2a <- datasets(1000, in_smoke = 10)   # fits per cell (set by the target)
+## ---- How many (docs/validation_tests.md, "How many datasets") -------------------------
+## Δ per quantity: the Monte Carlo SE must be at most Δ / 1.96
+deltas_2a <- c(
+  "mean scaled rank"             = 0.05,   # 10% of 1/2
+  "SD of the scaled rank"        = 0.029,  # 10% of .289
+  "chi-square over 20 rank bins" = NA      # an overall check, no Δ of its own
+)
+## Computed, not measured: the ranks (0-100, thinned) have SD .2915, so the
+## mean rank needs (.2915 x 1.96 / .05)^2 = 130.6, so 131 fits per cell; the
+## SD of the ranks needs 76
+fits_2a <- datasets(131, in_smoke = 10)
 
 
 ## ---- Bookkeeping (no effect on the results) ------------------------------------

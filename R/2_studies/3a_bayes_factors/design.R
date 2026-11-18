@@ -18,12 +18,22 @@ cells_3a <- data.frame(
 if (smoke) cells_3a <- cells_3a[cells_3a$k == 3, ]
 
 
-## ---- How many --------------------------------------------------------------------
-datasets_per_cell_3a <- datasets(1000, in_smoke = 40)   # part A (set by cost; provisional)
-repeat_datasets_3a   <- datasets(20, in_smoke = 2)      # part B (set by the target)
-repeat_runs_3a       <- 5                               # part B: runs per dataset
-bin_minimum_3a       <- if (smoke) 2 else 10            # part A: datasets a bin needs to be shown
+## ---- How many (docs/validation_tests.md, "How many datasets") -------------------------
+## Δ per quantity: the Monte Carlo SE must be at most Δ / 1.96
+deltas_3a <- c(
+  "calibration intercept"                       = 0.1,  # the slope's scale (log-odds)
+  "calibration slope"                           = 0.1,  # 10% of 1
+  "spread of repeated log BFs / reported error" = 0.1   # 10% of 1
+)
+## The first rounds (the Chow-Robbins rule's): parts A and B each have their
+## own plan, and later rounds add datasets until their quantities reach
+## their targets (R/shared/rounds.R)
+first_round_3a         <- datasets(50, in_smoke = 40)   # part A, datasets per cell
+first_round_repeats_3a <- datasets(50, in_smoke = 2)    # part B, datasets per cell
+repeat_runs_3a         <- 5                             # part B: runs per dataset
+bin_minimum_3a         <- if (smoke) 2 else 10          # part A: datasets a bin needs to be shown
 
 
 ## ---- Bookkeeping (no effect on the results) ------------------------------------
-batch_size_3a <- if (smoke) 4 else 25   # datasets per piece of work, saved as it finishes
+batch_size_3a         <- if (smoke) 4 else 25   # part A: datasets per piece of work
+batch_size_repeats_3a <- if (smoke) 2 else 5    # part B: datasets (of 5 runs) per piece

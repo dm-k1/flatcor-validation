@@ -110,10 +110,11 @@ calibration_line_3a <- function(results) {
 
   results |>
     mutate(cell = sprintf("k = %d, n = %d", k, n)) |>
-    group_by(prior, cell) |>
+    group_by(prior, k, n, cell) |>
     group_modify(fit_line) |>
     ungroup() |>
-    mutate(distance_in_mcse = (estimate - expected) / mcse)
+    mutate(distance_in_mcse = (estimate - expected) / mcse) |>
+    with_targets(deltas_3a)
 }
 
 
@@ -136,7 +137,7 @@ repeat_spread_3a <- function(repeats, runs) {
   # per dataset: the variance over its runs, and the mean squared reported error
   per_dataset <- repeats |>
     mutate(cell = sprintf("k = %d, n = %d", k, n)) |>
-    group_by(prior, cell, replication) |>
+    group_by(prior, k, n, cell, replication) |>
     summarise(
       variance = var(log_BF10),
       mean_square_error = mean(error^2),
@@ -145,7 +146,7 @@ repeat_spread_3a <- function(repeats, runs) {
 
   # per cell: pooled SD against the reported error
   per_dataset |>
-    group_by(prior, cell) |>
+    group_by(prior, k, n, cell) |>
     summarise(
       datasets = n(),
       pooled_sd = sqrt(mean(variance)),
@@ -158,7 +159,8 @@ repeat_spread_3a <- function(repeats, runs) {
       estimate = pooled_sd / reported_error,
       mcse = estimate / sqrt(2 * datasets * (runs - 1)),
       distance_in_mcse = (estimate - expected) / mcse
-    )
+    ) |>
+    with_targets(deltas_3a)
 }
 
 

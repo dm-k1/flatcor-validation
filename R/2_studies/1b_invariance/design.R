@@ -11,8 +11,15 @@
 priors_1b <- data.frame(prior = c("flat_partial_r", "flat_r", "flat_r_squared"))
 
 
-## ---- How many --------------------------------------------------------------------
-datasets_1b <- datasets(20, in_smoke = 2)   # per prior (set by the target)
+## ---- How many (docs/validation_tests.md, "How many datasets") -------------------------
+## Δ per quantity: the Monte Carlo SE must be at most Δ / 1.96
+deltas_1b <- c(
+  "change in log BF, rescaled" = log(1.1),   # .095: the Bayes factor off by 10%
+  "change in log BF, recoded"  = log(1.1)
+)
+## The first round (the Chow-Robbins rule's, per prior); later rounds add
+## datasets until both changes reach their targets (R/shared/rounds.R)
+first_round_1b <- datasets(50, in_smoke = 2)
 
 
 ## ---- Bookkeeping (no effect on the results) ------------------------------------

@@ -16,8 +16,8 @@ Notation: *n* the sample size of one dataset, *k* the number of predictors, *a* 
 Δ follows the field's conventions, at their looser end throughout, so that the whole validation fits a budget of about €20 of computing:
 
 - **coverage**: a Monte Carlo SE of 1% (Morris et al., 2019, use 0.4–0.5% in their examples; 1% is the common upper end), so Δ = .0196;
-- **every other quantity with an expected value**: a relative error of 10% of that value (the common criteria for relative bias are 5% and 10%); for a log Bayes factor, a Bayes factor off by 10% (log 1.1 = .095); for an expectation of 0, the same scale as its companion quantity, said in its row;
-- **a direction** ("increases", "positive"): the sign at 1.96 MCSE.
+- **every other quantity with an expected value**: a relative error of 10% of that value (the common criteria for relative bias are 5% and 10%); for a log Bayes factor, a Bayes factor off by 10% (log 1.1 = .095); for an expectation of 0, the same scale as its companion quantity, said in its row; for the percentiles of a distribution (1a), 10% of that distribution's SD, its natural unit (10% of a percentile itself would demand the impossible for a median of 0, as the partial correlations have);
+- **a direction** ("increases", "positive"): a fixed Δ too, never the estimate itself: stopping once a slope looks clearly positive would be optional stopping, which inflates false confirmations. For 3b's directions, a slope of .05 per log *n*: 10% of the smallest rate in the same study (½).
 
 Where σ is known in advance (coverage, the ranks of 2a), *n*<sub>sim</sub> is computed. Elsewhere it is **measured**, by the classical sequential fixed-width rule (Chow & Robbins, 1965; shown valid for stochastic simulations by Glynn & Whitt, 1992, and for MCMC output by Jones et al., 2006): every cell starts with a **first round of 50 datasets**, fixed in advance, so that its Monte Carlo SE is estimated from enough datasets (the rule's guard against stopping on a lucky, too small estimate; 50 is our choice, as bootstrap SEs of medians and slopes are unreliable on fewer); after each round the SE is estimated again, and the cell **stops at the first round whose Monte Carlo SE is at most Δ / 1.96**. The rule looks only at the Monte Carlo SE, never at the estimate itself, and it is fixed before the run: adapting a simulation's size becomes a questionable practice when it is undisclosed or serves a preferred result (Pawel et al., 2024). The whole run stops at 2,500 core hours (about €20; `docs/working/run_time_estimate.md`); a cell that has not reached its target by then is reported as such, with its Monte Carlo SE. This is written down before the run, as the template of Siepe et al. (2024) asks. (Each study also has a batch size: how many datasets form one piece of work, saved as it finishes. That is bookkeeping for resuming and running in parallel, and changes no result.)
 
@@ -61,7 +61,7 @@ flatcor's Stan model with the data switched off should draw exactly the prior.
 
 | Quantity | Expected | Why | MCSE | Δ | *n*<sub>sim</sub> |
 |------------|------------|------------|------------|------------|------------|
-| 5th, 25th, 50th, 75th, 95th percentile of *r*² (one predictor) | those of Beta(*a*, 1) | the prior is *R*² \~ Beta(*a*, 1) | `posterior::mcse_quantile()` (allows for autocorrelated draws) | 10% of the expected percentile | measured (effective draws per setting) |
+| 5th, 25th, 50th, 75th, 95th percentile of *r*² (one predictor) | those of Beta(*a*, 1) | the prior is *R*² \~ Beta(*a*, 1) | `posterior::mcse_quantile()` (allows for autocorrelated draws) | 10% of the quantity's SD under the prior | measured: the chains are lengthened until every percentile reaches its target |
 | the same of *R*² (three, eight predictors) | those of Beta(*a*, 1) | the same | the same | the same | the same |
 | the same of each partial correlation (three predictors) | those of the prior as a recipe (`draw_coefficients_from_prior()`) | a second, independent route to the same prior | the same, plus the recipe's own | the same | the same |
 
@@ -90,9 +90,9 @@ Simulation-based calibration (Talts et al., 2018): draw the parameters from the 
 
 | Quantity, for *R*², *b*₁ and σ | Expected | Why | MCSE | Δ | *n*<sub>sim</sub> |
 |------------|------------|------------|------------|------------|------------|
-| mean of the scaled rank (0–1) | ½ | uniform ranks; a bias shifts them | SD of a uniform rank / √*n*<sub>sim</sub> | .05: 10% of ½ | 128 fits per cell: .289² / (.05 / 1.96)² |
-| SD of the scaled rank | that of a uniform rank, about .289 | a posterior too wide or too narrow changes it | the SD of a sample SD of uniform ranks | .029: 10% of .289 | 76 needed; 128 cover it |
-| chi-square over 20 rank bins | 19 | uniform ranks | its SD under uniformity, √38 | — (an overall check) | the same 128 |
+| mean of the scaled rank (0–1) | ½ | uniform ranks; a bias shifts them | SD of a uniform rank / √*n*<sub>sim</sub> | .05: 10% of ½ | 131 fits per cell: (.2915 × 1.96 / .05)², .2915 being the SD of a rank from 0 to 100 (ranks thinned to 100 draws) |
+| SD of the scaled rank | that of a uniform rank, about .289 | a posterior too wide or too narrow changes it | the SD of a sample SD of uniform ranks | .029: 10% of .289 | 76 needed; 131 cover it |
+| chi-square over 20 rank bins | 19 | uniform ranks | its SD under uniformity, √38 | — (an overall check) | the same 131 |
 
 Also shown: Stan's divergent transitions (counts) and the SBC package's ECDF plots.
 
@@ -146,9 +146,9 @@ The criteria of Bayarri, Berger, Forte and García-Donato (2012); invariance is 
 | 3b.3 | slope of the median log BF for the truth against log *n* | ½ (asymptotic) | model-selection consistency: evidence for a true null grows like *q*/2 log *n* | bootstrap | 10% of ½: .05 | measured |
 | 3b.4 | the same | *q*/2 (asymptotic) | the same | the same | 10% of *q*/2 | measured |
 | 3b.5 | the same, against the intercept-only model | *a* (asymptotic) | the rate against the intercept-only model is the prior's shape | the same | 10% of *a* | measured |
-| 3b.6 | median log BF₁₀ for a real effect | increases with *n* (a direction) | consistency under the alternative | the same | the sign | measured |
+| 3b.6 | median log BF₁₀ for a real effect | increases with *n* (a direction) | consistency under the alternative | the same | .05 per log *n* (10% of ½) | measured |
 | 3b.7 | KS distance of the prior with the sample covariance to that with the population covariance | falls below its .01 critical value (a limit) | intrinsic consistency | — | — (a limit) | 26,569 draws: a KS distance of .01 detectable at the .01 level (draws only, no Stan fits) |
-| 3b.8, 3b.9 | slope of the median log BF for the truth against log *n* | positive (a direction) | consistency as *k* grows | bootstrap | the sign | measured |
+| 3b.8, 3b.9 | slope of the median log BF for the truth against log *n* | positive (a direction) | consistency as *k* grows | bootstrap | .05 per log *n* (10% of ½) | measured |
 
 Also shown: Stan's divergent transitions.
 

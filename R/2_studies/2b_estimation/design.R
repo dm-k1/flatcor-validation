@@ -31,8 +31,17 @@ stan_draws_2b <- if (smoke) {
 bayesfactor_draws_2b <- if (smoke) 1000 else 4000   # BayesFactor's draws (JZS, Zellner-Siow)
 
 
-## ---- How many --------------------------------------------------------------------
-datasets_per_cell_2b <- datasets(475, in_smoke = 10)   # set by the target (coverage MCSE .01)
+## ---- How many (docs/validation_tests.md, "How many datasets") -------------------------
+## Δ per quantity: the Monte Carlo SE must be at most Δ / 1.96
+deltas_2b <- c(
+  "bias of x1 (share of 0.2)"     = 0.1,     # .02, 10% of the slope 0.2
+  "coverage of x1's 95% interval" = 0.0196,  # an MCSE of 1%, the coverage convention
+  "prediction error / OLS"        = 0.1      # 10% of OLS's
+)
+## The first round: computed for coverage, .95 x .05 / .01^2 = 475. Bias and
+## prediction are measured: a cell gets more datasets in later rounds until
+## they reach their targets too (R/shared/rounds.R).
+first_round_2b <- datasets(475, in_smoke = 10)
 
 
 ## ---- Bookkeeping (no effect on the results) ------------------------------------

@@ -92,8 +92,39 @@ rate_slopes_3b <- function(rates) {
       mutate(
         quantity = "slope of median log BF against log n",
         expected = ifelse(setting == "intercept only", mapply(prior_shape, prior, q), q / 2),
-        distance_in_mcse = (estimate - expected) / mcse
-      )
+        distance_in_mcse = (estimate - expected) / mcse,
+        delta = relative_delta_3b * expected
+      ) |>
+      with_targets()
+  })
+}
+
+## 3b.6: the slope of the median log BF10 against log n for a real effect
+## (expected positive, a direction; its Δ fixed, never the estimate itself)
+alternative_slopes_3b <- function(rates) {
+  alternative <- filter(rates, setting == "alternative")
+  # none in the smoke test, whose corner leaves the alternative out (it
+  # starts at n = 200): an empty table, as dplyr would otherwise fit a line
+  # through no points
+  if (nrow(alternative) == 0) {
+    return(tibble(
+      item = character(0), setting = character(0), q = numeric(0), prior = character(0),
+      estimate = numeric(0), mcse = numeric(0), quantity = character(0),
+      expected = character(0), delta = numeric(0), target_mcse = numeric(0),
+      reached = logical(0)
+    ))
+  }
+  with_stream_of("3b-bootstrap-alternative-slope", {
+    alternative |>
+      group_by(item, setting, q, prior) |>
+      group_modify(function(rows, keys) slope_of_medians(rows)) |>
+      ungroup() |>
+      mutate(
+        quantity = "slope of median log BF10 against log n",
+        expected = "positive",
+        delta = direction_delta_3b
+      ) |>
+      with_targets()
   })
 }
 
@@ -184,8 +215,11 @@ growing_slopes_3b <- function(growing) {
       ungroup() |>
       mutate(
         item = ifelse(truth == "null", "3b.8", "3b.9"),
-        expected = "positive"
-      )
+        quantity = "slope of median log BF against log n",
+        expected = "positive",
+        delta = direction_delta_3b
+      ) |>
+      with_targets()
   })
 }
 
@@ -238,6 +272,7 @@ save_results_3b <- function(formula_checks, rates, growing) {
     rates = slopes,
     beyond_reference = rbind(beyond_reference(matching), beyond_reference(slopes)),
     alternative = alternative_3b(rates),
+    alternative_slopes = alternative_slopes_3b(rates),
     intrinsic_consistency = intrinsic_3b(),
     growing_slopes = growing_slopes_3b(growing),
     growing_medians = growing_medians_3b(growing),

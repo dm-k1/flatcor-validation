@@ -105,7 +105,8 @@ pooled_1b <- function(invariance) {
       mcse = sqrt(sum(mcse^2)) / n(),
       .groups = "drop"
     ) |>
-    mutate(distance_in_mcse = (estimate - expected) / mcse)
+    mutate(distance_in_mcse = (estimate - expected) / mcse) |>
+    with_targets(deltas_1b)
 }
 
 

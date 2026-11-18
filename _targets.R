@@ -47,7 +47,7 @@ studies <- c(
 )
 tar_source(c(
   "R/shared/random_streams.R", "R/shared/pipeline.R", "R/shared/expectations.R",
-  "R/shared/results.R", "R/shared/comparison_methods.R",
+  "R/shared/results.R", "R/shared/comparison_methods.R", "R/shared/rounds.R",
   list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
   file.path("R", "2_studies", studies, "design.R"),
   file.path("R", "2_studies", studies, "code.R")
@@ -80,16 +80,17 @@ list(
 
 
   ## ---- 1b. Is the Bayes factor invariant to units and coding? ----
-  tar_target(design_1b, priors_1b),
+  # the plan and its pieces, as in 2b (R/shared/rounds.R)
   tar_target(
-    batches_1b,
-    split_into_batches(datasets_1b, batch_size_1b),
-    iteration = "list"
+    plan_1b,
+    read_plan("1b", targets::tar_path_store(), priors_1b, first_round_1b),
+    cue = tar_cue(mode = "always")
   ),
+  tar_target(pieces_1b, pieces_of_plan(plan_1b, batch_size_1b)),
   tar_target(
     changes_1b,
-    invariance_batch_1b(design_1b, batches_1b),
-    pattern = cross(design_1b, batches_1b)
+    invariance_batch_1b(pieces_1b["prior"], pieces_1b$from:pieces_1b$to),
+    pattern = map(pieces_1b)
   ),
   tar_target(results_1b, save_results_1b(changes_1b), format = "file"),
 
@@ -111,42 +112,56 @@ list(
 
 
   ## ---- 2b. How close are the estimates to a known truth? ----
-  tar_target(design_2b, cells_2b),
+  # the plan: per cell, the datasets of the rounds so far (R/shared/rounds.R);
+  # read every time, but what follows reruns only if it changed
   tar_target(
-    batches_2b,
-    split_into_batches(datasets_per_cell_2b, batch_size_2b),
-    iteration = "list"
+    plan_2b,
+    read_plan("2b", targets::tar_path_store(), cells_2b, first_round_2b),
+    cue = tar_cue(mode = "always")
   ),
+  # one piece of work per cell and batch; a new round only adds pieces
+  tar_target(pieces_2b, pieces_of_plan(plan_2b, batch_size_2b)),
   tar_target(
     fits_2b,
-    estimates_batch_2b(design_2b, batches_2b, stan_model),
-    pattern = cross(design_2b, batches_2b)
+    estimates_batch_2b(pieces_2b[names(cells_2b)], pieces_2b$from:pieces_2b$to, stan_model),
+    pattern = map(pieces_2b)
   ),
   tar_target(results_2b, save_results_2b(fits_2b), format = "file"),
 
 
   ## ---- 3a. Are the Bayes factors right? ----
-  tar_target(design_3a, cells_3a),
 
-  # part A, calibration: every cell x every batch of datasets
+  # part A, calibration: its plan and pieces, as in 2b (R/shared/rounds.R)
   tar_target(
-    batches_3a,
-    split_into_batches(datasets_per_cell_3a, batch_size_3a),
-    iteration = "list"
+    plan_3a,
+    read_plan("3a", targets::tar_path_store(), cells_3a, first_round_3a),
+    cue = tar_cue(mode = "always")
   ),
+  tar_target(pieces_3a, pieces_of_plan(plan_3a, batch_size_3a)),
   tar_target(
     calibration_runs_3a,
-    calibration_batch_3a(design_3a, batches_3a),
-    pattern = cross(design_3a, batches_3a)
+    calibration_batch_3a(pieces_3a[names(cells_3a)], pieces_3a$from:pieces_3a$to),
+    pattern = map(pieces_3a)
   ),
   tar_target(bins_table_3a, calibration_bins_3a(calibration_runs_3a)),
   tar_target(line_table_3a, calibration_line_3a(calibration_runs_3a)),
 
-  # part B, bridge sampling's error: every cell, its datasets run repeat_runs_3a times
+  # part B, bridge sampling's error: each dataset run repeat_runs_3a times;
+  # its own plan and pieces
+  tar_target(
+    plan_repeats_3a,
+    read_plan("3a-repeats", targets::tar_path_store(), cells_3a, first_round_repeats_3a),
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(pieces_repeats_3a, pieces_of_plan(plan_repeats_3a, batch_size_repeats_3a)),
   tar_target(
     repeated_3a,
-    repeats_3a(design_3a, seq_len(repeat_datasets_3a), repeat_runs_3a),
-    pattern = map(design_3a)
+    repeats_3a(
+      pieces_repeats_3a[names(cells_3a)],
+      pieces_repeats_3a$from:pieces_repeats_3a$to,
+      repeat_runs_3a
+    ),
+    pattern = map(pieces_repeats_3a)
   ),
   tar_target(spread_table_3a, repeat_spread_3a(repeated_3a, repeat_runs_3a)),
 
@@ -172,30 +187,38 @@ list(
     pattern = map(design_formula_3b)
   ),
 
-  # 3b.3-3b.6: the rates
-  tar_target(design_rates_3b, rate_cells_3b),
+  # 3b.3-3b.6: the rates; their plan and pieces, as in 2b (R/shared/rounds.R)
   tar_target(
-    rate_batches_3b,
-    split_into_batches(rate_datasets_3b, batch_size_3b),
-    iteration = "list"
+    plan_rates_3b,
+    read_plan("3b-rates", targets::tar_path_store(), rate_cells_3b, first_round_rates_3b),
+    cue = tar_cue(mode = "always")
   ),
+  tar_target(pieces_rates_3b, pieces_of_plan(plan_rates_3b, batch_size_3b)),
   tar_target(
     rates_3b,
-    batch_3b(design_rates_3b, rate_batches_3b, rate_bayes_factor_3b),
-    pattern = cross(design_rates_3b, rate_batches_3b)
+    batch_3b(
+      pieces_rates_3b[names(rate_cells_3b)],
+      pieces_rates_3b$from:pieces_rates_3b$to,
+      rate_bayes_factor_3b
+    ),
+    pattern = map(pieces_rates_3b)
   ),
 
-  # 3b.8, 3b.9: k growing with n
-  tar_target(design_growing_3b, growing_cells_3b),
+  # 3b.8, 3b.9: k growing with n; their own plan and pieces
   tar_target(
-    growing_batches_3b,
-    split_into_batches(growing_datasets_3b, batch_size_3b),
-    iteration = "list"
+    plan_growing_3b,
+    read_plan("3b-growing", targets::tar_path_store(), growing_cells_3b, first_round_growing_3b),
+    cue = tar_cue(mode = "always")
   ),
+  tar_target(pieces_growing_3b, pieces_of_plan(plan_growing_3b, batch_size_3b)),
   tar_target(
     growing_3b,
-    batch_3b(design_growing_3b, growing_batches_3b, growing_bayes_factor_3b),
-    pattern = cross(design_growing_3b, growing_batches_3b)
+    batch_3b(
+      pieces_growing_3b[names(growing_cells_3b)],
+      pieces_growing_3b$from:pieces_growing_3b$to,
+      growing_bayes_factor_3b
+    ),
+    pattern = map(pieces_growing_3b)
   ),
 
   # the results file (3b.7 is computed in it)
