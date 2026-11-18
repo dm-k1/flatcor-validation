@@ -177,8 +177,10 @@ points of practical advice). What flatcor and the studies take from it:
 
 ## Status (17 November 2026)
 
-- **flatcor 3.0** (in development) is on flatcor's `main` (commit cd828f5,
-  18 November 2026) and pinned in `renv.lock`. Since 9a80b87: Bayes factor
+- **flatcor 3.0** (in development) is on flatcor's `main` (commit 07c7b55,
+  18 November 2026) and pinned in `renv.lock`. Since 9a80b87: no Stan
+  rejection messages (same draws and divergences); the default backend falls
+  back to rstan without CmdStan; flatcor has its own checks on GitHub; Bayes factor
   fits no longer draw log_lik and y_rep (at n = 5000 they took gigabytes per
   model and crashed 3b's run-time estimate);
   `bayes_factor_models()` takes formulas and data instead of `lm()` fits,
@@ -238,16 +240,18 @@ points of practical advice). What flatcor and the studies take from it:
   on this Mac). The numbers are now provisional (in each study's `design.R`):
   1,000 datasets per cell for calibration, 100 per setting and n for the
   rates, 50 per setting for growing k. The run-time estimate sets them.
-- Stan's "proposal rejected" messages (seen 18 November 2026, in flatcor's
-  tests): now and then the mean of the likelihood
-  (`inst/stan/flatcor.stan`, lines 95-98, `alpha + Xc * b_magnitude`) is
-  `inf` or `nan`, so Stan rejects that proposal. Stan calls this harmless
-  when it is sporadic, typically early in warmup, and the tests pass. Not
-  yet looked into: what makes the mean overflow (probably a direction or R
-  near the edge, where the coefficients become very large), and whether it
-  happens more at extreme data (near-perfect fits, large k), which 3b
-  covers. Watch the divergent transitions and these messages in the full
-  run.
+- Resolved (18 November 2026): Stan's "proposal rejected" messages, seen in
+  every fit. A long trajectory now and then overshoots into a region of
+  practically zero probability (one step earlier the log density is about
+  -6e16), where R rounded to 1 (an infinite f), sigma to 0 or infinity, and
+  normal_lpdf stopped with an error that Stan printed before rejecting the
+  proposal. flatcor now gives such proposals log density -infinity, which
+  Stan rejects the same way without a message. Checked in 18 settings
+  (1 and 2 predictors, three priors, three seeds, 4 x 10,000 draws): draws
+  and divergent transitions identical to before, bit for bit (so the
+  divergences reported keep their meaning); no messages. Sampling R on its
+  logit scale (so that 1 - R never rounds to 0) was tried too and works,
+  but changes the model's style for no visible gain; kept in reserve.
 
 ## Pitfalls already handled
 
