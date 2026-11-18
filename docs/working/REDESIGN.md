@@ -215,8 +215,14 @@ points of practical advice). What flatcor and the studies take from it:
 
 ## Still to do
 
-1. The run-time estimate for the six studies; with it, set the provisional
-   numbers of datasets of 3a and 3b (their `design.R`).
+1. Carry out the numbers of datasets as `docs/validation_tests.md` now
+   defines them (18 November 2026: Burton et al., 2006, and Morris et al.,
+   2019; a Monte Carlo SE of at most Δ / 1.96, Δ at the looser end of the
+   conventions): 2a 128 fits per cell (computed); the measured ones in
+   rounds by the Chow-Robbins rule (a first round of 50 datasets per cell,
+   then stop at the first round whose Monte Carlo SE is below target); the whole run stopping at 2,500 core hours (about €20).
+   The `design.R` numbers are the old ones until then. The run-time
+   estimate is in `docs/working/run_time_estimate.md`.
 2. The full run (`Rscript run_all.R`; `cluster/README.md`).
 3. The docs from the results: `docs/3_results.md` (new), the README's
    findings, and the places marked **TO REFRESH** in the README,

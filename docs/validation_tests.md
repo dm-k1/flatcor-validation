@@ -11,7 +11,15 @@ The validation checks three things for each of the three priors (flat partial r,
 
 Notation: *n* the sample size of one dataset, *k* the number of predictors, *a* the shape of the prior (*R*² \~ Beta(*a*, 1): *k*/2 for flat partial r, ½ for flat R, 1 for flat R²), *n*<sub>sim</sub> the number of datasets per cell. Designs are written as factors crossed: *k* (2, 10) × *n* (50, 200) means the four combinations.
 
-**How many datasets.** For each quantity, *n*<sub>sim</sub> follows from a target Monte Carlo SE fixed in advance (Morris et al., 2019), or, where every dataset costs Stan fits with bridge sampling, from the cost; the column "set by" says which. Numbers set by cost are **provisional**, until the run-time estimate. (Each study also has a batch size: how many datasets form one piece of work, saved as it finishes. That is bookkeeping for resuming and running in parallel, and changes no result.)
+**How many datasets.** By the standard procedure for simulation studies (Burton et al., 2006; Morris et al., 2019), every quantity gets an accuracy Δ in advance: the smallest deviation from its expectation that should show. Its Monte Carlo SE must be at most Δ / 1.96, so that a deviation of Δ reaches the 95% line; equivalently *n*<sub>sim</sub> = (1.96 σ / Δ)², with σ the SD of the quantity's estimate over datasets. (Burton et al.'s optional power term is left out: 95%, without power.)
+
+Δ follows the field's conventions, at their looser end throughout, so that the whole validation fits a budget of about €20 of computing:
+
+- **coverage**: a Monte Carlo SE of 1% (Morris et al., 2019, use 0.4–0.5% in their examples; 1% is the common upper end), so Δ = .0196;
+- **every other quantity with an expected value**: a relative error of 10% of that value (the common criteria for relative bias are 5% and 10%); for a log Bayes factor, a Bayes factor off by 10% (log 1.1 = .095); for an expectation of 0, the same scale as its companion quantity, said in its row;
+- **a direction** ("increases", "positive"): the sign at 1.96 MCSE.
+
+Where σ is known in advance (coverage, the ranks of 2a), *n*<sub>sim</sub> is computed. Elsewhere it is **measured**, by the classical sequential fixed-width rule (Chow & Robbins, 1965; shown valid for stochastic simulations by Glynn & Whitt, 1992, and for MCMC output by Jones et al., 2006): every cell starts with a **first round of 50 datasets**, fixed in advance, so that its Monte Carlo SE is estimated from enough datasets (the rule's guard against stopping on a lucky, too small estimate; 50 is our choice, as bootstrap SEs of medians and slopes are unreliable on fewer); after each round the SE is estimated again, and the cell **stops at the first round whose Monte Carlo SE is at most Δ / 1.96**. The rule looks only at the Monte Carlo SE, never at the estimate itself, and it is fixed before the run: adapting a simulation's size becomes a questionable practice when it is undisclosed or serves a preferred result (Pawel et al., 2024). The whole run stops at 2,500 core hours (about €20; `docs/working/run_time_estimate.md`); a cell that has not reached its target by then is reported as such, with its Monte Carlo SE. This is written down before the run, as the template of Siepe et al. (2024) asks. (Each study also has a batch size: how many datasets form one piece of work, saved as it finishes. That is bookkeeping for resuming and running in parallel, and changes no result.)
 
 ------------------------------------------------------------------------
 
@@ -51,9 +59,9 @@ flatcor's Stan model with the data switched off should draw exactly the prior.
 
 **Design:** prior (3) × predictor design (one, three correlated, eight) = 9 settings. Data: the prior-only designs.
 
-| Quantity | Expected | Why | MCSE | *n*<sub>sim</sub> | Set by |
+| Quantity | Expected | Why | MCSE | Δ | *n*<sub>sim</sub> |
 |------------|------------|------------|------------|------------|------------|
-| 5th, 25th, 50th, 75th, 95th percentile of *r*² (one predictor) | those of Beta(*a*, 1) | the prior is *R*² \~ Beta(*a*, 1) | `posterior::mcse_quantile()` (allows for autocorrelated draws) | 26,569 effective draws per setting | target: a KS distance of .01 detectable at the .01 level |
+| 5th, 25th, 50th, 75th, 95th percentile of *r*² (one predictor) | those of Beta(*a*, 1) | the prior is *R*² \~ Beta(*a*, 1) | `posterior::mcse_quantile()` (allows for autocorrelated draws) | 10% of the expected percentile | measured (effective draws per setting) |
 | the same of *R*² (three, eight predictors) | those of Beta(*a*, 1) | the same | the same | the same | the same |
 | the same of each partial correlation (three predictors) | those of the prior as a recipe (`draw_coefficients_from_prior()`) | a second, independent route to the same prior | the same, plus the recipe's own | the same | the same |
 
@@ -67,10 +75,10 @@ Bayarri et al. (2012): rescaling, shifting or recoding the predictors and the ou
 
 **Design:** prior (3) × change (rescaled: *x*₁ → 100 *x*₁ + 7, *x*₂ → −0.01 *x*₂, *x*₃ → *x*₃ − 50, *y* → 1000 *y* − 3; recoded: *x*₁, *x*₂ → *x*₁ + *x*₂, *x*₁ − *x*₂) × Bayes factor (whole model against intercept only; *x*₁ with against without). Data: the ordinary regression data.
 
-| Quantity | Expected | Why | MCSE | *n*<sub>sim</sub> | Set by |
+| Quantity | Expected | Why | MCSE | Δ | *n*<sub>sim</sub> |
 |------------|------------|------------|------------|------------|------------|
-| **pooled**: the mean change in log BF over the datasets, per prior, change and Bayes factor | 0 | the prior is built in units of explained variance | √(sum of the datasets' MCSE²) / *n*<sub>sim</sub> | 20 datasets per prior | target: with an error of about 0.01 per change, the mean has an MCSE of about 0.003, so a systematic change of 1% in the Bayes factor stands out at about 3 MCSE |
-| per dataset: the change in log BF | 0 | the same | bridge sampling's approximate errors of both Bayes factors | the same | the same |
+| **pooled**: the mean change in log BF over the datasets, per prior, change and Bayes factor | 0 | the prior is built in units of explained variance | √(sum of the datasets' MCSE²) / *n*<sub>sim</sub> | .095: the Bayes factor off by 10% (log 1.1) | measured (datasets per prior) |
+| per dataset: the change in log BF | 0 | the same | bridge sampling's approximate errors of both Bayes factors | — (one dataset; descriptive) | the same |
 
 ------------------------------------------------------------------------
 
@@ -80,11 +88,11 @@ Simulation-based calibration (Talts et al., 2018): draw the parameters from the 
 
 **Design:** prior (3) × setting (*k* = 8, *n* = 60; *k* = 3, *n* = 50) = 6 cells. Data: data from the prior, intercept and noise SD drawn.
 
-| Quantity, for *R*², *b*₁ and σ | Expected | Why | MCSE | *n*<sub>sim</sub> | Set by |
+| Quantity, for *R*², *b*₁ and σ | Expected | Why | MCSE | Δ | *n*<sub>sim</sub> |
 |------------|------------|------------|------------|------------|------------|
-| mean of the scaled rank (0–1) | ½ | uniform ranks; a bias shifts them | SD of a uniform rank / √*n*<sub>sim</sub> | 1,000 fits per cell | target: a miscalibration of about 5% of the rank distribution |
-| SD of the scaled rank | that of a uniform rank, about .289 | a posterior too wide or too narrow changes it | the SD of a sample SD of uniform ranks | the same | the same |
-| chi-square over 20 rank bins | 19 | uniform ranks | its SD under uniformity, √38 | the same | the same |
+| mean of the scaled rank (0–1) | ½ | uniform ranks; a bias shifts them | SD of a uniform rank / √*n*<sub>sim</sub> | .05: 10% of ½ | 128 fits per cell: .289² / (.05 / 1.96)² |
+| SD of the scaled rank | that of a uniform rank, about .289 | a posterior too wide or too narrow changes it | the SD of a sample SD of uniform ranks | .029: 10% of .289 | 76 needed; 128 cover it |
+| chi-square over 20 rank bins | 19 | uniform ranks | its SD under uniformity, √38 | — (an overall check) | the same 128 |
 
 Also shown: Stan's divergent transitions (counts) and the SBC package's ECDF plots.
 
@@ -96,11 +104,11 @@ How each prior's posterior estimates behave on data with fixed slopes. The refer
 
 **Design:** *k* (2, 10) × *n* (50, 200) × predictor correlation (0, .7) × other slopes (sparse, dense) = 16 cells; slope of *x*₁ = 0.2. Methods: the three priors (Stan), JZS and Zellner–Siow (BayesFactor), OLS. Data: known slopes.
 
-| Quantity, for *x*₁ | Reference | Why | MCSE | *n*<sub>sim</sub> | Set by |
+| Quantity, for *x*₁ | Reference | Why | MCSE | Δ | *n*<sub>sim</sub> |
 |------------|------------|------------|------------|------------|------------|
-| coverage of the 95% interval | .95 | nominal | √(*p*(1 − *p*)/*n*<sub>sim</sub>) | 475 datasets per cell | target: a coverage near .95 with MCSE .01 needs .95 × .05 / .01² = 475 |
-| bias of the posterior mean, as a share of 0.2 | 0 | OLS is unbiased; a prior that shrinks pulls it below 0 | SD / √*n*<sub>sim</sub> | the same | the same |
-| excess prediction error / OLS's | 1 | below 1 means better than OLS | paired bootstrap | the same | the same |
+| coverage of the 95% interval | .95 | nominal | √(*p*(1 − *p*)/*n*<sub>sim</sub>) | .0196: an MCSE of 1%, the coverage convention | 475 per cell: .95 × .05 / .01² |
+| bias of the posterior mean, as a share of 0.2 | 0 | OLS is unbiased; a prior that shrinks pulls it below 0 | SD / √*n*<sub>sim</sub> | .02: 10% of the slope 0.2 | measured |
+| excess prediction error / OLS's | 1 | below 1 means better than OLS | paired bootstrap | .1: 10% of OLS's | measured |
 
 ------------------------------------------------------------------------
 
@@ -108,12 +116,12 @@ How each prior's posterior estimates behave on data with fixed slopes. The refer
 
 **Design:** prior (3) × setting (*k* = 3, *n* = 50; *k* = 8, *n* = 200) = 6 cells; each prior generates its own data and computes its own Bayes factor for *x*₁. Data: data from the prior, intercept 0 and noise SD 1, half the datasets from the model without *x*₁.
 
-| Part | Quantity | Expected | Why | MCSE | *n*<sub>sim</sub> | Set by |
+| Part | Quantity | Expected | Why | MCSE | Δ | *n*<sub>sim</sub> |
 |------------|------------|------------|------------|------------|------------|------------|
-| A | share of datasets without *x*₁, per bin of log BF₁₀ | the mean of 1 / (1 + BF₁₀) in the bin | **calibration** (Schad et al., 2023): among datasets drawn from the prior, P(without *x*₁ \| BF₁₀) = 1 / (1 + BF₁₀), if the Bayes factors are right | the Monte Carlo SD of the share under calibration | 1,000 datasets per cell | cost (**provisional**): about .05 per bin; .02 per bin would need about 10,000 |
-| A | calibration intercept | 0 | the same, as a logistic line of "without *x*₁" on log BF₀₁ | SE of the coefficient | the same | cost: SE about .07 |
-| A | calibration slope | 1 | the same | SE of the coefficient | the same | cost: SE about .07 (a slope of .85 at about 2 SE) |
-| B | spread of repeated log BFs / reported error | 1 | bridgesampling's approximate error should be the real spread (Gronau et al., 2020: repeat with fresh posterior draws) | relative SE of a pooled SD | 20 datasets × 5 runs per cell | target: relative SE about .08 (a ratio of 1.4 at about 5 SE) |
+| A | share of datasets without *x*₁, per bin of log BF₁₀ | the mean of 1 / (1 + BF₁₀) in the bin | **calibration** (Schad et al., 2023): among datasets drawn from the prior, P(without *x*₁ \| BF₁₀) = 1 / (1 + BF₁₀), if the Bayes factors are right | the Monte Carlo SD of the share under calibration | — (for the figure) | follows from the slope's |
+| A | calibration intercept | 0 | the same, as a logistic line of "without *x*₁" on log BF₀₁ | SE of the coefficient | .1 on the log-odds scale, the slope's scale | measured |
+| A | calibration slope | 1 | the same | SE of the coefficient | .1: 10% of 1 | measured |
+| B | spread of repeated log BFs / reported error | 1 | bridgesampling's approximate error should be the real spread (Gronau et al., 2020: repeat with fresh posterior draws) | relative SE of a pooled SD | .1: 10% of 1 | measured (datasets of 5 runs each) |
 
 Also shown: bridge sampling's approximate errors and Stan's divergent transitions. Bins of log BF₁₀ run from −2.5 to 6, finer near 0, where most datasets fall; bins with fewer than 10 datasets are left out.
 
@@ -131,16 +139,16 @@ The criteria of Bayarri, Berger, Forte and García-Donato (2012); invariance is 
 - 3b.7: prior (3) × *n* (30, 300, 100,000) = 9 cells; the prior as a recipe, no Bayes factors.
 - 3b.8, 3b.9: growth (*k* = *n*/4 at *n* = 50, 100, 200, 360; *k* = √*n* at *n* = 50 to 2,000) × truth (null; a small model) × method (the three priors, JZS, Zellner–Siow) = 100 cells. Data: growing *k*.
 
-| Item | Quantity | Expected | Why | MCSE | *n*<sub>sim</sub> | Set by |
+| Item | Quantity | Expected | Why | MCSE | Δ | *n*<sub>sim</sub> |
 |------------|------------|------------|------------|------------|------------|------------|
-| 3b.1 | log BF against the intercept-only model at *n* = *k* + 1 | 0 | predictive matching: every model fits exactly, the data say nothing | bridge sampling's error | one dataset per cell | the property is about one given dataset |
+| 3b.1 | log BF against the intercept-only model at *n* = *k* + 1 | 0 | predictive matching: every model fits exactly, the data say nothing | bridge sampling's error | — (about one given dataset) | one per cell |
 | 3b.2 | log BF as *R*² → 1 | increases (a direction) | information consistency | the same | the same | the same |
-| 3b.3 | slope of the median log BF for the truth against log *n* | ½ (asymptotic) | model-selection consistency: evidence for a true null grows like *q*/2 log *n* | bootstrap | 100 datasets per cell | cost (**provisional**): slope MCSE about .05 to .1 |
-| 3b.4 | the same | *q*/2 (asymptotic) | the same | the same | the same | the same |
-| 3b.5 | the same, against the intercept-only model | *a* (asymptotic) | the rate against the intercept-only model is the prior's shape | the same | the same | the same |
-| 3b.6 | median log BF₁₀ for a real effect | increases with *n* (a direction) | consistency under the alternative | the same | the same | the same |
-| 3b.7 | KS distance of the prior with the sample covariance to that with the population covariance | falls below its .01 critical value (a limit) | intrinsic consistency | — | 26,569 draws | target: as in 1a |
-| 3b.8, 3b.9 | slope of the median log BF for the truth against log *n* | positive (a direction) | consistency as *k* grows | bootstrap | 50 datasets per cell | cost (**provisional**): enough to see the sign |
+| 3b.3 | slope of the median log BF for the truth against log *n* | ½ (asymptotic) | model-selection consistency: evidence for a true null grows like *q*/2 log *n* | bootstrap | 10% of ½: .05 | measured |
+| 3b.4 | the same | *q*/2 (asymptotic) | the same | the same | 10% of *q*/2 | measured |
+| 3b.5 | the same, against the intercept-only model | *a* (asymptotic) | the rate against the intercept-only model is the prior's shape | the same | 10% of *a* | measured |
+| 3b.6 | median log BF₁₀ for a real effect | increases with *n* (a direction) | consistency under the alternative | the same | the sign | measured |
+| 3b.7 | KS distance of the prior with the sample covariance to that with the population covariance | falls below its .01 critical value (a limit) | intrinsic consistency | — | — (a limit) | 26,569 draws: a KS distance of .01 detectable at the .01 level (draws only, no Stan fits) |
+| 3b.8, 3b.9 | slope of the median log BF for the truth against log *n* | positive (a direction) | consistency as *k* grows | bootstrap | the sign | measured |
 
 Also shown: Stan's divergent transitions.
 
@@ -151,8 +159,14 @@ Also shown: Stan's divergent transitions.
 ## References
 
 - Bayarri, M. J., Berger, J. O., Forte, A., & García-Donato, G. (2012). Criteria for Bayesian model choice with application to variable selection. *Annals of Statistics*, *40*(3), 1550–1577.
+- Burton, A., Altman, D. G., Royston, P., & Holder, R. L. (2006). The design of simulation studies in medical statistics. *Statistics in Medicine*, *25*(24), 4279–4292.
+- Chow, Y. S., & Robbins, H. (1965). On the asymptotic theory of fixed-width sequential confidence intervals for the mean. *Annals of Mathematical Statistics*, *36*(2), 457–462.
+- Glynn, P. W., & Whitt, W. (1992). The asymptotic validity of sequential stopping rules for stochastic simulations. *Annals of Applied Probability*, *2*(1), 180–198.
 - Gronau, Q. F., et al. (2017). A tutorial on bridge sampling. *Journal of Mathematical Psychology*, *81*, 80–97.
 - Gronau, Q. F., Singmann, H., & Wagenmakers, E.-J. (2020). bridgesampling: An R package for estimating normalizing constants. *Journal of Statistical Software*, *92*(10), 1–29.
+- Jones, G. L., Haran, M., Caffo, B. S., & Neath, R. (2006). Fixed-width output analysis for Markov chain Monte Carlo. *Journal of the American Statistical Association*, *101*(476), 1537–1547.
 - Morris, T. P., White, I. R., & Crowther, M. J. (2019). Using simulation studies to evaluate statistical methods. *Statistics in Medicine*, *38*(11), 2074–2102.
+- Pawel, S., Kook, L., & Reeve, K. (2024). Pitfalls and potentials in simulation studies: Questionable research practices in comparative simulation studies allow for spurious claims of superiority of any method. *Biometrical Journal*, *66*(1), e2200091.
 - Schad, D. J., Nicenboim, B., Bürkner, P.-C., Betancourt, M., & Vasishth, S. (2023). Workflow techniques for the robust use of Bayes factors. *Psychological Methods*, *28*(6), 1404–1426.
+- Siepe, B. S., Bartoš, F., Morris, T. P., Boulesteix, A.-L., Heck, D. W., & Pawel, S. (2024). Simulation studies for methodological research in psychology: A standardized template for planning, preregistration, and reporting. *Psychological Methods*. Advance online publication.
 - Talts, S., Betancourt, M., Simpson, D., Vehtari, A., & Gelman, A. (2018). Validating Bayesian inference algorithms with simulation-based calibration. arXiv:1804.06788.
