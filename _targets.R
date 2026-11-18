@@ -37,7 +37,12 @@ if (!nzchar(Sys.getenv("R_USER_CACHE_DIR"))) {
 ## (parallelly reads SLURM, PBS and cgroups), not all cores of the node.
 tar_option_set(
   packages = c("flatcor", "dplyr"),
-  controller = crew_controller_local(workers = max(1, (parallelly::availableCores() - 1) %/% 4))
+  controller = crew_controller_local(
+    workers = max(1, (parallelly::availableCores() - 1) %/% 4),
+    # a log per worker (its R output, including Stan's own messages), for
+    # finding out why a piece of work failed
+    options_local = crew_options_local(log_directory = file.path("cache", "logs", "workers"))
+  )
 )
 
 ## The shared code, then each study's design and code
