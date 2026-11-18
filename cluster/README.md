@@ -130,3 +130,22 @@ sbatch run_validation.sbatch
 
 A SLURM array script was here until 17 November 2026 (in the git history);
 one job on one node replaces it.
+
+## On AWS
+
+[`aws/user-data.sh`](aws/user-data.sh) runs the validation on one EC2 spot
+instance (Amazon Linux 2023), given to it as user data with five values
+filled in: the S3 bucket, a name for the run, smoke test or not, the studies,
+and a safety cutoff in hours. It installs Docker, clones this repository,
+runs `run_all.R` in the published image, copies the results and logs to
+`s3://<bucket>/<run name>/`, and shuts down. Launched with shutdown behaviour
+"terminate", the instance then deletes itself.
+
+AWS can take a spot instance back at any moment, its disk included. A real
+run therefore copies the pipeline's store to `s3://<bucket>/<run name>/store`
+every 15 minutes, and a new instance launched with the same run name first
+copies it back and continues from there. An interruption costs at most 15
+minutes of work.
+
+The instance needs a role that may read and write the bucket. With 32 cores
+the pipeline runs 7 workers.
