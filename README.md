@@ -133,6 +133,14 @@ Every push to `main` is checked automatically
 ([`.github/workflows/check.yml`](.github/workflows/check.yml)): lintr, the
 links, the workflow files, and the smoke test inside the published image.
 
+The smoke test is meant to run the way a real run does, because a bug can
+hide anywhere the two differ. So it runs in the same image (the same
+packages and CmdStan) and with several workers (3, by pretending to have 16
+cores), since workers clashing over shared files only happens with more
+than one. Two differences remain, on purpose: it stops after two rounds
+(round three and later run the same code as round two), and it runs a
+corner of each design.
+
 ## What's where
 
 | Path | What it is |

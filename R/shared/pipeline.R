@@ -35,7 +35,10 @@ split_into_batches <- function(total, size) split(seq_len(total), ceiling(seq_le
 ## workers on AWS). Each worker compiles flatcor's two versions of the model
 ## (for estimation, and with model methods for Bayes factors) once, here,
 ## under a lock: one worker at a time, the others wait. flatcor keeps them in
-## memory, so the worker's later fits and Bayes factors compile nothing. The
+## memory, so the worker's later fits and Bayes factors compile nothing.
+## run_all.R calls this once before any worker starts, so the shared files
+## already exist when the workers compile (the version with model methods
+## is compiled once per R process, into its own temporary folder). The
 ## lock is a folder: creating one is atomic, so only one worker succeeds; a
 ## lock older than 30 minutes is taken to be left by a worker that stopped
 ## while compiling, and removed.

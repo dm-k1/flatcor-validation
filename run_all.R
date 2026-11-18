@@ -73,6 +73,19 @@ for (script in c(
 )) {
   source(script)
 }
+
+## ---- flatcor's models, compiled before any worker starts ---------------------------
+## The first compile in a fresh CmdStan also builds the files every model
+## shares (main.o, the TBB library). Done here, once, those files exist
+## before the workers start, so a worker's own compile only writes its own
+## files and never rebuilds a shared one under another worker. The lock in
+## compile_flatcor_models() stays as a second guard. The cache folder is the
+## one _targets.R gives the workers, so they find the model compiled here.
+if (!nzchar(Sys.getenv("R_USER_CACHE_DIR"))) {
+  Sys.setenv(R_USER_CACHE_DIR = file.path(getwd(), "cache", "r_user_cache"))
+}
+compile_flatcor_models()
+
 in_rounds <- list(
   "1b" = list(
     study = "1b", tables = "pooled", by = "prior",
