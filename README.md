@@ -103,9 +103,14 @@ container image of `cluster/Dockerfile`, published by GitHub Actions as
 `ghcr.io/dm-k1/flatcor-validation`. Then:
 
 ```bash
+VALIDATION_SMOKE=1 Rscript run_all.R   # first: a corner of every study, about 10 minutes
 Rscript run_all.R                      # the studies, then the figures
 VALIDATION_FRESH=1 Rscript run_all.R   # the same, from scratch
 ```
+
+The smoke test runs every step and every figure on a small part of each
+design, from scratch, with its results in `cache/` (never mixed with real
+ones).
 
 or open [`validation.ipynb`](validation.ipynb), which runs through
 `run_all.R` too. A stopped run continues where it was. It refuses to
@@ -113,8 +118,13 @@ continue with another flatcor than the one it started with (each results
 file records the flatcor commit), so one results file never mixes two
 versions; start from scratch then. (`targets::tar_make()` runs the pipeline
 without that check: for working on a single step.)
-[`cluster/README.md`](cluster/README.md) describes running it elsewhere and
-how long it takes.
+[`cluster/README.md`](cluster/README.md) describes the container image, how
+long the full run takes, and how to run it on a cluster (Apptainer, a SLURM
+job, resubmitting until it is done).
+
+Every push to `main` is checked automatically
+([`.github/workflows/check.yml`](.github/workflows/check.yml)): lintr, the
+links, the workflow files, and the smoke test inside the published image.
 
 ## What's where
 
@@ -131,7 +141,8 @@ how long it takes.
 | `results/` | Each study's tables and setup, `studies/study_<cell>.rds`, and its figures, `figures/<cell>_*.png` |
 | `validation.ipynb` | The notebook (R kernel) |
 | `docs/` | What the validation tests, working notes |
-| `cluster/` | The container image, and how to run and time the validation on it |
+| `cluster/` | The container image, the run-time estimate, and how to run the validation on a cluster |
+| `.github/workflows/` | The checks on every push (`check.yml`), the image build (`image.yml`) and the run-time estimate, on demand (`timing.yml`) |
 | `renv.lock`, `.lintr` | The pinned packages; the code style |
 
 ## Author
