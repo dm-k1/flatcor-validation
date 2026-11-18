@@ -5,7 +5,11 @@
 # datasets, each on its own runner (4 cores). R/timing/estimate_run_time.R then
 # fits the fixed part and the part per dataset and reads off the full run; the
 # table appears on the run's summary page and as the artifact run-time-estimate.
-# Study 1a does not depend on the number of datasets and runs in full.
+# Studies 1a (it does not depend on the number of datasets) and 1b (20 per
+# prior, too few to scale) run in full. The fractions, 4% and 6%, give exact
+# numbers of datasets for every study (3b: 2 and 3 per growing-k cell, 4 and
+# 6 per rates cell); only 3a's repeated runs (part B, 20 datasets) stay at 2
+# in both, so the estimate counts part B low.
 #
 # It runs on demand only (Actions > "Run-time estimate" > Run workflow): the
 # validation is run once, for the paper, and an estimate takes hours (study
@@ -19,7 +23,7 @@ on:
     inputs:
       fractions:
         description: Fractions of the datasets to time each study at (JSON list)
-        default: '["0.02", "0.05"]'
+        default: '["0.04", "0.06"]'
 
 permissions:
   contents: read
@@ -61,10 +65,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        study: ["1b", "2a", "2b", "3a", "3b"]
-        fraction: ${{ fromJSON(inputs.fractions || '["0.02", "0.05"]') }}
+        study: ["2a", "2b", "3a", "3b"]
+        fraction: ${{ fromJSON(inputs.fractions || '["0.04", "0.06"]') }}
         include:
           - study: "1a"
+            fraction: "1"
+          - study: "1b"
             fraction: "1"
     name: study ${{ matrix.study }} at ${{ matrix.fraction }}
     steps:

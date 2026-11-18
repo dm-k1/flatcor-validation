@@ -6,7 +6,10 @@
 ## Full run by default. VALIDATION_SMOKE=1: a corner of each design, to test
 ## the code (results go to cache/, never mixed with real ones).
 ## VALIDATION_TIMING=<fraction>: the full design with that fraction of the
-## datasets (at least 10), to estimate the run time.
+## datasets (at least 2), to estimate the run time. The floor is 2, not
+## more, so that the two fractions of the estimate (4% and 6%) give different
+## numbers of datasets also for study 3b (50 or 100 per cell: 2 and 3, or 4
+## and 6), and both stay small enough for a 6-hour GitHub runner.
 smoke <- identical(Sys.getenv("VALIDATION_SMOKE"), "1")
 timing_fraction <- suppressWarnings(as.numeric(Sys.getenv("VALIDATION_TIMING", NA)))
 
@@ -16,7 +19,7 @@ datasets <- function(full, in_smoke) {
     return(in_smoke)
   }
   if (!is.na(timing_fraction)) {
-    return(min(full, max(10, ceiling(full * timing_fraction))))
+    return(min(full, max(2, ceiling(full * timing_fraction))))
   }
   full
 }

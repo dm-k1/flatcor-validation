@@ -31,8 +31,9 @@ from `cmdstanr::install_cmdstan()`.
 The workflow "Run-time estimate" ([`.github/workflows/timing.yml`](../.github/workflows/timing.yml))
 measures it on GitHub's runners, for free on a public repository. It runs on
 demand only, from Actions > Run-time estimate > Run workflow (it first waits
-for an image build still running; a newer run cancels one still going). Each study runs its full design on 2% and
-5% of its datasets, each on its own 4-core runner; `R/timing/estimate_run_time.R`
+for an image build still running; a newer run cancels one still going). Each study runs its full design on 4% and
+6% of its datasets (at least 2 per cell; 1a and 1b in full), each on its own
+4-core runner; `R/timing/estimate_run_time.R`
 separates the fixed part of a study's cost from the part per dataset and reads
 off the full run. The run's summary page shows the hours per study on 4, 8, 16
 and 32 cores.
@@ -40,8 +41,8 @@ and 32 cores.
 The same can be run anywhere, a study at a time:
 
 ```bash
-VALIDATION_TIMING=0.02 Rscript R/timing/time_study.R 3a
-VALIDATION_TIMING=0.05 Rscript R/timing/time_study.R 3a
+VALIDATION_TIMING=0.04 Rscript R/timing/time_study.R 3a
+VALIDATION_TIMING=0.06 Rscript R/timing/time_study.R 3a
 Rscript R/timing/estimate_run_time.R
 ```
 

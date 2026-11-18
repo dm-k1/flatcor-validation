@@ -29,7 +29,7 @@ runs <- do.call(rbind, lapply(files, function(file) {
   data.frame(
     study = run$study, fraction = run$fraction, cores = run$cores, cpu_model = run$cpu_model,
     ## the share of the full run's datasets this run used (1 for study
-    ## 1a, which does not depend on them)
+    ## 1a, which does not depend on them, and for a run at fraction 1)
     scale = if (run$study == "1a") 1 else run$fraction,
     elapsed_hours = run$elapsed_seconds / 3600, failed = !is.na(run$error)
   )

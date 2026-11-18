@@ -1,22 +1,22 @@
 ## =====================================================================
 ##  Times one study on a fraction of its datasets
 ##
-##    VALIDATION_TIMING=0.02 Rscript R/timing/time_study.R 3a
+##    VALIDATION_TIMING=0.04 Rscript R/timing/time_study.R 3a
 ##
 ##  runs the study's steps of the pipeline (_targets.R: the targets ending in
-##  _3a) in timing mode (R/shared/pipeline.R): the full design, but 2% of the
-##  datasets (at least 10), in its own store under cache/timing/, so it never
-##  mixes with a real run. It writes cache/timing/time_3a_at_0.02.rds with the
+##  _3a) in timing mode (R/shared/pipeline.R): the full design, but 4% of the
+##  datasets (at least 2), in its own store under cache/timing/, so it never
+##  mixes with a real run. It writes cache/timing/time_3a_at_0.04.rds with the
 ##  elapsed time and the cores. R/timing/estimate_run_time.R scales these up to
 ##  the full run; the "Run-time estimate" workflow (.github/workflows/timing.yml)
-##  runs both. Study 1a does not depend on the number of datasets: time it at
-##  fraction 1.
+##  runs both. Studies 1a (it does not depend on the number of datasets) and
+##  1b (20 datasets per prior, too few to scale) are timed at fraction 1.
 ## =====================================================================
 study <- commandArgs(trailingOnly = TRUE)[1]
 fraction <- as.numeric(Sys.getenv("VALIDATION_TIMING", NA))
 stopifnot(
   "give a study, as in Rscript R/timing/time_study.R 3a" = !is.na(study),
-  "set VALIDATION_TIMING to the fraction of datasets, as in 0.02" = !is.na(fraction)
+  "set VALIDATION_TIMING to the fraction of datasets, as in 0.04" = !is.na(fraction)
 )
 
 store <- file.path("cache", "timing", paste0("store_", study, "_", fraction))
