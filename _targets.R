@@ -32,10 +32,12 @@ if (!nzchar(Sys.getenv("R_USER_CACHE_DIR"))) {
 }
 
 ## Each piece of work runs Stan's 4 chains in parallel, so a quarter of the
-## cores work on pieces at the same time, each in its own R process
+## cores work on pieces at the same time, each in its own R process. The
+## cores are those given to this run: on a cluster, the job's allocation
+## (parallelly reads SLURM, PBS and cgroups), not all cores of the node.
 tar_option_set(
   packages = c("flatcor", "dplyr"),
-  controller = crew_controller_local(workers = max(1, (parallel::detectCores() - 1) %/% 4))
+  controller = crew_controller_local(workers = max(1, (parallelly::availableCores() - 1) %/% 4))
 )
 
 ## The shared code, then each study's design and code

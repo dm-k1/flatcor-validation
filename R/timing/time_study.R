@@ -47,7 +47,7 @@ saveRDS(
   list(
     study = study,
     fraction = fraction,
-    cores = parallel::detectCores(),
+    cores = parallelly::availableCores(),
     cpu_model = cpu_model,
     elapsed_seconds = elapsed,
     error = error
