@@ -89,6 +89,7 @@ models_as_formulas <- function(predictors_a, predictors_b, outcome) {
 log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome, seed) {
   # the three priors: flatcor
   if (method %in% names(contenders)) {
+    compile_flatcor_models() # once per worker, one worker at a time (R/shared/pipeline.R)
     models <- models_as_formulas(predictors_a, predictors_b, outcome)
     result <- suppressWarnings(flatcor::bayes_factor_models(
       models$formula_a,

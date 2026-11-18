@@ -28,12 +28,42 @@ datasets <- function(full, in_smoke) {
 ## of work, saved as soon as it is done
 split_into_batches <- function(total, size) split(seq_len(total), ceiling(seq_len(total) / size))
 
-## ---- flatcor's Stan model --------------------------------------------------------------
-## Compiled once (the pipeline's first step for every study that samples), so
-## that parallel workers find the executable instead of compiling it at the
-## same time. Studies that sample the model directly (the prior only, SBC) use
-## this; fit_regression() and bayes_factor_models() compile it themselves.
+## ---- flatcor's Stan models, compiled one worker at a time ---------------------------
+## Compiling a model can make CmdStan rebuild shared files in its folder (the
+## main.o every model is linked with, the TBB library), so two compiles at
+## once break each other ("cannot find src/cmdstan/main.o", seen with 7
+## workers on AWS). Each worker compiles flatcor's two versions of the model
+## (for estimation, and with model methods for Bayes factors) once, here,
+## under a lock: one worker at a time, the others wait. flatcor keeps them in
+## memory, so the worker's later fits and Bayes factors compile nothing. The
+## lock is a folder: creating one is atomic, so only one worker succeeds; a
+## lock older than 30 minutes is taken to be left by a worker that stopped
+## while compiling, and removed.
+compile_flatcor_models <- function() {
+  if (isTRUE(getOption("validation_flatcor_compiled"))) {
+    return(invisible(TRUE))
+  }
+  dir.create("cache", showWarnings = FALSE)
+  lock <- file.path("cache", "compile.lock")
+  repeat {
+    if (dir.create(lock, showWarnings = FALSE)) break
+    age <- difftime(Sys.time(), file.mtime(lock), units = "mins")
+    if (!is.na(age) && age > 30) unlink(lock, recursive = TRUE)
+    Sys.sleep(5)
+  }
+  on.exit(unlink(lock, recursive = TRUE))
+
+  compile_stan_model <- utils::getFromNamespace("compile_stan_model", "flatcor")
+  compile_stan_model("cmdstanr")
+  compile_stan_model("cmdstanr", model_methods = TRUE)
+  options(validation_flatcor_compiled = TRUE)
+  invisible(TRUE)
+}
+
+## The model for the studies that sample it directly (the prior only, SBC):
+## the pipeline's first step, so that their workers find it compiled
 flatcor_stan_model <- function() {
+  compile_flatcor_models()
   compile_stan_model <- utils::getFromNamespace("compile_stan_model", "flatcor")
   compile_stan_model("cmdstanr")
 }
