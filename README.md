@@ -48,12 +48,19 @@ Carlo errors; nothing is judged pass or fail per row.
 
 ## Reading order
 
+Background, in [Objective-bayes](https://github.com/dm-k1/Objective-bayes):
+[the three priors](https://github.com/dm-k1/Objective-bayes/blob/main/docs/2_the_three_priors.md)
+(part 2: the family $R^2 \sim$ Beta($a$, 1), what each keeps flat and
+expects, how the total is divided, what the package computes) and
+[their derivations](https://github.com/dm-k1/Objective-bayes/blob/main/docs/appendix/A_derivations.md)
+(appendix A: the density factor by factor, the Stan model, the Bayes factors
+and the g-prior forms behind them, the default-prior criteria). The table
+above is enough to follow the validation. In this repository:
+
 | | Document | What it is |
 |---|---|---|
-| 1 | [`2_the_three_priors.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/2_the_three_priors.md) (in Objective-bayes) | **The three priors**: the family $R^2 \sim$ Beta($a$, 1), what each keeps flat and expects, how the total is divided, what the package computes |
-| 2 | [`docs/validation_tests.md`](docs/validation_tests.md) | **What the validation tests**: per study its design, what is tested, what is expected and why, with what Monte Carlo error and how many datasets, and the data sets |
-| 3 | [`validation.ipynb`](validation.ipynb) | **The results**: per study its question, its estimates against what is expected, and figures |
-| A | [`appendix/A_derivations.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/appendix/A_derivations.md) (in Objective-bayes) | The derivations: the density factor by factor, the Stan model, the Bayes factors and the g-prior forms behind them, the default-prior criteria |
+| 1 | [`docs/validation_tests.md`](docs/validation_tests.md) | **What the validation tests**: per study its design, what is tested, what is expected and why, with what Monte Carlo error and how many datasets, and the data sets |
+| 2 | [`validation.ipynb`](validation.ipynb) | **The results**: per study its question, its estimates against what is expected, and figures |
 
 Working notes: [`docs/working/`](docs/working/) (the plan of the redesign, the
 run-time estimate).
