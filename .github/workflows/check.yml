@@ -1,0 +1,100 @@
+# Checks the validation on every push to main: four independent jobs that
+# start at the same time, written from the quickest to the slowest.
+#
+#   lint        lintr, in the style of .lintr (seconds)
+#   links       every link in the README, the docs and the notebook (seconds)
+#   workflows   actionlint on these workflow files (seconds)
+#   smoke       the smoke test (VALIDATION_SMOKE=1 Rscript run_all.R: a corner
+#               of every study, from scratch, and every figure) inside the
+#               published image, so with exactly the packages and CmdStan of
+#               the real run (about half an hour)
+#
+# On a public repository the runners are free. The run-time estimate
+# (timing.yml) is separate and runs on demand only.
+name: Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  actions: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: Lint
+        run: |
+          install.packages("lintr")
+          lints <- lintr::lint_dir(".")
+          print(lints)
+          if (length(lints) > 0) quit(status = 1)
+        shell: Rscript {0}
+
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # 403: publishers (such as Wiley) refuse automated requests to links
+      # that work in a browser; temporary errors are retried. A file on
+      # GitHub is checked as its raw file: GitHub's rendered page of a long
+      # document (appendix A) can answer 503 to automated requests.
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress --accept '200..=299,403' --max-retries 3
+            --remap 'https://github.com/([^/]+)/([^/]+)/blob/(.*) https://raw.githubusercontent.com/$1/$2/$3'
+            README.md 'docs/**/*.md' cluster/README.md validation.ipynb
+          fail: true
+
+  workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color
+
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      # when renv.lock changed in this push or a recent one, the image is
+      # still being built: smoke-test the new image, not the one before it
+      - name: Wait for the branch's latest image build, if it is still running
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 60
+          while true; do
+            state=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
+              --branch "$GITHUB_REF_NAME" --limit 1 --json status,conclusion \
+              -q '.[0] // empty | "\(.status) \(.conclusion)"')
+            case "$state" in
+              "") echo "No image build for this branch"; break ;;
+              "completed success") echo "Image built"; break ;;
+              completed*) echo "Image build ended: $state"; exit 1 ;;
+            esac
+            sleep 60
+          done
+
+      - uses: actions/checkout@v4
+
+      - name: Smoke test
+        run: |
+          docker run --rm -v "$PWD":/project \
+            -e VALIDATION_SMOKE=1 \
+            ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
+            Rscript run_all.R

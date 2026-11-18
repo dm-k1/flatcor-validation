@@ -7,22 +7,14 @@
 # table appears on the run's summary page and as the artifact run-time-estimate.
 # Study 1a does not depend on the number of datasets and runs in full.
 #
-# It runs when this file or the studies' code changes on main (a newer push
-# cancels a run still going), and on demand (Actions > "Run-time estimate" >
-# Run workflow). On a public repository the runners are free; it takes about
+# It runs on demand only (Actions > "Run-time estimate" > Run workflow): the
+# validation is run once, for the paper, and an estimate takes hours (study
+# 3b most), so it no longer starts on every push. A newer run cancels one
+# still going. On a public repository the runners are free; it takes about
 # as long as the slowest job.
 name: Run-time estimate
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/timing.yml
-      - _targets.R
-      - R/shared/**
-      - R/1_data/**
-      - R/2_studies/**
-      - R/timing/**
   workflow_dispatch:
     inputs:
       fractions:

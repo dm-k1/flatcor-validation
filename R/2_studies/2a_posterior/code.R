@@ -30,6 +30,7 @@ sbc_dataset_2a <- function(setting, replication) {
     y = data$outcome,
     prior_only = 0L,
     proper_stand_ins = 1L,
+    per_observation = 0L,   # no log_lik or y_rep: not needed here
     r_squared_shape = prior_shape(setting$prior, setting$k)
   )
 

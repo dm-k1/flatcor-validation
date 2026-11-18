@@ -68,6 +68,7 @@ sample_setting_1a <- function(setting, predictors, model) {
     y = data_prior_only_outcome(setting$design, nrow(predictors)),
     prior_only = 1L,
     proper_stand_ins = 1L,
+    per_observation = 0L,   # no log_lik or y_rep: not needed here
     r_squared_shape = prior_shape(setting$prior, ncol(predictors))
   )
   seed <- seed_of("1a", setting$prior, setting$design)
