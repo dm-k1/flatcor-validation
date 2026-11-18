@@ -31,6 +31,28 @@ if (!nzchar(Sys.getenv("R_USER_CACHE_DIR"))) {
   Sys.setenv(R_USER_CACHE_DIR = file.path(getwd(), "cache", "r_user_cache"))
 }
 
+## Linux: every Stan model loads CmdStan's TBB library (libtbb.so.2) when it
+## starts, and compiling a model can make CmdStan rebuild that library in
+## place. With several workers, one worker's compile then removes it under a
+## model another worker is starting ("libtbb.so.2: cannot open shared object
+## file", seen with 7 workers on AWS). A copy made here, before any worker
+## starts, and put first on the library path the workers inherit, is never
+## touched by such a rebuild.
+if (Sys.info()[["sysname"]] == "Linux") {
+  tbb_copy <- file.path(getwd(), "cache", "tbb")
+  dir.create(tbb_copy, recursive = TRUE, showWarnings = FALSE)
+  tbb_libraries <- list.files(
+    file.path(cmdstanr::cmdstan_path(), "stan", "lib", "stan_math", "lib", "tbb"),
+    pattern = "^libtbb.*[.]so[.]2$", full.names = TRUE
+  )
+  file.copy(tbb_libraries, tbb_copy, overwrite = TRUE)
+  library_path <- Sys.getenv("LD_LIBRARY_PATH")
+  if (!startsWith(library_path, tbb_copy)) {
+    library_path <- paste(c(tbb_copy, library_path[nzchar(library_path)]), collapse = ":")
+    Sys.setenv(LD_LIBRARY_PATH = library_path)
+  }
+}
+
 ## Each piece of work runs Stan's 4 chains in parallel, so a quarter of the
 ## cores work on pieces at the same time, each in its own R process. The
 ## cores are those given to this run: on a cluster, the job's allocation
