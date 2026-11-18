@@ -26,12 +26,12 @@ behave the way a default prior should?
 | **Computed correctly?** | Stan's prior-only draws against the exact prior: R ~ Beta(2a, 1), direction uniform (prior check) | SBC (Talts et al., 2018; `SBC` package, Modrák et al., 2023), with Stan's diagnostics: divergent transitions, R-hat, effective sample size (Vehtari et al., 2021) | bridge sampling with its own error estimate and repeated runs (Gronau et al., 2017, 2020); Bayes factor calibration on data from each prior (Schad et al., 2023) |
 | **Behaves like a default?** | invariance: rescaling or recoding the predictors changes nothing (Bayarri et al., 2012) | behaviour in estimation: bias and coverage of a slope, prediction error against OLS, on data with a known truth | predictive matching, information consistency, intrinsic consistency, model-selection consistency (Bayarri et al., 2012) |
 
-Each cell is one study folder in `studies/`, named after its heading (1-3)
+Each cell is one study folder in `R/2_studies/`, named after its heading (1-3)
 and row (a: computed correctly; b: behaves like a default), so the folder
 reads like the table:
 
 ```
-studies/
+R/2_studies/
   1a_prior_sampling/      prior, computed correctly: Stan's prior-only draws = the exact prior
   1b_invariance/          prior, behaves like a default: rescaling or recoding changes nothing
   2a_posterior/           posterior, computed correctly: SBC and Stan's diagnostics
@@ -49,7 +49,7 @@ made and the reasons for every choice are in one document,
 work is saved as it finishes, a stopped run continues where it was, and only
 what is not done yet or has changed reruns. Each study writes its tables to
 `results/studies/study_<cell>.rds`; the figures are a separate step, one
-script per study in `figures/`, that reads those files. `Rscript run_all.R`
+script per study in `R/3_figures/`, that reads those files. `Rscript run_all.R`
 runs the pipeline and then the figures. Items are numbered within their
 study (3b.1, 3b.2, ...), so a number says which cell it belongs to.
 Invariance sits under the prior because it holds by how the prior is built,
@@ -177,8 +177,11 @@ points of practical advice). What flatcor and the studies take from it:
 
 ## Status (17 November 2026)
 
-- **flatcor 3.0** (in development) is on flatcor's `main` (commit 9a80b87)
-  and pinned in `renv.lock`: one Stan model for the three priors, with the
+- **flatcor 3.0** (in development) is on flatcor's `main` (commit dbb02a1,
+  18 November 2026) and pinned in `renv.lock`. Since 9a80b87:
+  `bayes_factor_models()` takes formulas and data instead of `lm()` fits,
+  `seed` makes a Bayes factor fully reproducible, rstan is tested in its own
+  R process, and the code is lintr-clean. In 3.0: one Stan model for the three priors, with the
   intercept-only model (K = 0) and every normalising constant;
   `bayes_factor_models()` by bridgesampling (4 chains of 10,000 draws per
   model); the formula Bayes factors, the likelihood ratio code and the
@@ -213,8 +216,8 @@ points of practical advice). What flatcor and the studies take from it:
 2. The full run (`Rscript run_all.R`; `cluster/README.md`).
 3. The docs from the results: `docs/3_results.md` (new), the README's
    findings, and the places marked **TO REFRESH** in the README,
-   `docs/2_the_three_priors.md`, appendices A and B,
-   `docs/validation_tests.md` and `docs/working/run_time_estimate.md`.
+   `docs/validation_tests.md` and `docs/working/run_time_estimate.md`, and in
+   Objective-bayes: `docs/2_the_three_priors.md` and appendices A and B.
 
 **Open questions:**
 
@@ -233,6 +236,16 @@ points of practical advice). What flatcor and the studies take from it:
   on this Mac). The numbers are now provisional (in each study's `design.R`):
   1,000 datasets per cell for calibration, 100 per setting and n for the
   rates, 50 per setting for growing k. The run-time estimate sets them.
+- Stan's "proposal rejected" messages (seen 18 November 2026, in flatcor's
+  tests): now and then the mean of the likelihood
+  (`inst/stan/flatcor.stan`, lines 95-98, `alpha + Xc * b_magnitude`) is
+  `inf` or `nan`, so Stan rejects that proposal. Stan calls this harmless
+  when it is sporadic, typically early in warmup, and the tests pass. Not
+  yet looked into: what makes the mean overflow (probably a direction or R
+  near the edge, where the coefficients become very large), and whether it
+  happens more at extreme data (near-perfect fits, large k), which 3b
+  covers. Watch the divergent transitions and these messages in the full
+  run.
 
 ## Pitfalls already handled
 
@@ -261,19 +274,23 @@ as ² as `<U+00B2>`.
 ```
 _targets.R          the pipeline: the steps of every study, in order
 run_all.R           runs the pipeline, then the figures
-studies/            one folder per study (1a-3b): design.R and code.R
 R/
-  shared/           pipeline helpers, the reporting rule, the results file, comparison methods
-  data/             one file per data set (prior-only designs, example data, data from the
-                    prior, known slopes, set R², nested models, growing k) and the
-                    building blocks (ID-based random streams); docs/validation_tests.md
-  notebook/         present.R, the notebook's helpers (they compute nothing)
-  docs/             the figures of part 2 and appendix A
-figures/            one script per study, and the figures they draw (tracked)
-results/            studies/study_<cell>.rds per study: its tables and the setup of the run (tracked)
+  shared/           random streams, pipeline helpers, the reporting rule, the results file,
+                    comparison methods
+  timing/           the run-time estimate (time_study.R, estimate_run_time.R)
+  1_data/           one file per data set, numbered by first use (0 correlated predictors,
+                    1 prior-only designs, 2 ordinary regression, 3 data from the prior,
+                    4 known slopes, 5 set R², 6 nested models, 7 growing k);
+                    docs/validation_tests.md
+  2_studies/        one folder per study (1a-3b): design.R and code.R
+  3_figures/        one script per study
+  4_notebook/       present.R, the notebook's helpers (they compute nothing)
+results/            studies/study_<cell>.rds per study (its tables and the setup of the run),
+                    and figures/ (tracked)
 validation.ipynb    the notebook (R kernel): per study its question, tables and figures
-cluster/            the container image (Dockerfile) and the run-time estimate
-docs/               the three priors (2), validation_tests.md, appendix/A, working/ (this plan)
+cluster/            the container image (Dockerfile)
+docs/               validation_tests.md, working/ (this plan); the three priors and appendix A
+                    are in Objective-bayes
 _targets/, cache/   the pipeline's store, smoke and timing runs (gitignored)
 ```
 

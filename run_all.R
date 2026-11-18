@@ -6,13 +6,23 @@
 ##    VALIDATION_SMOKE=1 Rscript run_all.R   the smoke test (results in cache/)
 ##
 ##  The pipeline runs only what is not done yet: a run that stopped continues
-##  where it was. Each study writes results/studies/study_<cell>.rds; each
-##  script in figures/ reads those files and writes its figures. The
+##  where it was. The smoke test always starts from scratch (its store,
+##  results and figures are deleted first), so every step really runs.
+##  Each study writes results/studies/study_<cell>.rds; each
+##  script in R/3_figures/ reads those files and writes its figures. The
 ##  notebook (validation.ipynb) presents the same results.
 ## =====================================================================
 smoke <- identical(Sys.getenv("VALIDATION_SMOKE"), "1")
 requested <- commandArgs(trailingOnly = TRUE)
 store <- if (smoke) file.path("cache", "targets_smoke") else "_targets"
+
+## ---- The smoke test starts from scratch ----------------------------------------------
+if (smoke) {
+  unlink(
+    file.path("cache", c("targets_smoke", "smoke_results", "smoke_figures")),
+    recursive = TRUE
+  )
+}
 
 ## ---- The studies -------------------------------------------------------------------
 started <- Sys.time()
@@ -25,7 +35,7 @@ if (length(requested) == 0) {
 ## ---- The figures, each script in its own R process ----------------------------------
 results_folder <- if (smoke) file.path("cache", "smoke_results") else "results"
 results_folder <- file.path(results_folder, "studies")
-for (script in list.files("figures", pattern = "[.]R$", full.names = TRUE)) {
+for (script in list.files(file.path("R", "3_figures"), pattern = "[.]R$", full.names = TRUE)) {
   study <- sub("^([0-9][a-z]).*", "\\1", basename(script))
   if (!file.exists(file.path(results_folder, sprintf("study_%s.rds", study)))) next
   status <- system2(file.path(R.home("bin"), "Rscript"), script)

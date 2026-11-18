@@ -7,7 +7,7 @@
 ##    targets::tar_visnetwork()                    the steps and what depends on what
 ##
 ##  Each study writes its tables to results/studies/study_<cell>.rds; the
-##  figures are made from those files by the scripts in figures/
+##  figures are made from those files by the scripts in R/3_figures/
 ##  (Rscript run_all.R does both). Every finished piece is saved in _targets/
 ##  as soon as it is done, so a run that stops (a laptop closed, Colab or a
 ##  cloud machine shutting down) continues where it was.
@@ -16,7 +16,7 @@
 ##  results folder, so it never mixes with a real run):
 ##    Sys.setenv(VALIDATION_SMOKE = "1"); targets::tar_make(store = "cache/targets_smoke")
 ##
-##  Each study is a folder in studies/: design.R (the design) and code.R (the
+##  Each study is a folder in R/2_studies/: design.R (the design) and code.R (the
 ##  steps). What each tests, expects and why: docs/validation_tests.md.
 ## =====================================================================
 library(targets)
@@ -44,14 +44,11 @@ studies <- c(
   "2b_estimation", "3a_bayes_factors", "3b_default_criteria"
 )
 tar_source(c(
-  "R/shared/pipeline.R", "R/shared/expectations.R", "R/shared/results.R",
-  "R/shared/comparison_methods.R",
-  file.path("R", "data", c(
-    "building_blocks.R", "prior_only_designs.R", "example_data.R", "from_the_prior.R",
-    "known_slopes.R", "set_r_squared.R", "nested_models.R", "growing_k.R"
-  )),
-  file.path("studies", studies, "design.R"),
-  file.path("studies", studies, "code.R")
+  "R/shared/random_streams.R", "R/shared/pipeline.R", "R/shared/expectations.R",
+  "R/shared/results.R", "R/shared/comparison_methods.R",
+  list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
+  file.path("R", "2_studies", studies, "design.R"),
+  file.path("R", "2_studies", studies, "code.R")
 ))
 
 

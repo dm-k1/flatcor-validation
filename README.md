@@ -1,10 +1,10 @@
 # flatcor-validation: do flatcor's three priors work?
 
-The statistics behind [flatcor](https://github.com/dm-k1/flatcor), an R package
-for objective Bayes factors and estimation in linear regression: its three
-default priors, their derivations, and the validation that each works
-correctly within the Bayesian framework. The argument for the priors, and the
-paper, are in [Objective-bayes](https://github.com/dm-k1/Objective-bayes).
+The validation of [flatcor](https://github.com/dm-k1/flatcor), an R package
+for objective Bayes factors and estimation in linear regression: whether each
+of its three default priors works correctly within the Bayesian framework.
+The argument for the priors, the priors and their derivations, and the paper
+are in [Objective-bayes](https://github.com/dm-k1/Objective-bayes).
 
 ## The three priors
 
@@ -50,10 +50,10 @@ Carlo errors; nothing is judged pass or fail per row.
 
 | | Document | What it is |
 |---|---|---|
-| 1 | [`docs/2_the_three_priors.md`](docs/2_the_three_priors.md) | **The three priors**: the family $R^2 \sim$ Beta($a$, 1), what each keeps flat and expects, how the total is divided, what the package computes |
+| 1 | [`2_the_three_priors.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/2_the_three_priors.md) (in Objective-bayes) | **The three priors**: the family $R^2 \sim$ Beta($a$, 1), what each keeps flat and expects, how the total is divided, what the package computes |
 | 2 | [`docs/validation_tests.md`](docs/validation_tests.md) | **What the validation tests**: per study its design, what is tested, what is expected and why, with what Monte Carlo error and how many datasets, and the data sets |
 | 3 | [`validation.ipynb`](validation.ipynb) | **The results**: per study its question, its estimates against what is expected, and figures |
-| A | [`docs/appendix/A_derivations.md`](docs/appendix/A_derivations.md) | The derivations: the density factor by factor, the Stan model, the Bayes factors and the g-prior forms behind them, the default-prior criteria |
+| A | [`appendix/A_derivations.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/appendix/A_derivations.md) (in Objective-bayes) | The derivations: the density factor by factor, the Stan model, the Bayes factors and the g-prior forms behind them, the default-prior criteria |
 
 Working notes: [`docs/working/`](docs/working/) (the plan of the redesign, the
 run-time estimate).
@@ -73,7 +73,7 @@ run-time estimate).
 
 - **Choosing the prior.** Without `prior =`, flatcor uses flat partial r and
   says so once per session. What each prior assumes:
-  [`docs/2_the_three_priors.md`](docs/2_the_three_priors.md).
+  [`2_the_three_priors.md`](https://github.com/dm-k1/Objective-bayes/blob/main/docs/2_the_three_priors.md) (in Objective-bayes).
 - **Shrinkage at small $n$.** With several predictors and a small sample, the
   prior pulls estimates towards zero (study 2b shows how much).
 - **Leaving the null model.** Against the intercept-only model, evidence for
@@ -117,16 +117,16 @@ how long it takes.
 |---|---|
 | `_targets.R` | The pipeline: the steps of every study, in order |
 | `run_all.R` | Runs the pipeline, then the figures |
-| `studies/` | The six studies, one folder per cell, each with `design.R` and `code.R` |
-| `R/data/` | One file per data set (what each is and which study needs it: `docs/validation_tests.md`, "The data sets") |
-| `R/shared/` | The pipeline's helpers, the reporting rule, the results file, the comparison methods |
-| `R/notebook/` | The notebook's helpers: they present the results, they compute nothing |
-| `R/docs/` | The figures of part 2 and appendix A |
-| `figures/` | One script per study that draws its figures from its results file, and the figures |
-| `results/` | Each study's tables and setup, `studies/study_<cell>.rds` |
+| `R/shared/` | Used by every step: the random streams, the pipeline's helpers, the reporting rule, the results file, the comparison methods |
+| `R/1_data/` | One file per data set, numbered in the order the studies first use them (what each is and which study needs it: `docs/validation_tests.md`, "The data sets") |
+| `R/2_studies/` | The six studies, one folder per cell, each with `design.R` and `code.R` |
+| `R/3_figures/` | One script per study that draws its figures from its results file |
+| `R/4_notebook/` | The notebook's helpers: they present the results, they compute nothing |
+| `R/timing/` | The run-time estimate: time a study on a fraction of its datasets, scale up to the full run |
+| `results/` | Each study's tables and setup, `studies/study_<cell>.rds`, and its figures, `figures/<cell>_*.png` |
 | `validation.ipynb` | The notebook (R kernel) |
-| `docs/` | The three priors, what the validation tests, appendix A, working notes |
-| `cluster/` | The container image and the run-time estimate |
+| `docs/` | What the validation tests, working notes |
+| `cluster/` | The container image, and how to run and time the validation on it |
 | `renv.lock`, `.lintr` | The pinned packages; the code style |
 
 ## Author

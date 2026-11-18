@@ -65,25 +65,35 @@ method_scales <- function(methods) {
 ## bridgesampling authors' rule), fewer in the smoke test
 bayes_factor_draws <- if (identical(Sys.getenv("VALIDATION_SMOKE"), "1")) 1000 else 10000
 
-## An lm() fit of the outcome on the columns of predictors (none: intercept only)
-lm_of <- function(predictors, outcome) {
-  if (ncol(predictors) == 0) {
-    return(lm(outcome ~ 1))
+## The two models as formulas on one data frame, as flatcor takes them: the
+## outcome, model A's columns a1, a2, ... and model B's b1, b2, ... (no
+## columns: the intercept-only model)
+models_as_formulas <- function(predictors_a, predictors_b, outcome) {
+  colnames(predictors_a) <- sprintf("a%d", seq_len(ncol(predictors_a)))
+  colnames(predictors_b) <- sprintf("b%d", seq_len(ncol(predictors_b)))
+  formula_of <- function(columns) {
+    reformulate(if (length(columns) == 0) "1" else columns, response = "outcome")
   }
-  colnames(predictors) <- paste0("x", seq_len(ncol(predictors)))
-  lm(outcome ~ ., data = data.frame(predictors, outcome = outcome))
+  list(
+    formula_a = formula_of(colnames(predictors_a)),
+    formula_b = formula_of(colnames(predictors_b)),
+    data = data.frame(outcome = outcome, predictors_a, predictors_b)
+  )
 }
 
 ## The log BF of model A (columns predictors_a) against model B
 ## (predictors_b), for one method, with its approximate Monte Carlo SE and,
 ## for the three priors, the divergent transitions of the two Stan fits.
-## `seed` fixes the Stan fits (derive it from the dataset's ID).
+## `seed` fixes the Stan fits and bridge sampling (derive it from the
+## dataset's ID).
 log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome, seed) {
   # the three priors: flatcor
   if (method %in% names(contenders)) {
+    models <- models_as_formulas(predictors_a, predictors_b, outcome)
     result <- suppressWarnings(flatcor::bayes_factor_models(
-      lm_of(predictors_a, outcome),
-      lm_of(predictors_b, outcome),
+      models$formula_a,
+      models$formula_b,
+      models$data,
       prior = contenders[[method]],
       iter_sampling = bayes_factor_draws,
       seed = seed
@@ -106,7 +116,7 @@ log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome
     if (ncol(predictors) == 0) {
       return(c(bf = 0, error = 0))
     }
-    r_squared <- summary(lm_of(predictors, outcome))$r.squared
+    r_squared <- summary(lm(outcome ~ predictors))$r.squared
     bf <- BayesFactor::linearReg.R2stat(
       length(outcome), ncol(predictors), r_squared,
       rscale = scale,

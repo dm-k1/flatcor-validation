@@ -2,7 +2,7 @@
 #
 # Every study runs in timing mode (R/shared/pipeline.R) inside the published
 # image: the full design and full-length chains, on two fractions of its
-# datasets, each on its own runner (4 cores). cluster/estimate_run_time.R then
+# datasets, each on its own runner (4 cores). R/timing/estimate_run_time.R then
 # fits the fixed part and the part per dataset and reads off the full run; the
 # table appears on the run's summary page and as the artifact run-time-estimate.
 # Study 1a does not depend on the number of datasets and runs in full.
@@ -18,12 +18,11 @@ on:
     branches: [main]
     paths:
       - .github/workflows/timing.yml
-      - studies/**
       - _targets.R
       - R/shared/**
-      - R/data/**
-      - cluster/time_study.R
-      - cluster/estimate_run_time.R
+      - R/1_data/**
+      - R/2_studies/**
+      - R/timing/**
   workflow_dispatch:
     inputs:
       fractions:
@@ -84,7 +83,7 @@ jobs:
           docker run --rm -v "$PWD":/project \
             -e VALIDATION_TIMING=${{ matrix.fraction }} \
             ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
-            Rscript cluster/time_study.R ${{ matrix.study }}
+            Rscript R/timing/time_study.R ${{ matrix.study }}
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -110,7 +109,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD":/project \
             ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
-            Rscript cluster/estimate_run_time.R timing | tee run_time_estimate.md
+            Rscript R/timing/estimate_run_time.R timing | tee run_time_estimate.md
           cat run_time_estimate.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4

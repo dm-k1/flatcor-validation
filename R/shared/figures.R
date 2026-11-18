@@ -1,5 +1,5 @@
 ## =====================================================================
-##  Shared by the figure scripts in figures/: where a study's results file
+##  Shared by the figure scripts in R/3_figures/: where a study's results file
 ##  is, and where its figures go (cache/ for the smoke test)
 ## =====================================================================
 
@@ -12,5 +12,5 @@ read_results <- function(study) {
 }
 
 ## Where the figures go
-figure_folder <- if (smoke) file.path("cache", "smoke_figures") else "figures"
+figure_folder <- if (smoke) file.path("cache", "smoke_figures") else file.path("results", "figures")
 dir.create(figure_folder, recursive = TRUE, showWarnings = FALSE)

@@ -31,7 +31,7 @@ measures it on GitHub's runners, for free on a public repository. It starts
 when the studies' code changes on `main` (a newer push cancels a run still
 going; it first waits for an image build still running), and on demand from
 Actions > Run-time estimate > Run workflow. Each study runs its full design on 2% and
-5% of its datasets, each on its own 4-core runner; `cluster/estimate_run_time.R`
+5% of its datasets, each on its own 4-core runner; `R/timing/estimate_run_time.R`
 separates the fixed part of a study's cost from the part per dataset and reads
 off the full run. The run's summary page shows the hours per study on 4, 8, 16
 and 32 cores.
@@ -39,9 +39,9 @@ and 32 cores.
 The same can be run anywhere, a study at a time:
 
 ```bash
-VALIDATION_TIMING=0.02 Rscript cluster/time_study.R 3a
-VALIDATION_TIMING=0.05 Rscript cluster/time_study.R 3a
-Rscript cluster/estimate_run_time.R
+VALIDATION_TIMING=0.02 Rscript R/timing/time_study.R 3a
+VALIDATION_TIMING=0.05 Rscript R/timing/time_study.R 3a
+Rscript R/timing/estimate_run_time.R
 ```
 
 Timing runs write only to `cache/timing/`, so they never mix with a real run.
