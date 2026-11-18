@@ -4,7 +4,9 @@ The validation is one pipeline ([`_targets.R`](../_targets.R)); `Rscript
 run_all.R` runs it and then the figures. It saves every finished piece as it
 goes, so it can run anywhere a run may stop (a laptop, Colab, a cloud
 machine) and continue where it was, as long as the project folder (with its
-`_targets/` store) survives. This folder holds the two things that help with
+`_targets/` store) survives and flatcor stays the same: `run_all.R` refuses
+to continue with another flatcor commit than the run started with.
+`VALIDATION_FRESH=1 Rscript run_all.R` starts from scratch. This folder holds the two things that help with
 that: a container image with the exact environment, and the run-time
 estimate.
 

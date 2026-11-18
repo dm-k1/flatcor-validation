@@ -102,12 +102,17 @@ pinned version, with targets, crew and the other packages), or use the
 container image of `cluster/Dockerfile`, published by GitHub Actions as
 `ghcr.io/dm-k1/flatcor-validation`. Then:
 
-```r
-targets::tar_make()        # the studies: only what is not done yet
+```bash
+Rscript run_all.R                      # the studies, then the figures
+VALIDATION_FRESH=1 Rscript run_all.R   # the same, from scratch
 ```
 
-or `Rscript run_all.R` (the studies, then the figures), or open
-[`validation.ipynb`](validation.ipynb). A stopped run continues where it was.
+or open [`validation.ipynb`](validation.ipynb), which runs through
+`run_all.R` too. A stopped run continues where it was. It refuses to
+continue with another flatcor than the one it started with (each results
+file records the flatcor commit), so one results file never mixes two
+versions; start from scratch then. (`targets::tar_make()` runs the pipeline
+without that check: for working on a single step.)
 [`cluster/README.md`](cluster/README.md) describes running it elsewhere and
 how long it takes.
 
