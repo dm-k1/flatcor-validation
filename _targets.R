@@ -16,6 +16,11 @@
 ##  results folder, so it never mixes with a real run):
 ##    Sys.setenv(VALIDATION_SMOKE = "1"); targets::tar_make(store = "cache/targets_smoke")
 ##
+##  Dry run (the smoke test's design with Stan and bridge sampling replayed
+##  from a recorded smoke test, in one R process: tests the plumbing in a
+##  minute or two; R/dry_run/replay.R):
+##    Sys.setenv(VALIDATION_DRY = "1"); targets::tar_make(store = "cache/targets_dry")
+##
 ##  Each study is a folder in R/2_studies/: design.R (the design) and code.R (the
 ##  steps). What each tests, expects and why: docs/validation_tests.md.
 ## =====================================================================
@@ -24,6 +29,10 @@ library(crew)
 
 
 ## ---- Setup ------------------------------------------------------------------------
+
+## The dry run uses the smoke test's design (R/dry_run/replay.R)
+dry_run <- identical(Sys.getenv("VALIDATION_DRY"), "1")
+if (dry_run) Sys.setenv(VALIDATION_SMOKE = "1")
 
 ## flatcor compiles its Stan model into R's user cache folder: keep that in
 ## cache/, writable everywhere (set before the workers start, so they inherit it)
@@ -69,9 +78,11 @@ local({
 ## cores work on pieces at the same time, each in its own R process. The
 ## cores are those given to this run: on a cluster, the job's allocation
 ## (parallelly reads SLURM, PBS and cgroups), not all cores of the node.
+## The dry run samples nothing, so it runs every step in this one process:
+## starting workers would take longer than the steps.
 tar_option_set(
   packages = c("flatcor", "dplyr"),
-  controller = crew_controller_local(
+  controller = if (dry_run) NULL else crew_controller_local(
     workers = max(1, (parallelly::availableCores() - 1) %/% 4),
     # a log per worker (its R output, including Stan's own messages), for
     # finding out why a piece of work failed
@@ -89,7 +100,10 @@ tar_source(c(
   "R/shared/results.R", "R/shared/comparison_methods.R", "R/shared/rounds.R",
   list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
   file.path("R", "2_studies", studies, "design.R"),
-  file.path("R", "2_studies", studies, "code.R")
+  file.path("R", "2_studies", studies, "code.R"),
+  # last, and only to record or replay the expensive calls: it replaces a few
+  # of the functions above (R/dry_run/replay.R)
+  if (dry_run || identical(Sys.getenv("VALIDATION_RECORD"), "1")) "R/dry_run/replay.R"
 ))
 
 

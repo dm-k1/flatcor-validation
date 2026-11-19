@@ -1,7 +1,11 @@
-# Checks the validation on every push to main: four independent jobs that
+# Checks the validation on every push to main: five independent jobs that
 # start at the same time, written from the quickest to the slowest.
 #
 #   lint        lintr, in the style of .lintr (seconds)
+#   static      the static check (R/shared/static_check.R): the pipeline is
+#               valid, every function called exists, and the code keeps to
+#               the declared way (expensive calls replayable, files declared
+#               as steps); inside the published image, for its packages
 #   links       every link in the README, the docs and the notebook (seconds)
 #   workflows   actionlint on these workflow files (seconds)
 #   smoke       the smoke test (VALIDATION_SMOKE=1 Rscript run_all.R: a corner
@@ -47,6 +51,16 @@ jobs:
           print(lints)
           if (length(lints) > 0) quit(status = 1)
         shell: Rscript {0}
+
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static check
+        run: |
+          docker run --rm -v "$PWD":/project \
+            ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
+            Rscript R/shared/static_check.R
 
   links:
     runs-on: ubuntu-latest

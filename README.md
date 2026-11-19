@@ -119,6 +119,51 @@ The smoke test runs every step and every figure on a small part of each
 design, from scratch, with its results in `cache/` (never mixed with real
 ones).
 
+### Faster checks while working on the code
+
+Two cheaper checks come before the smoke test, for the mistakes that do
+not need Stan to show up: a renamed function, a column a later step
+expects but an earlier one no longer writes, a results file or figure that
+is not made.
+
+```bash
+Rscript R/shared/static_check.R                         # seconds: parses, the pipeline is valid, every function called exists, the rules below
+VALIDATION_SMOKE=1 VALIDATION_RECORD=1 Rscript run_all.R # once: the smoke test, recording what Stan and bridge sampling returned
+VALIDATION_DRY=1 Rscript run_all.R                      # then, after every change: the dry run
+```
+
+The dry run ([`R/dry_run/replay.R`](R/dry_run/replay.R)) is the smoke
+test with the calls to Stan and bridge sampling replayed from those
+recordings (in `cache/dry_recordings/`), in one R process, no model
+compiled. It changes no study's code: that file is sourced after the
+studies, only in a recording run or the dry run, and replaces a few
+functions (the seams: flatcor's Bayes factors and fit, 1a's prior draws of a
+setting, 2a's SBC fits of a batch) by versions that record or replay the
+original. Everything else runs for real: the data, every step, the
+hand-overs between them, both rounds, the results files, the figures and
+the check at the end. Its results go to `cache/dry_results/` and
+`cache/dry_figures/`. It does not test the code inside the seams or whether
+the numbers are right: run the smoke test for that, and record again when
+flatcor changes. When the design or a data step has changed since the
+recording, the dry run replays recordings of the same shape (prior, numbers
+of predictors) and says so; when there is none, it stops and says to record
+again.
+
+Both rest on three rules for the pipeline's code, which the static check
+enforces (it fails, saying which rule and where):
+
+1. Every expensive call (Stan, bridge sampling, SBC) is inside one of the
+   seams listed in `R/dry_run/replay.R`, so the dry run can stand in for
+   it. A new expensive step either calls one of them or gets a seam of its
+   own there.
+2. A step reads and writes files only where it is declared: a study's
+   results file, the plans of the rounds, the recordings. Any other file a
+   step needs or makes is a step of its own (`tar_target(..., format =
+   "file")`), so targets knows it is there before a step needs it.
+3. Every results file a figure script or `run_all.R` reads is made by a step
+   `results_<study>` (`format = "file"`), and the figure scripts read them
+   only through `read_results()`.
+
 Every run ends with a check of its outputs
 ([`R/shared/check_results.R`](R/shared/check_results.R)): a results file
 for every study run, all with the run's flatcor; no empty table, no NaN,
@@ -155,10 +200,11 @@ corner of each design.
 |---|---|
 | `_targets.R` | The pipeline: the steps of every study, in order |
 | `run_all.R` | Runs the pipeline, then the figures |
-| `R/shared/` | Used by every step: the random streams, the pipeline's helpers, the reporting rule, the results file, the comparison methods |
+| `R/shared/` | Used by every step: the random streams, the pipeline's helpers, the reporting rule, the results file, the comparison methods; the static check (`static_check.R`) |
 | `R/1_data/` | One file per data set, numbered in the order the studies first use them (what each is and which study needs it: `docs/validation_tests.md`, "The data sets") |
 | `R/2_studies/` | The six studies, one folder per cell, each with `design.R` and `code.R` |
 | `R/3_figures/` | One script per study that draws its figures from its results file |
+| `R/dry_run/` | The dry run: records the expensive calls in a smoke test, replays them after (`replay.R`); changes no study's code |
 | `R/4_notebook/` | The notebook's helpers: they present the results, they compute nothing |
 | `R/timing/` | The run-time estimate: time a study on a fraction of its datasets, scale up to the full run |
 | `results/` | Each study's tables and setup, `studies/study_<cell>.rds`, and its figures, `figures/<cell>_*.png` |

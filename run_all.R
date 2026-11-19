@@ -4,6 +4,10 @@
 ##    Rscript run_all.R                  every study, then every figure
 ##    Rscript run_all.R 3a               one study (its targets end in _3a), then the figures
 ##    VALIDATION_SMOKE=1 Rscript run_all.R   the smoke test (results in cache/)
+##    VALIDATION_SMOKE=1 VALIDATION_RECORD=1 Rscript run_all.R
+##                                       the smoke test, recording the expensive calls
+##    VALIDATION_DRY=1 Rscript run_all.R     the dry run: the smoke test's design with
+##                                       those calls replayed, a minute or two (R/dry_run/replay.R)
 ##    VALIDATION_FRESH=1 Rscript run_all.R   the whole validation from scratch
 ##    VALIDATION_BUDGET_CORE_HOURS=3000 Rscript run_all.R   with a raised budget
 ##
@@ -20,12 +24,39 @@
 ##  script in R/3_figures/ reads those files and writes its figures. The
 ##  notebook (validation.ipynb) presents the same results.
 ## =====================================================================
+dry <- identical(Sys.getenv("VALIDATION_DRY"), "1")
+recording <- identical(Sys.getenv("VALIDATION_RECORD"), "1")
+if (dry && recording) stop("VALIDATION_DRY=1 replays recordings; it cannot also record them.")
+if (recording && !identical(Sys.getenv("VALIDATION_SMOKE"), "1")) {
+  stop("Recordings for the dry run come from a smoke test: VALIDATION_SMOKE=1 VALIDATION_RECORD=1")
+}
+# the dry run has the smoke test's design (set here, so the pipeline and the
+# figure scripts inherit it)
+if (dry) Sys.setenv(VALIDATION_SMOKE = "1")
 smoke <- identical(Sys.getenv("VALIDATION_SMOKE"), "1")
 fresh <- identical(Sys.getenv("VALIDATION_FRESH"), "1")
 requested <- commandArgs(trailingOnly = TRUE)
-store <- if (smoke) file.path("cache", "targets_smoke") else "_targets"
-results_root <- if (smoke) file.path("cache", "smoke_results") else "results"
-figure_folder <- if (smoke) file.path("cache", "smoke_figures") else file.path("results", "figures")
+store <- if (dry) {
+  file.path("cache", "targets_dry")
+} else if (smoke) {
+  file.path("cache", "targets_smoke")
+} else {
+  "_targets"
+}
+results_root <- if (dry) {
+  file.path("cache", "dry_results")
+} else if (smoke) {
+  file.path("cache", "smoke_results")
+} else {
+  "results"
+}
+figure_folder <- if (dry) {
+  file.path("cache", "dry_figures")
+} else if (smoke) {
+  file.path("cache", "smoke_figures")
+} else {
+  file.path("results", "figures")
+}
 
 ## ---- From scratch: always for the smoke test, on request for a real run -------------
 if (fresh && length(requested) > 0) {
@@ -37,6 +68,9 @@ if (fresh && length(requested) > 0) {
 if (smoke || fresh) {
   unlink(c(store, file.path(results_root, "studies"), figure_folder), recursive = TRUE)
 }
+## A recording run replaces every recording, so none is left from an older
+## design or flatcor (R/dry_run/replay.R)
+if (recording) unlink(file.path("cache", "dry_recordings"), recursive = TRUE)
 
 ## ---- One flatcor per run ------------------------------------------------------------
 ## The store remembers the flatcor commit it was started with; continuing
@@ -70,7 +104,9 @@ design_scripts <- list.files(
 for (script in c(
   file.path("R", "shared", c("random_streams.R", "pipeline.R", "rounds.R")),
   list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
-  design_scripts
+  design_scripts,
+  # last, and only to record or replay the expensive calls (R/dry_run/replay.R)
+  if (dry || recording) file.path("R", "dry_run", "replay.R")
 )) {
   source(script)
 }
