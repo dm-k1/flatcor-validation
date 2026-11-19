@@ -1,0 +1,35 @@
+# Does BridgeStan give flatcor's Bayes factors on Linux, inside the
+# validation's image? (ci/bridgestan_check.R: flatcor as it is against the
+# BridgeStan route for three model pairs, four fresh processes at once, and
+# 50 Bayes factors in a row in one process.) A check for flatcor v2, which
+# would take the log density for its Bayes factors from BridgeStan instead
+# of cmdstanr's model methods; it changes nothing in flatcor or the pipeline.
+#
+# It runs when the check or this file changes on v2, and on demand
+# (Actions > "BridgeStan check" > Run workflow).
+name: BridgeStan check
+
+on:
+  push:
+    branches: [v2]
+    paths:
+      - ci/bridgestan_check.R
+      - .github/workflows/bridgestan.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  bridgestan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: BridgeStan against flatcor, in the v2 image
+        run: |
+          docker run --rm -v "$PWD":/project \
+            ghcr.io/${{ github.repository_owner }}/flatcor-validation:v2 \
+            Rscript ci/bridgestan_check.R
