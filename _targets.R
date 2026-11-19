@@ -119,7 +119,9 @@ list(
     invariance_batch_1b(pieces_1b["prior"], pieces_1b$from:pieces_1b$to),
     pattern = map(pieces_1b)
   ),
-  tar_target(results_1b, save_results_1b(changes_1b), format = "file"),
+  # a change of one dataset is judged against bridge sampling's error as
+  # measured in 3a, part B (shortfall_3a, below)
+  tar_target(results_1b, save_results_1b(changes_1b, shortfall_3a), format = "file"),
 
 
   ## ---- 2a. Is the posterior computed correctly? ----
@@ -170,6 +172,8 @@ list(
     calibration_batch_3a(pieces_3a[names(cells_3a)], pieces_3a$from:pieces_3a$to),
     pattern = map(pieces_3a)
   ),
+  # the data-averaged posterior decides; the bins and the line describe
+  tar_target(averaged_table_3a, data_averaged_posterior_3a(calibration_runs_3a)),
   tar_target(bins_table_3a, calibration_bins_3a(calibration_runs_3a)),
   tar_target(line_table_3a, calibration_line_3a(calibration_runs_3a)),
 
@@ -191,14 +195,17 @@ list(
     pattern = map(pieces_repeats_3a)
   ),
   tar_target(spread_table_3a, repeat_spread_3a(repeated_3a, repeat_runs_3a)),
+  # the factor by which the reported error falls short, over every cell:
+  # used by 1b and 3b for quantities about one given dataset
+  tar_target(shortfall_3a, bridge_shortfall_3a(repeated_3a)),
 
   # also reported, and the results file
   tar_target(diagnostics_table_3a, diagnostics_3a(calibration_runs_3a)),
   tar_target(
     results_3a,
     save_results_3a(
-      bins_table_3a, line_table_3a, spread_table_3a, diagnostics_table_3a,
-      calibration_runs_3a, repeated_3a
+      averaged_table_3a, bins_table_3a, line_table_3a, spread_table_3a, shortfall_3a,
+      diagnostics_table_3a, calibration_runs_3a, repeated_3a
     ),
     format = "file"
   ),
@@ -249,5 +256,9 @@ list(
   ),
 
   # the results file (3b.7 is computed in it)
-  tar_target(results_3b, save_results_3b(formula_3b, rates_3b, growing_3b), format = "file")
+  tar_target(
+    results_3b,
+    save_results_3b(formula_3b, rates_3b, growing_3b, shortfall_3a),
+    format = "file"
+  )
 )

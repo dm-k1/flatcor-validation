@@ -88,8 +88,34 @@ calibration_bins_3a <- function(results) {
     )
 }
 
+## The data-averaged posterior, per prior and cell: the mean over the
+## datasets of P(without x1 | data) = 1 / (1 + BF10), expected 1/2, the prior
+## probability of the model without x1 (Schad et al., 2023). It decides part
+## A: it uses every dataset's posterior probability in full. Its MCSE: the SD
+## over the datasets / sqrt(datasets).
+data_averaged_posterior_3a <- function(results) {
+  results |>
+    mutate(
+      cell = sprintf("k = %d, n = %d", k, n),
+      posterior_without_x1 = plogis(-log_BF10) # = 1 / (1 + BF10)
+    ) |>
+    group_by(prior, k, n, cell) |>
+    summarise(
+      datasets = n(),
+      quantity = "data-averaged posterior",
+      expected = 0.5,
+      mcse = sd(posterior_without_x1) / sqrt(n()),
+      estimate = mean(posterior_without_x1),
+      .groups = "drop"
+    ) |>
+    mutate(distance_in_mcse = (estimate - expected) / mcse) |>
+    with_targets(deltas_3a)
+}
+
 ## The logistic calibration line of "without x1" on log BF01, per prior and
-## cell: intercept expected 0, slope expected 1
+## cell: intercept expected 0, slope expected 1. It describes (no Δ): a line
+## learns only from datasets whose Bayes factor is near 1, so with extreme
+## Bayes factors it would need tens of thousands of datasets to reach one.
 calibration_line_3a <- function(results) {
   fit_line <- function(rows, key) {
     # (huge Bayes factors give fitted probabilities of 0 or 1: harmless)
@@ -113,8 +139,7 @@ calibration_line_3a <- function(results) {
     group_by(prior, k, n, cell) |>
     group_modify(fit_line) |>
     ungroup() |>
-    mutate(distance_in_mcse = (estimate - expected) / mcse) |>
-    with_targets(deltas_3a)
+    mutate(distance_in_mcse = (estimate - expected) / mcse)
 }
 
 
@@ -164,6 +189,23 @@ repeat_spread_3a <- function(repeats, runs) {
 }
 
 
+## The factor by which bridge sampling's reported error falls short of the
+## real spread, over every cell of part B: the pooled SD of the repeated runs
+## against the root mean square reported error. Quantities about one given
+## dataset (1b per dataset, 3b.1, 3b.2) multiply bridge sampling's error by
+## it (docs/validation_tests.md, "Monte Carlo errors are measured").
+bridge_shortfall_3a <- function(repeats) {
+  per_dataset <- repeats |>
+    group_by(prior, k, n, replication) |>
+    summarise(
+      variance = var(log_BF10),
+      mean_square_error = mean(error^2),
+      .groups = "drop"
+    )
+  sqrt(mean(per_dataset$variance)) / sqrt(mean(per_dataset$mean_square_error))
+}
+
+
 ## ---- Also reported: bridge sampling's errors and Stan's divergent transitions ---
 
 diagnostics_3a <- function(results) {
@@ -185,17 +227,24 @@ diagnostics_3a <- function(results) {
 
 ## Every table of the study in results/studies/study_3a.rds
 ## (R/3_figures/3a_bayes_factors.R makes the figures from it)
-save_results_3a <- function(bins, line, spread, diagnostics, calibration, repeats) {
+save_results_3a <- function(averaged, bins, line, spread, shortfall, diagnostics,
+                            calibration, repeats) {
   distances <- rbind(
+    averaged[, c("quantity", "distance_in_mcse")],
     bins[, c("quantity", "distance_in_mcse")],
     line[, c("quantity", "distance_in_mcse")],
     spread[, c("quantity", "distance_in_mcse")]
   )
 
   save_study_results_file("3a", list(
+    data_averaged_posterior = averaged,
     calibration_bins = bins,
     calibration_line = line,
     repeated_runs = spread,
+    bridge_shortfall = tibble(
+      quantity = "real spread / reported error, over every cell of part B",
+      factor = shortfall
+    ),
     beyond_reference = beyond_reference(distances),
     diagnostics = diagnostics,
     bayes_factors = calibration,

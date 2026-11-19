@@ -30,6 +30,16 @@ with_targets <- function(table, deltas = NULL) {
   table
 }
 
+## Δ of a direction ("positive", "increases"), whose size is not known in
+## advance: `relative` times the estimate itself, at least `floor` (the
+## relative fixed-width rule, Glynn & Whitt, 1992; Flegal & Gong, 2015). The
+## floor ends the rule for an estimate near 0. It asks the same precision of
+## a positive and a negative estimate, so it never stops on one that looks
+## clearly positive.
+direction_delta <- function(estimate, relative, floor) {
+  pmax(relative * abs(estimate), floor)
+}
+
 
 ## ---- The plan ------------------------------------------------------------------------
 

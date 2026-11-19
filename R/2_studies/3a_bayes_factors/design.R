@@ -19,10 +19,11 @@ if (smoke) cells_3a <- cells_3a[cells_3a$k == 3, ]
 
 
 ## ---- How many (docs/validation_tests.md, "How many datasets") -------------------------
-## Δ per quantity: the Monte Carlo SE must be at most Δ / 1.96
+## Δ per quantity: the Monte Carlo SE must be at most Δ / 1.96. Part A is
+## decided by the data-averaged posterior; its calibration line and bins
+## describe, without a Δ (docs/validation_tests.md, 3a, why)
 deltas_3a <- c(
-  "calibration intercept"                       = 0.1,  # the slope's scale (log-odds)
-  "calibration slope"                           = 0.1,  # 10% of 1
+  "data-averaged posterior"                     = 0.05, # 10% of 1/2
   "spread of repeated log BFs / reported error" = 0.1   # 10% of 1
 )
 ## The first rounds (the Chow-Robbins rule's): parts A and B each have their

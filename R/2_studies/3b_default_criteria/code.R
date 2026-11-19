@@ -100,7 +100,7 @@ rate_slopes_3b <- function(rates) {
 }
 
 ## 3b.6: the slope of the median log BF10 against log n for a real effect
-## (expected positive, a direction; its Δ fixed, never the estimate itself)
+## (expected positive, a direction: its Δ by the relative rule, direction_delta())
 alternative_slopes_3b <- function(rates) {
   alternative <- filter(rates, setting == "alternative")
   # none in the smoke test, whose corner leaves the alternative out (it
@@ -122,7 +122,7 @@ alternative_slopes_3b <- function(rates) {
       mutate(
         quantity = "slope of median log BF10 against log n",
         expected = "positive",
-        delta = direction_delta_3b
+        delta = direction_delta(estimate, relative_delta_3b, direction_delta_3b)
       ) |>
       with_targets()
   })
@@ -206,7 +206,8 @@ growing_bayes_factor_3b <- function(cell, replication) {
   cbind(cell, replication, as_row(result))
 }
 
-## The slopes, expected positive
+## The slopes, expected positive (a direction: its Δ by the relative rule,
+## direction_delta())
 growing_slopes_3b <- function(growing) {
   with_stream_of("3b-bootstrap-growing", {
     growing |>
@@ -217,7 +218,7 @@ growing_slopes_3b <- function(growing) {
         item = ifelse(truth == "null", "3b.8", "3b.9"),
         quantity = "slope of median log BF against log n",
         expected = "positive",
-        delta = direction_delta_3b
+        delta = direction_delta(estimate, relative_delta_3b, direction_delta_3b)
       ) |>
       with_targets()
   })
@@ -232,7 +233,13 @@ growing_medians_3b <- function(growing) {
 
 ## ---- The results file ---------------------------------------------------------
 
-save_results_3b <- function(formula_checks, rates, growing) {
+## `shortfall`: by how much bridge sampling's reported error falls short of
+## the real spread (study 3a, part B); 3b.1 and 3b.2 are about one given
+## dataset each, so their errors are the reported ones times that factor
+save_results_3b <- function(formula_checks, rates, growing, shortfall) {
+  formula_checks$bridge_error <- formula_checks$error
+  formula_checks$error <- formula_checks$error * shortfall
+
   # 3b.1 predictive matching: expected 0
   at_minimum <- subset(formula_checks, item == "3b.1")
   matching <- expectation_rows(
@@ -240,6 +247,7 @@ save_results_3b <- function(formula_checks, rates, growing) {
     k = at_minimum$k,
     n = at_minimum$n,
     divergent = at_minimum$divergent,
+    bridge_error = at_minimum$bridge_error,
     quantity = "3b.1 log BF at n = k + 1",
     expected = 0,
     estimate = at_minimum$log_bf,
@@ -248,7 +256,9 @@ save_results_3b <- function(formula_checks, rates, growing) {
 
   # 3b.2 information consistency: expected to increase
   information <- subset(formula_checks, item == "3b.2")
-  information <- information[, c("prior", "r_squared", "log_bf", "error", "divergent")]
+  information <- information[
+    , c("prior", "r_squared", "log_bf", "error", "bridge_error", "divergent")
+  ]
   information$expected <- "increases with R-squared"
 
   # 3b.3-3b.5 the rates

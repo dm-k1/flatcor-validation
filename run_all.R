@@ -5,6 +5,7 @@
 ##    Rscript run_all.R 3a               one study (its targets end in _3a), then the figures
 ##    VALIDATION_SMOKE=1 Rscript run_all.R   the smoke test (results in cache/)
 ##    VALIDATION_FRESH=1 Rscript run_all.R   the whole validation from scratch
+##    VALIDATION_BUDGET_CORE_HOURS=3000 Rscript run_all.R   with a raised budget
 ##
 ##  The pipeline runs only what is not done yet: a run that stopped continues
 ##  where it was. It refuses to continue with another flatcor than the one
@@ -88,41 +89,65 @@ compile_flatcor_models()
 
 in_rounds <- list(
   "1b" = list(
-    study = "1b", tables = "pooled", by = "prior",
+    study = "1b", tables = "pooled", by = "prior", pieces = "changes_1b",
     cells = priors_1b, first_round = first_round_1b, batch_size = batch_size_1b
   ),
   "2b" = list(
-    study = "2b", tables = "estimates", by = c("k", "n", "rho", "others"),
+    study = "2b", tables = "estimates", by = c("k", "n", "rho", "others"), pieces = "fits_2b",
     cells = cells_2b, first_round = first_round_2b, batch_size = batch_size_2b
   ),
   "3a" = list(
-    study = "3a", tables = "calibration_line", by = c("prior", "k", "n"),
+    study = "3a", tables = "data_averaged_posterior", by = c("prior", "k", "n"),
+    pieces = "calibration_runs_3a",
     cells = cells_3a, first_round = first_round_3a, batch_size = batch_size_3a
   ),
   "3a-repeats" = list(
-    study = "3a", tables = "repeated_runs", by = c("prior", "k", "n"),
+    study = "3a", tables = "repeated_runs", by = c("prior", "k", "n"), pieces = "repeated_3a",
     cells = cells_3a, first_round = first_round_repeats_3a, batch_size = batch_size_repeats_3a
   ),
   "3b-rates" = list(
     study = "3b", tables = c("rates", "alternative_slopes"),
-    by = c("item", "setting", "q", "prior"),
+    by = c("item", "setting", "q", "prior"), pieces = "rates_3b",
     cells = rate_cells_3b, first_round = first_round_rates_3b, batch_size = batch_size_3b
   ),
   "3b-growing" = list(
     study = "3b", tables = "growing_slopes", by = c("truth", "growth", "method"),
+    pieces = "growing_3b",
     cells = growing_cells_3b, first_round = first_round_growing_3b, batch_size = batch_size_3b
   )
 )
 if (length(requested) > 0) {
   in_rounds <- Filter(function(design) design$study %in% requested, in_rounds)
 }
-budget_core_hours <- 2500 # about 20 euros (docs/working/run_time_estimate.md)
+## The budget: about 20 euros (docs/working/run_time_estimate.md). Raising it
+## is a decision written in the log: VALIDATION_BUDGET_CORE_HOURS=3000
+budget_core_hours <- as.numeric(Sys.getenv("VALIDATION_BUDGET_CORE_HOURS", "2500"))
+message("Budget: ", budget_core_hours, " core hours")
 last_round <- if (smoke) 2 else Inf
 
 ## the core hours so far: every piece's seconds, times the 4 chains it runs
 core_hours_so_far <- function() {
   pieces <- targets::tar_meta(fields = c("type", "seconds"), store = store)
   sum(pieces$seconds[pieces$type %in% c("stem", "branch")], na.rm = TRUE) * 4 / 3600
+}
+
+## The core hours one dataset of a design has cost so far: the mean seconds
+## of its pieces, times the 4 chains each runs, over the datasets in a piece
+core_hours_per_dataset <- function(design) {
+  meta <- targets::tar_meta(fields = c("type", "seconds"), store = store)
+  pieces <- meta$seconds[meta$type == "branch" & startsWith(meta$name, paste0(design$pieces, "_"))]
+  if (length(pieces) == 0) return(0)
+  mean(pieces, na.rm = TRUE) * 4 / 3600 / design$batch_size
+}
+
+## The core hours the next round would cost, per design: the datasets it
+## adds, times what one of its datasets has cost so far. `plans`,
+## `plans_next`: per design, the plan so far and the plan of the next round.
+round_cost <- function(plans, plans_next) {
+  vapply(names(plans), function(name) {
+    added <- sum(plans_next[[name]]$datasets - plans[[name]]$datasets)
+    added * core_hours_per_dataset(in_rounds[[name]])
+  }, numeric(1))
 }
 
 started <- Sys.time()
@@ -135,35 +160,63 @@ repeat {
   }
 
   # every cell short of a target gets the datasets it is estimated to lack
-  extended <- character(0)
+  plans <- list()
+  plans_next <- list()
   for (name in names(in_rounds)) {
     design <- in_rounds[[name]]
-    plan <- read_plan(name, store, design$cells, design$first_round)
+    plans[[name]] <- read_plan(name, store, design$cells, design$first_round)
     file <- file.path(results_root, "studies", sprintf("study_%s.rds", design$study))
     tables <- readRDS(file)$tables[design$tables]
     columns <- c(design$by, "mcse", "target_mcse", "reached")
     table <- do.call(rbind, lapply(tables, function(t) as.data.frame(t)[columns]))
-    plan_next <- next_plan(plan, table, design$by, design$batch_size, one_batch = smoke)
-    if (!identical(plan_next$datasets, plan$datasets)) {
-      write_plan(plan_next, name, store)
+    plans_next[[name]] <- next_plan(
+      plans[[name]], table, design$by, design$batch_size, one_batch = smoke
+    )
+  }
+  short <- any(vapply(names(plans), function(name) {
+    !identical(plans_next[[name]]$datasets, plans[[name]]$datasets)
+  }, logical(1)))
+
+  # a round that would take the run past its budget is not started: the run
+  # stops before it and says what it would cost, and the researcher decides
+  # (raise the budget and start again, or report the cells short of a
+  # target as such); docs/validation_tests.md, "How many datasets"
+  core_hours <- core_hours_so_far()
+  cost <- round_cost(plans, plans_next)
+  if (short && round < last_round && core_hours + sum(cost) > budget_core_hours) {
+    message(sprintf(
+      paste(
+        "Round %d done, %.1f core hours so far. The next round would cost about %.1f core",
+        "hours (%s), more than the %.1f left of the budget of %.1f: stopping before it.",
+        "To run it, raise the budget (VALIDATION_BUDGET_CORE_HOURS) and start again; to",
+        "stop here, the cells short of a target are marked in their study's results",
+        "(column reached)."
+      ),
+      round, core_hours, sum(cost),
+      paste(sprintf("%s %.1f", names(cost), cost)[cost > 0], collapse = ", "),
+      max(0, budget_core_hours - core_hours), budget_core_hours
+    ))
+    break
+  }
+
+  extended <- character(0)
+  for (name in names(plans)) {
+    if (!identical(plans_next[[name]]$datasets, plans[[name]]$datasets)) {
+      write_plan(plans_next[[name]], name, store)
       extended <- c(extended, sprintf(
-        "%s (%d of %d cells)", name, sum(plan_next$datasets > plan$datasets), nrow(plan)
+        "%s (%d of %d cells)", name,
+        sum(plans_next[[name]]$datasets > plans[[name]]$datasets), nrow(plans[[name]])
       ))
     }
   }
 
-  core_hours <- core_hours_so_far()
-  message(sprintf(
-    "Round %d done, %.1f core hours so far. %s", round, core_hours,
-    if (length(extended) == 0) "Every cell has reached its targets." else
-      paste("Next round for:", paste(extended, collapse = ", "))
-  ))
-  if (length(extended) == 0 || round >= last_round) break
-  if (core_hours >= budget_core_hours) {
-    message("The budget of ", budget_core_hours, " core hours is reached: stopping here. ",
-            "Cells short of a target are marked in their study's results (column reached).")
-    break
+  status <- if (!short) {
+    "Every cell has reached its targets."
+  } else {
+    paste("Next round for:", paste(extended, collapse = ", "))
   }
+  message(sprintf("Round %d done, %.1f core hours so far. %s", round, core_hours, status))
+  if (length(extended) == 0 || round >= last_round) break
   round <- round + 1
 }
 

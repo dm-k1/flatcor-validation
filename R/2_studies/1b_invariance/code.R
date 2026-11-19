@@ -27,7 +27,8 @@ recoded_1b <- function(data) {
 ## ---- The change in log Bayes factor -------------------------------------------------
 
 ## For one prior and one dataset: the change after rescaling and recoding,
-## expected 0. Its MCSE combines bridge sampling's errors of both Bayes factors.
+## expected 0. Its MCSE combines bridge sampling's reported errors of both
+## Bayes factors (save_results_1b() corrects them by study 3a's part B).
 invariance_1b <- function(prior, replication) {
   method <- names(contenders)[contenders == prior]
   original <- data_ordinary_regression(replication)
@@ -94,15 +95,17 @@ invariance_batch_1b <- function(prior_row, replications) {
 ## ---- Pooled over the datasets ------------------------------------------------------
 
 ## Per prior, Bayes factor and change: the mean change over the datasets,
-## expected 0. Its MCSE combines the datasets' errors: sqrt(sum of MCSE^2) / n.
+## expected 0. Its MCSE is measured: the SD of the changes over the datasets
+## / sqrt(n), which includes every source of noise, bridge sampling's among
+## them (docs/validation_tests.md, "Monte Carlo errors are measured").
 pooled_1b <- function(invariance) {
   invariance |>
     group_by(prior, bayes_factor, quantity) |>
     summarise(
       datasets = n(),
       expected = 0,
+      mcse = sd(estimate) / sqrt(n()),
       estimate = mean(estimate),
-      mcse = sqrt(sum(mcse^2)) / n(),
       .groups = "drop"
     ) |>
     mutate(distance_in_mcse = (estimate - expected) / mcse) |>
@@ -112,8 +115,15 @@ pooled_1b <- function(invariance) {
 
 ## ---- The results file ---------------------------------------------------------
 
-save_results_1b <- function(invariance) {
+## `shortfall`: by how much bridge sampling's reported error falls short of
+## the real spread (study 3a, part B). A change of one dataset is judged
+## against the reported errors of its two Bayes factors times that factor;
+## the reported errors are kept in column bridge_error.
+save_results_1b <- function(invariance, shortfall) {
   pooled <- pooled_1b(invariance)
+  invariance$bridge_error <- invariance$mcse
+  invariance$mcse <- invariance$mcse * shortfall
+  invariance$distance_in_mcse <- (invariance$estimate - invariance$expected) / invariance$mcse
 
   save_study_results_file("1b", list(
     pooled = pooled,

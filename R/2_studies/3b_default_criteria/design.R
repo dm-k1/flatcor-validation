@@ -46,7 +46,9 @@ if (smoke) {
 
 ## How many (docs/validation_tests.md, "How many datasets"): the rate slopes'
 ## Δ is 10% of each row's expected rate (1/2, q/2 or a); the alternative's
-## (3b.6, a direction) is .05 per log n, 10% of the smallest rate, 1/2. The
+## (3b.6, a direction, whose size is not known in advance) is 10% of its
+## slope, at least .05 per log n (10% of the smallest rate, 1/2): the
+## relative rule, direction_delta() in R/shared/rounds.R. The
 ## first round is the Chow-Robbins rule's; later rounds add datasets to every
 ## n of a slope until it reaches its target (R/shared/rounds.R).
 relative_delta_3b  <- 0.1
@@ -72,8 +74,8 @@ if (smoke) {
   growing_cells_3b <- subset(growing_cells_3b, n %in% c(50, 100) & growth == "k = n / 4")
 }
 
-## How many: the slopes' Δ is .05 per log n (a direction, as 3b.6); first
-## round and later rounds as for the rates
+## How many: the slopes' Δ is 10% of the slope, at least .05 per log n (a
+## direction, as 3b.6); first round and later rounds as for the rates
 first_round_growing_3b <- datasets(50, in_smoke = 2)   # per cell
 
 
