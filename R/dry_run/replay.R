@@ -48,6 +48,11 @@ replayed_functions <- c(
   "sbc_batch_2a"              # 2a: the SBC fits of one batch
 )
 
+## Skipped in the dry run, which samples nothing: compiling flatcor's models
+## (R/shared/pipeline.R). The static check fails when one of these no longer
+## exists, so a rename never silently brings compiling back into the dry run.
+skipped_in_dry_run <- c("compile_flatcor_models", "flatcor_stan_model")
+
 
 ## ---- Record or replay one call --------------------------------------------------------
 
@@ -186,6 +191,10 @@ if (exists("estimates_2b", envir = overlay_env, inherits = FALSE)) {
 
 ## The dry run samples nothing, so compiles no model
 if (dry) {
-  compile_flatcor_models <- function() invisible(TRUE)
-  flatcor_stan_model <- function() "dry run: no model"
+  replace_function("compile_flatcor_models", function(original) {
+    function() invisible(TRUE)
+  })
+  replace_function("flatcor_stan_model", function(original) {
+    function() "dry run: no model"
+  })
 }

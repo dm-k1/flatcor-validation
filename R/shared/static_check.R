@@ -20,7 +20,7 @@
 
 found <- new.env()
 found$problems <- character(0)
-note <- function(...) found$problems <- c(found$problems, sprintf(...))
+note <- function(...) found$problems <- unique(c(found$problems, sprintf(...)))
 
 ## ---- 1. Every R file parses --------------------------------------------------------
 r_files <- c(
@@ -165,11 +165,14 @@ allowed_file_use <- c(
 
 ## The seams, as the dry run's file lists them (sourced on its own, it
 ## replaces nothing)
-seams <- local({
-  overlay <- new.env()
-  sys.source(file.path("R", "dry_run", "replay.R"), envir = overlay)
-  overlay$replayed_functions
-})
+overlay <- new.env()
+sys.source(file.path("R", "dry_run", "replay.R"), envir = overlay)
+seams <- overlay$replayed_functions
+for (skipped in overlay$skipped_in_dry_run) {
+  if (!exists(skipped, envir = code, mode = "function")) {
+    note("the dry run skips %s(), which no longer exists (R/dry_run/replay.R)", skipped)
+  }
+}
 # flatcor's fit is replaced by name: called as fit_regression(), never as
 # flatcor::fit_regression(), which would pass the replacement by
 flatcor_seams <- intersect(seams, getNamespaceExports("flatcor"))
