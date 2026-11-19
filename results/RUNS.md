@@ -44,6 +44,13 @@ change the validation's code only, never its software.
 | dplyr | 1.2.1 |
 | everything else | `renv.lock` |
 
+The image's R uses OpenBLAS with a thread per core in every process. These
+results were made that way. From ad5dba0 on, `_targets.R` gives every worker
+one BLAS thread, so that workers no longer compete for the cores; it changes
+no result: smoke runs with and without it, on two identical machines, gave
+the same 34 tables, and no finished piece of these runs would be computed
+again.
+
 ## The runs
 
 Both ran on AWS EC2 (Amazon Linux 2023), one machine at a time, with
