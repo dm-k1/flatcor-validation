@@ -96,7 +96,8 @@ studies <- c(
   "2b_estimation", "3a_bayes_factors", "3b_default_criteria"
 )
 tar_source(c(
-  "R/shared/random_streams.R", "R/shared/pipeline.R", "R/shared/expectations.R",
+  "R/shared/random_streams.R", "R/shared/pipeline.R", "R/shared/shared_stan_build.R",
+  "R/shared/expectations.R",
   "R/shared/results.R", "R/shared/comparison_methods.R", "R/shared/rounds.R",
   list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
   file.path("R", "2_studies", studies, "design.R"),

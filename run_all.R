@@ -102,7 +102,7 @@ design_scripts <- list.files(
   pattern = "^design[.]R$", recursive = TRUE, full.names = TRUE
 )
 for (script in c(
-  file.path("R", "shared", c("random_streams.R", "pipeline.R", "rounds.R")),
+  file.path("R", "shared", c("random_streams.R", "pipeline.R", "shared_stan_build.R", "rounds.R")),
   list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
   design_scripts,
   # last, and only to record or replay the expensive calls (R/dry_run/replay.R)
