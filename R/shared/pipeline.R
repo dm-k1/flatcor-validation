@@ -28,20 +28,20 @@ datasets <- function(full, in_smoke) {
 ## of work, saved as soon as it is done
 split_into_batches <- function(total, size) split(seq_len(total), ceiling(seq_len(total) / size))
 
-## ---- flatcor's Stan models, compiled one worker at a time ---------------------------
-## Compiling a model can make CmdStan rebuild shared files in its folder (the
-## main.o every model is linked with, the TBB library), so two compiles at
-## once break each other ("cannot find src/cmdstan/main.o", seen with 7
-## workers on AWS). Each worker compiles flatcor's two versions of the model
-## (for estimation, and with model methods for Bayes factors) once, here,
-## under a lock: one worker at a time, the others wait. flatcor keeps them in
-## memory, so the worker's later fits and Bayes factors compile nothing.
-## run_all.R calls this once before any worker starts, so the shared files
-## already exist when the workers compile (the version with model methods
-## is compiled once per R process, into its own temporary folder). The
-## lock is a folder: creating one is atomic, so only one worker succeeds; a
-## lock older than 30 minutes is taken to be left by a worker that stopped
-## while compiling, and removed.
+## ---- flatcor's Stan model and log density, built once ----------------------------
+## flatcor builds two things (flatcor 2.1): the model, for sampling
+## (flatcor_model(), cmdstanr's executable) and its log density, for the Bayes
+## factors' bridge sampling (flatcor_density(), BridgeStan's library). Both
+## are files in flatcor's cache folder, which _targets.R and run_all.R put in
+## cache/r_user_cache, so every worker finds them. run_all.R calls this once
+## before any worker starts, so the workers only load them. Compiling can make
+## CmdStan rebuild files every model shares (the main.o every model is linked
+## with, the TBB library), so two compiles at once break each other ("cannot
+## find src/cmdstan/main.o", seen with 7 workers on AWS): a worker that still
+## has to build does so under a lock, one worker at a time (flatcor also locks
+## its own cache folder). The lock is a folder: creating one is atomic, so
+## only one worker succeeds; a lock older than 30 minutes is taken to be left
+## by a worker that stopped while compiling, and removed.
 compile_flatcor_models <- function() {
   if (isTRUE(getOption("validation_flatcor_compiled"))) {
     return(invisible(TRUE))
@@ -56,9 +56,8 @@ compile_flatcor_models <- function() {
   }
   on.exit(unlink(lock, recursive = TRUE))
 
-  compile_stan_model <- utils::getFromNamespace("compile_stan_model", "flatcor")
-  compile_stan_model("cmdstanr")
-  compile_stan_model("cmdstanr", model_methods = TRUE)
+  flatcor::flatcor_model("cmdstanr")
+  flatcor::flatcor_density()
   options(validation_flatcor_compiled = TRUE)
   invisible(TRUE)
 }
@@ -67,8 +66,7 @@ compile_flatcor_models <- function() {
 ## the pipeline's first step, so that their workers find it compiled
 flatcor_stan_model <- function() {
   compile_flatcor_models()
-  compile_stan_model <- utils::getFromNamespace("compile_stan_model", "flatcor")
-  compile_stan_model("cmdstanr")
+  flatcor::flatcor_model("cmdstanr")
 }
 prior_shape <- function(prior, k) utils::getFromNamespace("prior_shape", "flatcor")(prior, k)
 

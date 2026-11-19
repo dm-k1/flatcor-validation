@@ -42,6 +42,20 @@ RUN mkdir -p /opt/cmdstan \
  && Rscript -e 'cmdstanr::install_cmdstan(dir = "/opt/cmdstan", version = Sys.getenv("CMDSTAN_VERSION"), cores = parallel::detectCores())'
 ENV CMDSTAN=/opt/cmdstan/cmdstan-${CMDSTAN_VERSION}
 
+# BridgeStan's sources, the version of the bridgestan R package in renv.lock:
+# flatcor builds its log density for the Bayes factors with them
+# (flatcor_density()). A tiny model is compiled once here, so that BridgeStan's
+# own first build (its stanc and bridge code) is in the image and a run needs
+# no network for it.
+ENV BRIDGESTAN_VERSION=2.9.0
+RUN mkdir -p /opt/bridgestan \
+ && curl -fsSL "https://github.com/roualdes/bridgestan/releases/download/v${BRIDGESTAN_VERSION}/bridgestan-${BRIDGESTAN_VERSION}.tar.gz" \
+      | tar -xz -C /opt/bridgestan \
+ && printf 'parameters { real x; }\nmodel { x ~ std_normal(); }\n' > /tmp/first.stan \
+ && make -C /opt/bridgestan/bridgestan-${BRIDGESTAN_VERSION} /tmp/first_model.so \
+ && rm -f /tmp/first*
+ENV BRIDGESTAN=/opt/bridgestan/bridgestan-${BRIDGESTAN_VERSION}
+
 # git refuses to read a mounted repository owned by another user unless told
 RUN git config --system --add safe.directory /project
 
