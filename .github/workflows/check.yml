@@ -1,4 +1,4 @@
-# Checks the validation on every push to main: five independent jobs that
+# Checks the validation on every push to main or v2: five independent jobs that
 # start at the same time, written from the quickest to the slowest.
 #
 #   lint        lintr, in the style of .lintr (seconds)
@@ -24,7 +24,7 @@ name: Check
 
 on:
   push:
-    branches: [main]
+    branches: [main, v2]
   workflow_dispatch:
 
 permissions:
