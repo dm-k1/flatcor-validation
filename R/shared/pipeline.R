@@ -37,9 +37,8 @@ split_into_batches <- function(total, size) split(seq_len(total), ceiling(seq_le
 ## under a lock: one worker at a time, the others wait. flatcor keeps them in
 ## memory, so the worker's later fits and Bayes factors compile nothing.
 ## run_all.R calls this once before any worker starts, so the shared files
-## already exist when the workers compile. The version with model methods
-## is built once for every worker and loaded by each
-## (R/shared/shared_stan_build.R). The
+## already exist when the workers compile (the version with model methods
+## is compiled once per R process, into its own temporary folder). The
 ## lock is a folder: creating one is atomic, so only one worker succeeds; a
 ## lock older than 30 minutes is taken to be left by a worker that stopped
 ## while compiling, and removed.
@@ -59,7 +58,7 @@ compile_flatcor_models <- function() {
 
   compile_stan_model <- utils::getFromNamespace("compile_stan_model", "flatcor")
   compile_stan_model("cmdstanr")
-  use_shared_flatcor_model() # R/shared/shared_stan_build.R
+  compile_stan_model("cmdstanr", model_methods = TRUE)
   options(validation_flatcor_compiled = TRUE)
   invisible(TRUE)
 }

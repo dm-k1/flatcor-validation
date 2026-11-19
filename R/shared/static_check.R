@@ -52,7 +52,7 @@ if (!is.null(manifest)) cat(sprintf("2. the pipeline is valid: %d steps\n", nrow
 studies <- basename(list.dirs(file.path("R", "2_studies"), recursive = FALSE))
 pipeline_files <- c(
   file.path("R", "shared", c(
-    "random_streams.R", "pipeline.R", "shared_stan_build.R", "expectations.R", "results.R",
+    "random_streams.R", "pipeline.R", "expectations.R", "results.R",
     "comparison_methods.R", "rounds.R", "check_results.R"
   )),
   list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
@@ -160,13 +160,8 @@ file_calls <- c(
 )
 allowed_file_use <- c(
   "save_study_results_file", "read_plan", "write_plan",
-  "compile_flatcor_models", "shared_flatcor_model", "check_results_file", "check_results",
-  "similar_names" # lists a package's own files (R/shared/shared_stan_build.R)
+  "compile_flatcor_models", "check_results_file", "check_results"
 )
-## Compiling, or the shared build's own test: reached only through
-## compile_flatcor_models(), which the dry run skips, or by running
-## R/shared/shared_stan_build.R itself
-compiling_functions <- c("shared_flatcor_model", "bayes_factor_in_fresh_process")
 
 ## The seams, as the dry run's file lists them (sourced on its own, it
 ## replaces nothing)
@@ -218,7 +213,7 @@ for (name in functions) {
     stan_sample <- called == "sample" && how == "$"
     replaced_by_name <- called %in% flatcor_seams && how == "plain"
     is_expensive <- called %in% setdiff(expensive_calls, "sample") || stan_sample
-    if (is_expensive && !(name %in% c(seams, compiling_functions)) && !replaced_by_name) {
+    if (is_expensive && !(name %in% seams) && !replaced_by_name) {
       note(
         paste(
           "%s() calls %s() outside the seams the dry run replays: move it into one,",
