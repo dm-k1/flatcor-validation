@@ -53,6 +53,18 @@ if (Sys.info()[["sysname"]] == "Linux") {
   }
 }
 
+## One thread per process for linear algebra (BLAS, OpenMP). Each piece of
+## work already keeps 4 cores busy with Stan's chains, and the workers are
+## sized for that; a BLAS that starts a thread per core in every worker
+## overloads the machine instead (a load of about 200 on 64 cores, seen on
+## AWS). Set before the workers start, so they inherit it; a value set from
+## outside (a cluster job, say) is kept.
+local({
+  for (variable in c("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")) {
+    if (!nzchar(Sys.getenv(variable))) do.call(Sys.setenv, stats::setNames(list("1"), variable))
+  }
+})
+
 ## Each piece of work runs Stan's 4 chains in parallel, so a quarter of the
 ## cores work on pieces at the same time, each in its own R process. The
 ## cores are those given to this run: on a cluster, the job's allocation
