@@ -189,6 +189,40 @@ if (exists("estimates_2b", envir = overlay_env, inherits = FALSE)) {
   attr(fit_regression, "replayed") <- TRUE
 }
 
+## The dry run's results files go to cache/dry_results/, never over the smoke
+## test's, and are marked as dry. Done here, not in R/shared/results.R, so a
+## normal run sees save_study_results_file() unchanged and a finished store's
+## results steps stay valid: the original writes the file in a scratch
+## folder, and it is moved from there.
+if (dry) {
+  replace_function("save_study_results_file", function(original) {
+    function(study, tables) {
+      project <- getwd()
+      scratch <- tempfile("dry_results_")
+      dir.create(scratch)
+      on.exit({
+        setwd(project)
+        unlink(scratch, recursive = TRUE)
+      }, add = TRUE)
+      setwd(scratch)
+      written <- original(study, tables)
+      setwd(project)
+
+      results <- readRDS(file.path(scratch, written))
+      results$setup$commit <- tryCatch(
+        system2("git", c("rev-parse", "--short", "HEAD"), stdout = TRUE, stderr = FALSE),
+        error = function(e) NA_character_
+      )
+      results$setup$dry <- TRUE
+      folder <- file.path("cache", "dry_results", "studies")
+      dir.create(folder, recursive = TRUE, showWarnings = FALSE)
+      file <- file.path(folder, basename(written))
+      saveRDS(results, file)
+      file
+    }
+  })
+}
+
 ## The dry run samples nothing, so compiles no model
 if (dry) {
   replace_function("compile_flatcor_models", function(original) {

@@ -1,7 +1,6 @@
 ## =====================================================================
 ##  The results file of a study: results/studies/study_<cell>.rds
-##  (cache/smoke_results/studies/ for the smoke test, cache/dry_results/ for
-##  the dry run, cache/timing/results/
+##  (cache/smoke_results/studies/ for the smoke test, cache/timing/results/
 ##  for a timing run, so neither mixes with real results), with the study's
 ##  tables and the setup of the run. The notebook and the figure scripts
 ##  read only these files.
@@ -11,10 +10,7 @@
 save_study_results_file <- function(study, tables) {
   smoke <- identical(Sys.getenv("VALIDATION_SMOKE"), "1")
   timing <- !is.na(suppressWarnings(as.numeric(Sys.getenv("VALIDATION_TIMING", NA))))
-  dry <- identical(Sys.getenv("VALIDATION_DRY"), "1")
-  root <- if (dry) {
-    file.path("cache", "dry_results")
-  } else if (smoke) {
+  root <- if (smoke) {
     file.path("cache", "smoke_results")
   } else if (timing) {
     file.path("cache", "timing", "results")
@@ -41,8 +37,7 @@ save_study_results_file <- function(study, tables) {
     flatcor_commit = utils::packageDescription("flatcor")$RemoteSha,
     CmdStan = or_missing(as.character(cmdstanr::cmdstan_version())),
     machine = paste(Sys.info()[["sysname"]], Sys.info()[["machine"]]),
-    smoke = smoke,
-    dry = dry
+    smoke = smoke
   )
 
   saveRDS(list(study = study, tables = tables, setup = setup), file)
