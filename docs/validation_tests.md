@@ -31,6 +31,13 @@ Where σ is known in advance (coverage, the ranks of 2a), *n*<sub>sim</sub> is c
 
 Every dataset is made by one generator in `R/1_data/` (numbered in the order the studies first use them), from its own random stream seeded by its ID (`R/shared/random_streams.R`), so the same ID always gives the same data, on any machine and in any order.
 
+**Randomness.** Every random number in the validation follows from one seed, `root_seed` in `R/shared/random_streams.R` (it is 0), and a name. Everything random has a name that says what it is: a dataset's name is its data set, cell and replication; a Stan fit's name is its dataset's name and the prior; a bootstrap's name is what it bootstraps. The name and the root seed are hashed (`digest::digest2int`) to a seed, used in one of two ways:
+
+- R's random numbers (making data, bootstraps, BayesFactor's posterior draws) are drawn inside `with_stream_of(name, ...)`: R gets the seed, draws, and is then put back as it was, so making one dataset never changes another.
+- Stan and bridge sampling get the seed as `seed = seed_of(...)`. flatcor uses it for Stan (the second model of a Bayes factor gets seed + 1) and for bridge sampling's own random numbers.
+
+targets' own seed, with which it seeds R before each step, is the root seed too, so nothing random is left outside it. The same name always gives the same numbers, on any machine, in any order, on any number of workers and in any round. A new round adds new replication numbers, so new names: finished work is never drawn again, and a piece of work computed again gives the same result. The smoke test and the dry run use the same names for the corner of the design they run. **To run the validation again with fresh random numbers,** change `root_seed` and commit: every step then reruns, and every results file records the root seed it was made with. With 0, every number is the same as in v1 (the hash's seed was 0 there). Two details: in 2a the fits of one batch share one Stan seed (SBC takes one seed per batch), so changing 2a's batch size changes its seeds; and the run-time estimate's reference task (`R/timing/`) keeps its own fixed seed, as a yardstick that must be the same on every machine. Results can still differ in the last digits between processors with the same seeds.
+
 | Data set | File | One dataset | Used by | Why this data |
 |------------------|------------------|------------------|------------------|------------------|
 | **Prior-only designs** | `1_prior_only_designs.R` | fixed predictors, *n* = 60: one; three with correlation .4; eight uncorrelated (no outcome: the model draws the prior) | 1a | one predictor (where flat partial r and flat R coincide), a few correlated (the direction is defined relative to their covariance), and more |

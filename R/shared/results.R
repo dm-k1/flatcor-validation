@@ -37,6 +37,7 @@ save_study_results_file <- function(study, tables) {
     flatcor_commit = utils::packageDescription("flatcor")$RemoteSha,
     CmdStan = or_missing(as.character(cmdstanr::cmdstan_version())),
     machine = paste(Sys.info()[["sysname"]], Sys.info()[["machine"]]),
+    root_seed = root_seed, # every random number follows from it (R/shared/random_streams.R)
     smoke = smoke
   )
 

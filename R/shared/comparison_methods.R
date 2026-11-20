@@ -134,6 +134,3 @@ log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome
     divergent = 0
   )
 }
-
-## A seed for the Stan fits, from a dataset's ID and a label
-seed_of <- function(...) abs(digest::digest2int(paste(...))) %% .Machine$integer.max

@@ -74,22 +74,6 @@ local({
   }
 })
 
-## Each piece of work runs Stan's 4 chains in parallel, so a quarter of the
-## cores work on pieces at the same time, each in its own R process. The
-## cores are those given to this run: on a cluster, the job's allocation
-## (parallelly reads SLURM, PBS and cgroups), not all cores of the node.
-## The dry run samples nothing, so it runs every step in this one process:
-## starting workers would take longer than the steps.
-tar_option_set(
-  packages = c("flatcor", "dplyr"),
-  controller = if (dry_run) NULL else crew_controller_local(
-    workers = max(1, (parallelly::availableCores() - 1) %/% 4),
-    # a log per worker (its R output, including Stan's own messages), for
-    # finding out why a piece of work failed
-    options_local = crew_options_local(log_directory = file.path("cache", "logs", "workers"))
-  )
-)
-
 ## The shared code, then each study's design and code
 studies <- c(
   "1a_prior_sampling", "1b_invariance", "2a_posterior",
@@ -105,6 +89,26 @@ tar_source(c(
   # of the functions above (R/dry_run/replay.R)
   if (dry_run || identical(Sys.getenv("VALIDATION_RECORD"), "1")) "R/dry_run/replay.R"
 ))
+
+## Each piece of work runs Stan's 4 chains in parallel, so a quarter of the
+## cores work on pieces at the same time, each in its own R process. The
+## cores are those given to this run: on a cluster, the job's allocation
+## (parallelly reads SLURM, PBS and cgroups), not all cores of the node.
+## The dry run samples nothing, so it runs every step in this one process:
+## starting workers would take longer than the steps.
+tar_option_set(
+  packages = c("flatcor", "dplyr"),
+  # targets seeds R before each step from the step's name and this seed;
+  # every draw that matters has its own seed (R/shared/random_streams.R),
+  # but whatever is left follows the same root seed
+  seed = root_seed,
+  controller = if (dry_run) NULL else crew_controller_local(
+    workers = max(1, (parallelly::availableCores() - 1) %/% 4),
+    # a log per worker (its R output, including Stan's own messages), for
+    # finding out why a piece of work failed
+    options_local = crew_options_local(log_directory = file.path("cache", "logs", "workers"))
+  )
+)
 
 
 ## ---- The steps ------------------------------------------------------------------------

@@ -203,7 +203,7 @@ corner of each design.
 |---|---|
 | `_targets.R` | The pipeline: the steps of every study, in order |
 | `run_all.R` | Runs the pipeline, then the figures |
-| `R/shared/` | Used by every step: the random streams, the pipeline's helpers, the reporting rule, the results file, the comparison methods; the static check (`static_check.R`) |
+| `R/shared/` | Used by every step: the random streams and the one root seed, the pipeline's helpers, the reporting rule, the results file, the comparison methods; the static check (`static_check.R`) |
 | `R/1_data/` | One file per data set, numbered in the order the studies first use them (what each is and which study needs it: `docs/validation_tests.md`, "The data sets") |
 | `R/2_studies/` | The six studies, one folder per cell, each with `design.R` and `code.R` |
 | `R/3_figures/` | One script per study that draws its figures from its results file |

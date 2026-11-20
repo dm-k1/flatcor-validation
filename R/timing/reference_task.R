@@ -13,6 +13,9 @@
 ##
 ##  The task: n = 1000, three predictors against two, flat partial r, the
 ##  default draws (4 chains of 10,000, run in parallel), fixed data and seed.
+##  Its seeds stay fixed on purpose and do not follow root_seed
+##  (R/shared/random_streams.R): it is a yardstick for machines, so it must
+##  be the same task on every machine and in every run.
 ## =====================================================================
 
 reference_data <- function() {
