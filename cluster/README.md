@@ -149,5 +149,13 @@ every 15 minutes, and a new instance launched with the same run name first
 copies it back and continues from there. An interruption costs at most 15
 minutes of work.
 
+[`aws/keep_running.sh`](aws/keep_running.sh), run in the background on your
+own computer, launches that new instance: every 2 minutes it checks the
+run's instance, and when it is gone and the run's log in S3 does not say
+the run finished, it launches the fleet again (at most 12 times). When the
+log says `run_all.R` stopped on an error in the code (status 1, "Execution
+halted"), it stops instead and shows the end of the log, since a new
+instance would stop on the same error.
+
 The instance needs a role that may read and write the bucket. With 32 cores
 the pipeline runs 7 workers.
