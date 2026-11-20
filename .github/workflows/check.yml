@@ -5,7 +5,8 @@
 #   static      the static check (R/shared/static_check.R): the pipeline is
 #               valid, every function called exists, and the code keeps to
 #               the declared way (expensive calls replayable, files declared
-#               as steps); inside the published image, for its packages
+#               as steps); inside the published image, for its packages,
+#               after waiting for an image build still running (as smoke does)
 #   links       every link in the README, the docs and the notebook (seconds)
 #   workflows   actionlint on these workflow files (seconds)
 #   smoke       the smoke test (VALIDATION_SMOKE=1 Rscript run_all.R: a corner
@@ -54,7 +55,29 @@ jobs:
 
   static:
     runs-on: ubuntu-latest
+    timeout-minutes: 150
     steps:
+      # the static check reads the packages in the image (flatcor's functions,
+      # for one): when renv.lock or the Dockerfile changed in this push, check
+      # against the new image, not the one before it
+      - name: Wait for the branch's latest image build, if it is still running
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 60
+          while true; do
+            build=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
+              --branch "$GITHUB_REF_NAME" --limit 1 --json status,conclusion \
+              -q '.[0] // empty | "\(.status) \(.conclusion)"')
+            read -r status conclusion <<< "$build"
+            case "$status $conclusion" in
+              " ") echo "No image build for this branch"; break ;;
+              "completed success") echo "Image built"; break ;;
+              completed*) echo "Image build ended: $status $conclusion"; exit 1 ;;
+            esac
+            sleep 60
+          done
+
       - uses: actions/checkout@v4
       - name: Static check
         run: |
