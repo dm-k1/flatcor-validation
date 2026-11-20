@@ -17,6 +17,7 @@ way. What the studies test and why is in
 | `studies/study_3b.rds` | run 1b, 3a, 3b | 467b18d | 07c7b55 | no |
 | `figures/2a_sbc_ecdf_difference.png`, `figures/2b_bias.png`, `figures/2b_coverage.png`, `figures/2b_prediction.png` | run 1a–2b | 5e91c5e | | |
 | `figures/3a_bayes_factor_calibration.png`, `figures/3b_growing_k.png` | run 1b, 3a, 3b | 467b18d | | |
+| `per_dataset/` (one CSV per table) | exported 20 Nov from the two final stores, see `per_dataset/README.md` | | | |
 
 Each results file records its own commit, flatcor commit, R and CmdStan
 versions and finishing time (`readRDS(file)$setup`). The code of 1a, 2a and 2b

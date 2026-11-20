@@ -207,7 +207,7 @@ corner of each design.
 | `R/dry_run/` | The dry run: records the expensive calls in a smoke test, replays them after (`replay.R`); changes no study's code |
 | `R/4_notebook/` | The notebook's helpers: they present the results, they compute nothing |
 | `R/timing/` | The run-time estimate: time a study on a fraction of its datasets, scale up to the full run |
-| `results/` | Each study's tables and setup, `studies/study_<cell>.rds`, and its figures, `figures/<cell>_*.png` |
+| `results/` | Each study's tables and setup, `studies/study_<cell>.rds`, its figures, `figures/<cell>_*.png`, and the per-dataset results as CSV, `per_dataset/` |
 | `validation.ipynb` | The notebook (R kernel) |
 | `docs/` | What the validation tests, working notes |
 | `cluster/` | The container image, the run-time estimate, and how to run the validation on a cluster |

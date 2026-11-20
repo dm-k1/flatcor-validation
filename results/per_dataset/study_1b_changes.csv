@@ -1,0 +1,451 @@
+"prior","replication","bayes_factor","quantity","expected","estimate","mcse","distance_in_mcse","bridge_error"
+"flat_partial_r",1,"whole model against intercept only","change in log BF, rescaled",0,-0.0164810822436294,0.0231310584635878,-0.712508779897532,0.0179332695422761
+"flat_partial_r",1,"whole model against intercept only","change in log BF, recoded",0,0.00340104774537053,0.0135620083895944,0.250777587483283,0.0105144843400946
+"flat_partial_r",1,"x1: with it against without it","change in log BF, rescaled",0,-0.0123374087036581,0.0280499639282649,-0.439836883042339,0.0217468458941707
+"flat_partial_r",2,"whole model against intercept only","change in log BF, rescaled",0,0.00794800300599263,0.0190994618413469,0.41613753685911,0.0148076145262643
+"flat_partial_r",2,"whole model against intercept only","change in log BF, recoded",0,-0.000200017345164838,0.00721987403211224,-0.0277037167511801,0.00559749339974934
+"flat_partial_r",2,"x1: with it against without it","change in log BF, rescaled",0,-0.0321271871970339,0.0229920109413019,-1.39731958544443,0.0178254674414659
+"flat_partial_r",3,"whole model against intercept only","change in log BF, rescaled",0,-0.0664438244842529,0.0243104475931737,-2.73313867338708,0.0188476376931927
+"flat_partial_r",3,"whole model against intercept only","change in log BF, recoded",0,0.00113618482387778,0.00447225232849239,0.254052039201642,0.00346729081136419
+"flat_partial_r",3,"x1: with it against without it","change in log BF, rescaled",0,-0.0337535853718833,0.0297464977179988,-1.13470788029812,0.0230621509324927
+"flat_partial_r",4,"whole model against intercept only","change in log BF, rescaled",0,0.0040352997498303,0.0234889911029093,0.171795362863861,0.0182107710024464
+"flat_partial_r",4,"whole model against intercept only","change in log BF, recoded",0,0.0084753994035367,0.0054080326368457,1.5671871774206,0.00419279157167187
+"flat_partial_r",4,"x1: with it against without it","change in log BF, rescaled",0,0.057496167974989,0.0269906843666571,2.13022267957076,0.0209255974446525
+"flat_partial_r",5,"whole model against intercept only","change in log BF, rescaled",0,0.0343186884431077,0.0194803019607343,1.76171234472046,0.0151028759179657
+"flat_partial_r",5,"whole model against intercept only","change in log BF, recoded",0,0.00879201512012173,0.00939179482184974,0.93613790408489,0.00728136104498265
+"flat_partial_r",5,"x1: with it against without it","change in log BF, rescaled",0,0.00736234843056138,0.0264924457273192,0.277903690219483,0.0205393181989496
+"flat_partial_r",6,"whole model against intercept only","change in log BF, rescaled",0,-0.00157988639213613,0.0183565141429807,-0.0860667978588005,0.0142316148870092
+"flat_partial_r",6,"whole model against intercept only","change in log BF, recoded",0,-0.00196704474424791,0.00395954715406458,-0.496785280667434,0.00306979581115886
+"flat_partial_r",6,"x1: with it against without it","change in log BF, rescaled",0,-0.0349814232579035,0.0195274998977735,-1.7913928276037,0.01513946798867
+"flat_partial_r",7,"whole model against intercept only","change in log BF, rescaled",0,-0.0615496546870133,0.0235797777177929,-2.61027289670203,0.0182811569226628
+"flat_partial_r",7,"whole model against intercept only","change in log BF, recoded",0,0.00060431328003574,0.00388290042800268,0.15563450344427,0.00301037239998358
+"flat_partial_r",7,"x1: with it against without it","change in log BF, rescaled",0,0.0347543592314281,0.0283884743835708,1.22424187935726,0.0220092895366627
+"flat_partial_r",8,"whole model against intercept only","change in log BF, rescaled",0,0.0354176327511624,0.0189681329057779,1.8672176606467,0.0147057965656221
+"flat_partial_r",8,"whole model against intercept only","change in log BF, recoded",0,0.0117740402727975,0.00851735732789151,1.38235837942849,0.00660341873197909
+"flat_partial_r",8,"x1: with it against without it","change in log BF, rescaled",0,-0.0208589309244047,0.0239582952259533,-0.870635023388847,0.0185746176179871
+"flat_partial_r",9,"whole model against intercept only","change in log BF, rescaled",0,-0.00557058898576201,0.0227643093121469,-0.244707138238962,0.017648932731769
+"flat_partial_r",9,"whole model against intercept only","change in log BF, recoded",0,0.00220058443854043,0.00442199845535412,0.497644777753366,0.00342832950512088
+"flat_partial_r",9,"x1: with it against without it","change in log BF, rescaled",0,0.0134667721525688,0.028032639604189,0.480396150441587,0.0217334145255293
+"flat_partial_r",10,"whole model against intercept only","change in log BF, rescaled",0,0.0534619792293256,0.0232741522438003,2.29705377318594,0.0180442086648595
+"flat_partial_r",10,"whole model against intercept only","change in log BF, recoded",0,0.00627719072790001,0.00424474736259708,1.47881374123981,0.00329090857265128
+"flat_partial_r",10,"x1: with it against without it","change in log BF, rescaled",0,0.0277550564404976,0.0283253923669055,0.979864853449507,0.0219603827038902
+"flat_partial_r",11,"whole model against intercept only","change in log BF, rescaled",0,0.00234657074500433,0.0190156270240042,0.123402228180125,0.0147426182625265
+"flat_partial_r",11,"whole model against intercept only","change in log BF, recoded",0,-0.00830405968875425,0.00305049267541318,-2.72220279553023,0.00236501530922326
+"flat_partial_r",11,"x1: with it against without it","change in log BF, rescaled",0,0.0294106562947718,0.0253428940128842,1.16050898842964,0.0196480826863076
+"flat_partial_r",12,"whole model against intercept only","change in log BF, rescaled",0,0.00246962619159774,0.0237223895667397,0.104105287734601,0.018391722408938
+"flat_partial_r",12,"whole model against intercept only","change in log BF, recoded",0,0.00176698284927568,0.0051086473208715,0.345880766138744,0.00396068124361159
+"flat_partial_r",12,"x1: with it against without it","change in log BF, rescaled",0,-0.0194468606234182,0.0250579212856564,-0.776076371289022,0.0194271462887096
+"flat_partial_r",13,"whole model against intercept only","change in log BF, rescaled",0,0.0194824199378729,0.0237708384546251,0.8195933002137,0.0184292843288492
+"flat_partial_r",13,"whole model against intercept only","change in log BF, recoded",0,0.000931134284016366,0.0053235136136716,0.174909721584081,0.00412726485025456
+"flat_partial_r",13,"x1: with it against without it","change in log BF, rescaled",0,-0.0725605362279254,0.0242808054524127,-2.98839082460155,0.0188246564491258
+"flat_partial_r",14,"whole model against intercept only","change in log BF, rescaled",0,0.0348968582536031,0.0209422629602267,1.66633655206597,0.0162363191067184
+"flat_partial_r",14,"whole model against intercept only","change in log BF, recoded",0,0.0045862841022597,0.00863587636339923,0.531073386100963,0.00669530531006181
+"flat_partial_r",14,"x1: with it against without it","change in log BF, rescaled",0,-0.00737042696738399,0.0234829584101947,-0.313862795250885,0.0182060939184
+"flat_partial_r",15,"whole model against intercept only","change in log BF, rescaled",0,0.0366845516218035,0.0236966601140459,1.54808953857844,0.0183717746313185
+"flat_partial_r",15,"whole model against intercept only","change in log BF, recoded",0,-0.00271130695044519,0.00310550816098379,-0.873063862626038,0.0024076682441631
+"flat_partial_r",15,"x1: with it against without it","change in log BF, rescaled",0,0.0438354952327416,0.0287354168979148,1.52548666297312,0.022278270467008
+"flat_partial_r",16,"whole model against intercept only","change in log BF, rescaled",0,-0.00419342253246668,0.0184038830861361,-0.227855312535954,0.0142683395369804
+"flat_partial_r",16,"whole model against intercept only","change in log BF, recoded",0,-0.000146989682392018,0.00749809251857392,-0.0196036101218946,0.00581319330458575
+"flat_partial_r",16,"x1: with it against without it","change in log BF, rescaled",0,0.000183892267216379,0.0224022137872412,0.00820866495440337,0.0173682038296131
+"flat_partial_r",17,"whole model against intercept only","change in log BF, rescaled",0,0.0255991062053482,0.0244024657175835,1.04903768748674,0.0189189783899625
+"flat_partial_r",17,"whole model against intercept only","change in log BF, recoded",0,-0.00214137977197026,0.00445432721632253,-0.480741460601131,0.00345339365794929
+"flat_partial_r",17,"x1: with it against without it","change in log BF, rescaled",0,-0.0242720869631654,0.027810509169271,-0.872766723378967,0.0215611991048991
+"flat_partial_r",18,"whole model against intercept only","change in log BF, rescaled",0,0.0200643204054103,0.0184823927564531,1.08559106333269,0.0143292072695006
+"flat_partial_r",18,"whole model against intercept only","change in log BF, recoded",0,-0.00536575663602434,0.00340200189740353,-1.57723505096208,0.00263753676060742
+"flat_partial_r",18,"x1: with it against without it","change in log BF, rescaled",0,0.0266216451551315,0.0212210735711527,1.25449096935983,0.0164524780795062
+"flat_partial_r",19,"whole model against intercept only","change in log BF, rescaled",0,0.0236657290568303,0.0224714062038569,1.05314855875679,0.0174218479920454
+"flat_partial_r",19,"whole model against intercept only","change in log BF, recoded",0,-0.00963502519400095,0.0124993765641815,-0.77084046108438,0.00969063691524246
+"flat_partial_r",19,"x1: with it against without it","change in log BF, rescaled",0,0.0378464554362807,0.0277403143181394,1.36431242278798,0.0215067777653912
+"flat_partial_r",20,"whole model against intercept only","change in log BF, rescaled",0,-0.0219128860287725,0.0230777220359585,-0.94952552052707,0.0178919183635307
+"flat_partial_r",20,"whole model against intercept only","change in log BF, recoded",0,-0.0030834656952976,0.00241901321200546,-1.27467914602305,0.00187543583556757
+"flat_partial_r",20,"x1: with it against without it","change in log BF, rescaled",0,0.0253303757834971,0.0282446672685803,0.896819762209585,0.0218977973730299
+"flat_partial_r",21,"whole model against intercept only","change in log BF, rescaled",0,-0.0266808228836197,0.022684218449365,-1.17618435667844,0.0175868391171425
+"flat_partial_r",21,"whole model against intercept only","change in log BF, recoded",0,0.00333000450655163,0.00447595378767017,0.743976516407461,0.00347016051424612
+"flat_partial_r",21,"x1: with it against without it","change in log BF, rescaled",0,0.0310092053687185,0.0278237941594262,1.11448514861203,0.0215714988198773
+"flat_partial_r",22,"whole model against intercept only","change in log BF, rescaled",0,0.0631028247465366,0.0242493142727185,2.60225192501752,0.0188002416643658
+"flat_partial_r",22,"whole model against intercept only","change in log BF, recoded",0,0.00203178438793827,0.00349019728691917,0.582140269134111,0.00270591373069117
+"flat_partial_r",22,"x1: with it against without it","change in log BF, rescaled",0,-0.00251539033601489,0.0248594925537876,-0.101184299340481,0.019273306552446
+"flat_partial_r",23,"whole model against intercept only","change in log BF, rescaled",0,-0.0184502512552456,0.0246578649028149,-0.748250155800769,0.0191169867274038
+"flat_partial_r",23,"whole model against intercept only","change in log BF, recoded",0,0.00432405045008011,0.00492714012671914,0.877598432127277,0.00381996059990562
+"flat_partial_r",23,"x1: with it against without it","change in log BF, rescaled",0,-0.0130125884063119,0.0248133313163514,-0.524419242237616,0.0192375182241838
+"flat_partial_r",24,"whole model against intercept only","change in log BF, rescaled",0,-0.000427854463708854,0.0232289978988422,-0.0184189806883654,0.0180092009698846
+"flat_partial_r",24,"whole model against intercept only","change in log BF, recoded",0,0.00305206782655887,0.0131313798015533,0.232425523645111,0.0101806224654161
+"flat_partial_r",24,"x1: with it against without it","change in log BF, rescaled",0,-0.034137301112267,0.0282007752532195,-1.2105093142207,0.0218637683490898
+"flat_partial_r",25,"whole model against intercept only","change in log BF, rescaled",0,0.0618267760164599,0.024192357936617,2.55563249264266,0.0187560840081541
+"flat_partial_r",25,"whole model against intercept only","change in log BF, recoded",0,0.00723215149487544,0.00397615490345999,1.81888072031151,0.00308267162688805
+"flat_partial_r",25,"x1: with it against without it","change in log BF, rescaled",0,-0.0113165643393245,0.0289803501835111,-0.390490945335893,0.022468164701091
+"flat_partial_r",26,"whole model against intercept only","change in log BF, rescaled",0,0.00522534068059599,0.0224667867599579,0.23258068616688,0.0174182665851372
+"flat_partial_r",26,"whole model against intercept only","change in log BF, recoded",0,-0.00542042332916992,0.00402580150483398,-1.34642091088231,0.00312116212163559
+"flat_partial_r",26,"x1: with it against without it","change in log BF, rescaled",0,-0.00345198920943801,0.0274917717368568,-0.125564450428275,0.0213140852818246
+"flat_partial_r",27,"whole model against intercept only","change in log BF, rescaled",0,0.0633128828946212,0.0239376818988454,2.64490451340131,0.0185586363194326
+"flat_partial_r",27,"whole model against intercept only","change in log BF, recoded",0,0.00286585996678923,0.00419594977689522,0.683006260601579,0.00325307631094214
+"flat_partial_r",27,"x1: with it against without it","change in log BF, rescaled",0,0.0109624945791751,0.0286131355486771,0.383128041333517,0.0221834670061406
+"flat_partial_r",28,"whole model against intercept only","change in log BF, rescaled",0,0.0504357800017914,0.0192035560145218,2.62637711284575,0.0148883176583006
+"flat_partial_r",28,"whole model against intercept only","change in log BF, recoded",0,0.017728228265085,0.00837447339396549,2.11693648437163,0.00649264230104361
+"flat_partial_r",28,"x1: with it against without it","change in log BF, rescaled",0,0.00334078430492468,0.0233214985262954,0.143249127030062,0.0180809157462559
+"flat_partial_r",29,"whole model against intercept only","change in log BF, rescaled",0,0.018119247845533,0.0187223716340754,0.967785930098475,0.0145152604025048
+"flat_partial_r",29,"whole model against intercept only","change in log BF, recoded",0,-0.00778940675604645,0.00700514380370526,-1.11195529661024,0.00543101528241809
+"flat_partial_r",29,"x1: with it against without it","change in log BF, rescaled",0,0.00301340928845661,0.0222290623175605,0.135561691510311,0.0172339612923633
+"flat_partial_r",30,"whole model against intercept only","change in log BF, rescaled",0,-0.0308827892005041,0.0187406255787382,-1.64790599282564,0.0145294124963384
+"flat_partial_r",30,"whole model against intercept only","change in log BF, recoded",0,-0.0120496783678163,0.006680336279807,-1.80375326377499,0.0051791953804194
+"flat_partial_r",30,"x1: with it against without it","change in log BF, rescaled",0,0.0370511211053355,0.0206292350088151,1.79604920344856,0.0159936317850047
+"flat_partial_r",31,"whole model against intercept only","change in log BF, rescaled",0,0.0123633296275898,0.023390632112108,0.52855902176282,0.0181345142977771
+"flat_partial_r",31,"whole model against intercept only","change in log BF, recoded",0,0.00103006760511448,0.00399173452530078,0.258050127979607,0.00309475034599542
+"flat_partial_r",31,"x1: with it against without it","change in log BF, rescaled",0,-0.0447941806299497,0.0278353538585722,-1.60925493735568,0.0215804609346435
+"flat_partial_r",32,"whole model against intercept only","change in log BF, rescaled",0,-0.0281442155830121,0.0238178033992806,-1.18164614558294,0.0184656957629767
+"flat_partial_r",32,"whole model against intercept only","change in log BF, recoded",0,0.00235561144999963,0.00298568341559086,0.788968930094504,0.00231476936275875
+"flat_partial_r",32,"x1: with it against without it","change in log BF, rescaled",0,-0.0480127974540068,0.0297256971442081,-1.61519500185589,0.0230460244635285
+"flat_partial_r",33,"whole model against intercept only","change in log BF, rescaled",0,-0.0186493206624903,0.0223913740201892,-0.832879690441288,0.017359799870727
+"flat_partial_r",33,"whole model against intercept only","change in log BF, recoded",0,0.00361888611135441,0.00520876438204075,0.694768633388744,0.00403830096198959
+"flat_partial_r",33,"x1: with it against without it","change in log BF, rescaled",0,-0.0128756614794838,0.0245449351100717,-0.524575087354803,0.0190294334312239
+"flat_partial_r",34,"whole model against intercept only","change in log BF, rescaled",0,0.00564449249557697,0.0227341762035181,0.248282253337312,0.0176255708454101
+"flat_partial_r",34,"whole model against intercept only","change in log BF, recoded",0,0.00704630719990007,0.00310413856816163,2.26997186020375,0.00240660641306352
+"flat_partial_r",34,"x1: with it against without it","change in log BF, rescaled",0,-0.0339019070426332,0.0284657150308862,-1.19097331670216,0.0220691734088213
+"flat_partial_r",35,"whole model against intercept only","change in log BF, rescaled",0,-0.0312362633121381,0.0201681950414014,-1.5487882404953,0.015636192283548
+"flat_partial_r",35,"whole model against intercept only","change in log BF, recoded",0,-0.00435447688481361,0.00848591838664895,-0.513141499412083,0.00657904444714841
+"flat_partial_r",35,"x1: with it against without it","change in log BF, rescaled",0,-0.00489076846403691,0.0221661824249205,-0.220640991321015,0.0171852111642498
+"flat_partial_r",36,"whole model against intercept only","change in log BF, rescaled",0,-0.00689441344233899,0.0190835400585142,-0.361275393412294,0.0147952705332913
+"flat_partial_r",36,"whole model against intercept only","change in log BF, recoded",0,-0.00719509857930234,0.00868022311304926,-0.828907101303158,0.0067296868847766
+"flat_partial_r",36,"x1: with it against without it","change in log BF, rescaled",0,0.0167068939909285,0.022154715075086,0.754101054078378,0.0171763206469463
+"flat_partial_r",37,"whole model against intercept only","change in log BF, rescaled",0,0.00937775275404817,0.0188791931475198,0.496724233963364,0.0146368424941783
+"flat_partial_r",37,"whole model against intercept only","change in log BF, recoded",0,-0.00861097350750128,0.00502493457284095,-1.71364888093118,0.00389577961894449
+"flat_partial_r",37,"x1: with it against without it","change in log BF, rescaled",0,0.014875887545017,0.0261939941370836,0.56791215066956,0.0203079317787631
+"flat_partial_r",38,"whole model against intercept only","change in log BF, rescaled",0,-0.00481424756195281,0.0198360985143906,-0.242701333554085,0.015378721293091
+"flat_partial_r",38,"whole model against intercept only","change in log BF, recoded",0,0.00159762853614609,0.00720500781323216,0.221738626460891,0.00558596777455277
+"flat_partial_r",38,"x1: with it against without it","change in log BF, rescaled",0,0.00694620351517017,0.0226046855089851,0.307290429340817,0.0175251780539634
+"flat_partial_r",39,"whole model against intercept only","change in log BF, rescaled",0,-0.00121154927015255,0.0200828669098289,-0.0603275058084259,0.0155700382687873
+"flat_partial_r",39,"whole model against intercept only","change in log BF, recoded",0,0.00931175474428869,0.00736719582228227,1.26394831478825,0.00571171045456888
+"flat_partial_r",39,"x1: with it against without it","change in log BF, rescaled",0,0.0135824402408673,0.023405640798676,0.580306275640853,0.0181461503766935
+"flat_partial_r",40,"whole model against intercept only","change in log BF, rescaled",0,-0.00556151335669597,0.0180832642790002,-0.307550300149872,0.0140197671036115
+"flat_partial_r",40,"whole model against intercept only","change in log BF, recoded",0,0.000906776485877003,0.00550266351437055,0.164788648898647,0.0042661579088132
+"flat_partial_r",40,"x1: with it against without it","change in log BF, rescaled",0,-0.0322364286638788,0.0201796305307794,-1.59747368093333,0.0156450580997701
+"flat_partial_r",41,"whole model against intercept only","change in log BF, rescaled",0,0.0244204389383924,0.0238372881729677,1.02446380482517,0.0184808021057777
+"flat_partial_r",41,"whole model against intercept only","change in log BF, recoded",0,-0.00211380742038614,0.00445948391005914,-0.474002701437733,0.00345739158908034
+"flat_partial_r",41,"x1: with it against without it","change in log BF, rescaled",0,-0.0136561457960056,0.0296463866727632,-0.460634408730553,0.0229845358782056
+"flat_partial_r",42,"whole model against intercept only","change in log BF, rescaled",0,-0.0127166345430112,0.0203334321555225,-0.625405216676979,0.015764298903078
+"flat_partial_r",42,"whole model against intercept only","change in log BF, recoded",0,0.00431533277225071,0.0109910813667658,0.392621310701891,0.00852127130375713
+"flat_partial_r",42,"x1: with it against without it","change in log BF, rescaled",0,-0.0247099499046755,0.0271128568965469,-0.911373891691308,0.0210203165390088
+"flat_partial_r",43,"whole model against intercept only","change in log BF, rescaled",0,0.0339016741721139,0.0185732608586539,1.82529467658437,0.0143996563659882
+"flat_partial_r",43,"whole model against intercept only","change in log BF, recoded",0,-0.00347502251618437,0.00517855839153229,-0.671040520054103,0.00401488257106587
+"flat_partial_r",43,"x1: with it against without it","change in log BF, rescaled",0,-0.0413296578557834,0.0201896546476287,-2.04707106570729,0.0156528296935199
+"flat_partial_r",44,"whole model against intercept only","change in log BF, rescaled",0,0.0170416960213515,0.0249612358658154,0.682726452847242,0.0193521870862353
+"flat_partial_r",44,"whole model against intercept only","change in log BF, recoded",0,0.000173959858614126,0.00376841030628722,0.0461626639551141,0.00292160939694663
+"flat_partial_r",44,"x1: with it against without it","change in log BF, rescaled",0,-0.00571855110707986,0.0284596425006748,-0.200935451207593,0.0220644654391771
+"flat_partial_r",45,"whole model against intercept only","change in log BF, rescaled",0,-0.0059687241778903,0.021065361494888,-0.283343069110813,0.0163317561229628
+"flat_partial_r",45,"whole model against intercept only","change in log BF, recoded",0,-0.0195833841190876,0.0105779665174236,-1.85133731391857,0.00820098764891133
+"flat_partial_r",45,"x1: with it against without it","change in log BF, rescaled",0,0.0112746123634224,0.0244376234307502,0.461362881516352,0.0189462358000677
+"flat_partial_r",46,"whole model against intercept only","change in log BF, rescaled",0,-0.0121219614124186,0.0202689981934098,-0.598054294383424,0.0157143439210324
+"flat_partial_r",46,"whole model against intercept only","change in log BF, recoded",0,-0.00749589401785045,0.0086239208896827,-0.86919791052562,0.00668603635537902
+"flat_partial_r",46,"x1: with it against without it","change in log BF, rescaled",0,0.0196905512591741,0.0232709340075343,0.846143573472341,0.0180417135996855
+"flat_partial_r",47,"whole model against intercept only","change in log BF, rescaled",0,-0.0334733809562664,0.0229360729963826,-1.45942075443977,0.0177820993333675
+"flat_partial_r",47,"whole model against intercept only","change in log BF, recoded",0,0.00223078578433444,0.00271178209164389,0.822627227758604,0.0021024165092108
+"flat_partial_r",47,"x1: with it against without it","change in log BF, rescaled",0,0.0154630561770261,0.0282031428807,0.548274220445404,0.021865603946101
+"flat_partial_r",48,"whole model against intercept only","change in log BF, rescaled",0,0.0521336823215819,0.0229962090149451,2.26705550848405,0.0178287221643883
+"flat_partial_r",48,"whole model against intercept only","change in log BF, recoded",0,-0.00710551007917104,0.00283736771565448,-2.50426127003847,0.00219978174001345
+"flat_partial_r",48,"x1: with it against without it","change in log BF, rescaled",0,-0.0257750621482273,0.0282499129808111,-0.912394390939722,0.0219018643192756
+"flat_partial_r",49,"whole model against intercept only","change in log BF, rescaled",0,0.0282697982626701,0.0207403695510155,1.36303252423417,0.0160797932420722
+"flat_partial_r",49,"whole model against intercept only","change in log BF, recoded",0,0.010024605877561,0.0101372687928734,0.988886265362563,0.00785931927720808
+"flat_partial_r",49,"x1: with it against without it","change in log BF, rescaled",0,0.00331239676449968,0.0271521766526421,0.121993783661442,0.0210508007377973
+"flat_partial_r",50,"whole model against intercept only","change in log BF, rescaled",0,-0.0180067860612638,0.0182776306413451,-0.985181636208981,0.0141704573269479
+"flat_partial_r",50,"whole model against intercept only","change in log BF, recoded",0,-0.00234634853212867,0.00448150336809332,-0.523562817967253,0.00347446304634734
+"flat_partial_r",50,"x1: with it against without it","change in log BF, rescaled",0,-0.0286516134323165,0.0221508819185162,-1.29347506513347,0.0171733488404433
+"flat_r",1,"whole model against intercept only","change in log BF, rescaled",0,-0.00682101102805177,0.0243826005431869,-0.279749119293911,0.0189035771264397
+"flat_r",1,"whole model against intercept only","change in log BF, recoded",0,0.00161566387266987,0.016145609988312,0.10006830796975,0.0125175238435654
+"flat_r",1,"x1: with it against without it","change in log BF, rescaled",0,-0.0189000385241798,0.0305635596090259,-0.61838472893708,0.0236956105360632
+"flat_r",2,"whole model against intercept only","change in log BF, rescaled",0,-0.0180776867356514,0.0222607414444843,-0.812088257739979,0.0172585217906597
+"flat_r",2,"whole model against intercept only","change in log BF, recoded",0,-0.0150223321508491,0.0127489324835253,-1.17832078648637,0.0098841150292902
+"flat_r",2,"x1: with it against without it","change in log BF, rescaled",0,0.0141994677222073,0.0278323967607182,0.510177684095391,0.0215781683273699
+"flat_r",3,"whole model against intercept only","change in log BF, rescaled",0,-0.010459359062267,0.0189581388674067,-0.551708115201593,0.0146980482914041
+"flat_r",3,"whole model against intercept only","change in log BF, recoded",0,-0.000872177368293592,0.00764823623231176,-0.114036405492926,0.00592959816745778
+"flat_r",3,"x1: with it against without it","change in log BF, rescaled",0,-0.0334926447364552,0.020556433597782,-1.62930230952459,0.0159371896066596
+"flat_r",4,"whole model against intercept only","change in log BF, rescaled",0,0.0128627538446722,0.0193804249520222,0.663698235539983,0.0150254423097662
+"flat_r",4,"whole model against intercept only","change in log BF, recoded",0,0.00279175307231583,0.00957057191851355,0.291701801740332,0.00741996507244229
+"flat_r",4,"x1: with it against without it","change in log BF, rescaled",0,-0.025414207160793,0.025871770015681,-0.982314203681827,0.0200581147619052
+"flat_r",5,"whole model against intercept only","change in log BF, rescaled",0,0.03416716447407,0.0227702017064636,1.50052094024144,0.0176535010439237
+"flat_r",5,"whole model against intercept only","change in log BF, recoded",0,-0.0169583394717989,0.0148778155777773,-1.13984068313962,0.0115346159959154
+"flat_r",5,"x1: with it against without it","change in log BF, rescaled",0,-0.0173201647339596,0.0292516920284783,-0.592108132312392,0.0226785332171516
+"flat_r",6,"whole model against intercept only","change in log BF, rescaled",0,0.00776809798762201,0.0192855731741221,0.40279321322145,0.0149519047108567
+"flat_r",6,"whole model against intercept only","change in log BF, recoded",0,0.00799627677038472,0.0063956322483664,1.25027150715665,0.00495846729987635
+"flat_r",6,"x1: with it against without it","change in log BF, rescaled",0,0.0209766549867965,0.0218060571449837,0.96196459760365,0.0169060097725685
+"flat_r",7,"whole model against intercept only","change in log BF, rescaled",0,-0.0193757269851318,0.0180862315931721,-1.07129707398232,0.0140220676314903
+"flat_r",7,"whole model against intercept only","change in log BF, recoded",0,-0.0107295347048648,0.00593481544781047,-1.8078969429156,0.00460120081736809
+"flat_r",7,"x1: with it against without it","change in log BF, rescaled",0,0.0115631106751692,0.0254073673645928,0.455108571826429,0.019698068206698
+"flat_r",8,"whole model against intercept only","change in log BF, rescaled",0,-0.00812625830432978,0.021986492097041,-0.369602311658594,0.0170458991181073
+"flat_r",8,"whole model against intercept only","change in log BF, recoded",0,-0.00513202885484532,0.013938132808182,-0.368200599425533,0.0108060896979117
+"flat_r",8,"x1: with it against without it","change in log BF, rescaled",0,-0.0321445157297973,0.0284756170808665,-1.1288435168415,0.0220768503653945
+"flat_r",9,"whole model against intercept only","change in log BF, rescaled",0,0.00282428445774485,0.0184611922650392,0.152984943615658,0.014312770748554
+"flat_r",9,"whole model against intercept only","change in log BF, recoded",0,-0.0146179601254914,0.0073127902315409,-1.99895794391072,0.00566953036475987
+"flat_r",9,"x1: with it against without it","change in log BF, rescaled",0,-0.0245812925675466,0.019978306002164,-1.23039924230233,0.0154889732823453
+"flat_r",10,"whole model against intercept only","change in log BF, rescaled",0,-0.0193373954780469,0.0184070885779865,-1.05054068687282,0.0142708247215412
+"flat_r",10,"whole model against intercept only","change in log BF, recoded",0,0.00826328999633574,0.00683212825249358,1.2094752456264,0.0052968781213466
+"flat_r",10,"x1: with it against without it","change in log BF, rescaled",0,-0.00984068544484273,0.0261231471634371,-0.376703671394391,0.020253004855438
+"flat_r",11,"whole model against intercept only","change in log BF, rescaled",0,0.00282648967306898,0.0188048166756835,0.150306685878194,0.0145791791875404
+"flat_r",11,"whole model against intercept only","change in log BF, recoded",0,-0.00469819584240838,0.00403471202227883,-1.16444390986666,0.00312807035332551
+"flat_r",11,"x1: with it against without it","change in log BF, rescaled",0,-0.00601707591324896,0.0189104532115632,-0.318187821620779,0.0146610780973731
+"flat_r",12,"whole model against intercept only","change in log BF, rescaled",0,0.0359691451876074,0.0195864356410621,1.83643138786312,0.015185160258729
+"flat_r",12,"whole model against intercept only","change in log BF, recoded",0,0.0123512981920868,0.00930566379852824,1.32728824718987,0.00721458455658252
+"flat_r",12,"x1: with it against without it","change in log BF, rescaled",0,0.00723203856085775,0.0233963257379295,0.3091100133357,0.0181389285067806
+"flat_r",13,"whole model against intercept only","change in log BF, rescaled",0,0.0453532679099027,0.019220142019686,2.35967392246374,0.014901176615953
+"flat_r",13,"whole model against intercept only","change in log BF, recoded",0,-0.0071143192734695,0.00913406694533343,-0.778877505064071,0.00708154729735839
+"flat_r",13,"x1: with it against without it","change in log BF, rescaled",0,0.0182461125493916,0.022269894705775,0.819317414404298,0.0172656182191338
+"flat_r",14,"whole model against intercept only","change in log BF, rescaled",0,0.0146463050396335,0.0238104090415524,0.61512194158755,0.0184599629941784
+"flat_r",14,"whole model against intercept only","change in log BF, recoded",0,-0.00438230824457264,0.014009157450063,-0.312817402487893,0.010861154365575
+"flat_r",14,"x1: with it against without it","change in log BF, rescaled",0,-0.0557016324604405,0.0282628012149396,-1.97084613222969,0.0219118564334244
+"flat_r",15,"whole model against intercept only","change in log BF, rescaled",0,0.0100111239549108,0.023211518105168,0.431299836122386,0.0179956490672773
+"flat_r",15,"whole model against intercept only","change in log BF, recoded",0,-0.00168712963724715,0.00411922341743852,-0.409574685875201,0.00319359116082242
+"flat_r",15,"x1: with it against without it","change in log BF, rescaled",0,-0.00610705358735686,0.0252859680097596,-0.241519469810281,0.019603948546938
+"flat_r",16,"whole model against intercept only","change in log BF, rescaled",0,0.0162087020534187,0.0213310162839759,0.759865439022467,0.0165377155236279
+"flat_r",16,"whole model against intercept only","change in log BF, recoded",0,-0.0129151282614401,0.0131235262513192,-0.984120274849295,0.0101745336894341
+"flat_r",16,"x1: with it against without it","change in log BF, rescaled",0,0.0222568849542313,0.0268670092887541,0.828409471073787,0.0208297134404168
+"flat_r",17,"whole model against intercept only","change in log BF, rescaled",0,0.0235918988012855,0.018615815103949,1.26730409974264,0.0144326482306816
+"flat_r",17,"whole model against intercept only","change in log BF, recoded",0,0.00116347425162644,0.00718093835463303,0.162022592893557,0.00556730697312537
+"flat_r",17,"x1: with it against without it","change in log BF, rescaled",0,0.0365841618205707,0.0256265795487476,1.4275866098704,0.0198680211378009
+"flat_r",18,"whole model against intercept only","change in log BF, rescaled",0,0.0158662616307197,0.0188693861338071,0.840846730159022,0.0146292392182369
+"flat_r",18,"whole model against intercept only","change in log BF, recoded",0,-0.00267339371087871,0.00482970590717754,-0.553531366559136,0.00374442086079548
+"flat_r",18,"x1: with it against without it","change in log BF, rescaled",0,0.00220912786113558,0.0228910764798275,0.0965060713978371,0.0177472140011154
+"flat_r",19,"whole model against intercept only","change in log BF, rescaled",0,-0.0604840389540442,0.0243810499296677,-2.48078073456735,0.0189023749518726
+"flat_r",19,"whole model against intercept only","change in log BF, recoded",0,-0.00589726361451426,0.0161166203868395,-0.365911926505997,0.0124950485064359
+"flat_r",19,"x1: with it against without it","change in log BF, rescaled",0,0.0105965696122325,0.0311738376164005,0.339918676122753,0.024168752740913
+"flat_r",20,"whole model against intercept only","change in log BF, rescaled",0,-0.0140229425007448,0.0229645585321889,-0.610634098673793,0.0178041838736178
+"flat_r",20,"whole model against intercept only","change in log BF, recoded",0,0.000861601041620474,0.00260366186395233,0.330918946714753,0.00201859201889544
+"flat_r",20,"x1: with it against without it","change in log BF, rescaled",0,0.0147773308274566,0.0281154034993424,0.525595545082687,0.0217975805144092
+"flat_r",21,"whole model against intercept only","change in log BF, rescaled",0,0.013621722350095,0.0176011281238738,0.773911891000825,0.0136459719467851
+"flat_r",21,"whole model against intercept only","change in log BF, recoded",0,-0.00804636607973919,0.00719547793384889,-1.11825317980444,0.00557857935798055
+"flat_r",21,"x1: with it against without it","change in log BF, rescaled",0,0.0119240482812017,0.0239408647809171,0.498062554979478,0.0185611039748666
+"flat_r",22,"whole model against intercept only","change in log BF, rescaled",0,0.00599282898473064,0.0242517895829078,0.247108732501715,0.0188021607466635
+"flat_r",22,"whole model against intercept only","change in log BF, recoded",0,-0.00348846639624867,0.0053878104576588,-0.647473852999004,0.00417711352604063
+"flat_r",22,"x1: with it against without it","change in log BF, rescaled",0,-0.0540279026283486,0.0265939892938765,-2.03158322850002,0.0206180438721488
+"flat_r",23,"whole model against intercept only","change in log BF, rescaled",0,-0.0196333650234806,0.0196093509588067,-1.00122462312619,0.0152029262667311
+"flat_r",23,"whole model against intercept only","change in log BF, recoded",0,-0.00627700223131455,0.00813053665346571,-0.772028034415038,0.00630352067803041
+"flat_r",23,"x1: with it against without it","change in log BF, rescaled",0,-0.0193523606296822,0.0205732414278535,-0.940656857479034,0.0159502205428602
+"flat_r",24,"whole model against intercept only","change in log BF, rescaled",0,0.00964173129514734,0.0251068463078787,0.384027972964557,0.0194650773506303
+"flat_r",24,"whole model against intercept only","change in log BF, recoded",0,-0.0070457362001406,0.0159492697293117,-0.44175917265929,0.0123653032786398
+"flat_r",24,"x1: with it against without it","change in log BF, rescaled",0,-0.0344414408993572,0.03141964190772,-1.09617547521745,0.0243593222566928
+"flat_r",25,"whole model against intercept only","change in log BF, rescaled",0,0.00888547183964761,0.0241251636007878,0.368307215929407,0.0187039889370168
+"flat_r",25,"whole model against intercept only","change in log BF, recoded",0,-0.00107037150938538,0.00596044555985528,-0.17957911009112,0.00462107157721342
+"flat_r",25,"x1: with it against without it","change in log BF, rescaled",0,0.039520152327313,0.0241128135030283,1.63896893750494,0.0186944140344094
+"flat_r",26,"whole model against intercept only","change in log BF, rescaled",0,0.0383592606609113,0.0229306939344926,1.67283470663794,0.0177779290025152
+"flat_r",26,"whole model against intercept only","change in log BF, recoded",0,-0.00307916813812881,0.00704594547051072,-0.437012768693144,0.00546264839119901
+"flat_r",26,"x1: with it against without it","change in log BF, rescaled",0,-0.00125938763598299,0.0253825101545713,-0.0496163550536856,0.0196787966697692
+"flat_r",27,"whole model against intercept only","change in log BF, rescaled",0,-0.0193648042251198,0.017996185654303,-1.07605048075782,0.0139522559497003
+"flat_r",27,"whole model against intercept only","change in log BF, recoded",0,-0.00741219334017273,0.00670942976090775,-1.10474266879722,0.00520175125434641
+"flat_r",27,"x1: with it against without it","change in log BF, rescaled",0,0.00155225627963773,0.0193866316346471,0.0800683846936873,0.0150302542863842
+"flat_r",28,"whole model against intercept only","change in log BF, rescaled",0,0.0435328232987189,0.0222435213987266,1.95710123942925,0.017245171267916
+"flat_r",28,"whole model against intercept only","change in log BF, recoded",0,-0.000396566028513234,0.0138710461750998,-0.0285894822573021,0.0107540781275964
+"flat_r",28,"x1: with it against without it","change in log BF, rescaled",0,-0.0231341277025905,0.0285840379245647,-0.809337286902678,0.0221609079201797
+"flat_r",29,"whole model against intercept only","change in log BF, rescaled",0,-0.0305874956352739,0.0214080918643436,-1.42878196847702,0.0165974714210953
+"flat_r",29,"whole model against intercept only","change in log BF, recoded",0,-0.0183510193493532,0.0125499919431398,-1.46223355620435,0.00972987849319591
+"flat_r",29,"x1: with it against without it","change in log BF, rescaled",0,0.0261217084938181,0.0266950316305298,0.978523226919273,0.0206963809470059
+"flat_r",30,"whole model against intercept only","change in log BF, rescaled",0,0.0133904683576134,0.0212240190772037,0.63091105925342,0.0164547616997751
+"flat_r",30,"whole model against intercept only","change in log BF, recoded",0,-0.00241612926970447,0.0118177951169309,-0.204448397166996,0.00916221389353766
+"flat_r",30,"x1: with it against without it","change in log BF, rescaled",0,-0.0283747339315141,0.0239205512043077,-1.18620736157636,0.0185453550697623
+"flat_r",31,"whole model against intercept only","change in log BF, rescaled",0,8.83732873404597e-05,0.0239774454221918,0.00368568401614076,0.0185894645663649
+"flat_r",31,"whole model against intercept only","change in log BF, recoded",0,-0.00297399095488515,0.00557777296920962,-0.533186089018351,0.00432438948956523
+"flat_r",31,"x1: with it against without it","change in log BF, rescaled",0,0.0411827088216512,0.0299382529998933,1.37558824229984,0.023210816812257
+"flat_r",32,"whole model against intercept only","change in log BF, rescaled",0,-0.00221317623382333,0.0246838392462421,-0.0896609401700051,0.019137124366267
+"flat_r",32,"whole model against intercept only","change in log BF, recoded",0,0.00518338843838251,0.00379203758173833,1.36691378359345,0.00293992737836894
+"flat_r",32,"x1: with it against without it","change in log BF, rescaled",0,0.0135088279360502,0.030079191147598,0.449108749958158,0.023320084695331
+"flat_r",33,"whole model against intercept only","change in log BF, rescaled",0,-0.0440089930454235,0.0188876437383546,-2.33004146282449,0.0146433941495412
+"flat_r",33,"whole model against intercept only","change in log BF, recoded",0,-0.0205574861875988,0.00937572350186138,-2.19262931372896,0.00726890111740497
+"flat_r",33,"x1: with it against without it","change in log BF, rescaled",0,-0.0134985759299155,0.0223269462877302,-0.604586751629967,0.0173098497184673
+"flat_r",34,"whole model against intercept only","change in log BF, rescaled",0,0.0305806779919635,0.0227529814691308,1.34402948613361,0.0176401503726539
+"flat_r",34,"whole model against intercept only","change in log BF, recoded",0,0.0058064161434146,0.00405833288488342,1.4307392488779,0.00314638336293448
+"flat_r",34,"x1: with it against without it","change in log BF, rescaled",0,0.0293728699273572,0.0254874539968056,1.15244425477094,0.0197601585414082
+"flat_r",35,"whole model against intercept only","change in log BF, rescaled",0,-0.0334886672550141,0.0232586210653354,-1.43983889504634,0.0180321675033986
+"flat_r",35,"whole model against intercept only","change in log BF, recoded",0,-0.0313519442528474,0.0142244093776815,-2.20409462497891,0.01102803695089
+"flat_r",35,"x1: with it against without it","change in log BF, rescaled",0,0.00706783963099156,0.0269234006966127,0.262516600730931,0.0208734331136255
+"flat_r",36,"whole model against intercept only","change in log BF, rescaled",0,0.0146991708801352,0.0222733766072764,0.659943534350925,0.0172683177012281
+"flat_r",36,"whole model against intercept only","change in log BF, recoded",0,0.0138768913560909,0.0140882395998332,0.984998250331801,0.0109224659354732
+"flat_r",36,"x1: with it against without it","change in log BF, rescaled",0,0.0187796355362337,0.0272337210884921,0.689572881914006,0.0211140212925364
+"flat_r",37,"whole model against intercept only","change in log BF, rescaled",0,0.00271944413363201,0.0203109887201023,0.133890288213321,0.0157468987405441
+"flat_r",37,"whole model against intercept only","change in log BF, recoded",0,0.00131481417210466,0.00835920301867824,0.157289417324447,0.00648080333757944
+"flat_r",37,"x1: with it against without it","change in log BF, rescaled",0,-0.0533400601063221,0.0275300167056312,-1.93752371008956,0.0213437362091588
+"flat_r",38,"whole model against intercept only","change in log BF, rescaled",0,0.0544780406521141,0.0218064103706078,2.49825806844136,0.0169062836247286
+"flat_r",38,"whole model against intercept only","change in log BF, recoded",0,-0.0012172340139216,0.0124514775703801,-0.0977581983376166,0.00965350132250697
+"flat_r",38,"x1: with it against without it","change in log BF, rescaled",0,-0.0321819644132404,0.0267985549613341,-1.20088431856395,0.0207766415108772
+"flat_r",39,"whole model against intercept only","change in log BF, rescaled",0,-0.00709123438339532,0.0226835896748997,-0.312615176214462,0.0175863516348257
+"flat_r",39,"whole model against intercept only","change in log BF, recoded",0,-0.0013924838840893,0.0131769134166785,-0.105676028980109,0.0102159242046149
+"flat_r",39,"x1: with it against without it","change in log BF, rescaled",0,0.00945165081300559,0.0278659373843168,0.339182948797017,0.0216041720247172
+"flat_r",40,"whole model against intercept only","change in log BF, rescaled",0,0.000292161540045299,0.0199724888274004,0.0146281989475684,0.0154844632871294
+"flat_r",40,"whole model against intercept only","change in log BF, recoded",0,-0.00574276509247795,0.00994734516605779,-0.577316358949054,0.0077120734606151
+"flat_r",40,"x1: with it against without it","change in log BF, rescaled",0,0.0315308553569764,0.0236971075548824,1.33057822706637,0.0183721215275549
+"flat_r",41,"whole model against intercept only","change in log BF, rescaled",0,-0.0432660172958492,0.0182697757888764,-2.36817450831509,0.0141643675413568
+"flat_r",41,"whole model against intercept only","change in log BF, recoded",0,0.00333951142359012,0.00684102650033573,0.488159404648737,0.0053037768405409
+"flat_r",41,"x1: with it against without it","change in log BF, rescaled",0,0.00628307205263923,0.0261786474121585,0.240007512753355,0.0202960336222171
+"flat_r",42,"whole model against intercept only","change in log BF, rescaled",0,-0.0275623038670432,0.0231725064491553,-1.18943990489419,0.0179654037352849
+"flat_r",42,"whole model against intercept only","change in log BF, recoded",0,0.0195638433489762,0.0155065929970877,1.26164679453769,0.0120221006028278
+"flat_r",42,"x1: with it against without it","change in log BF, rescaled",0,-0.0221868793090607,0.0294475760060412,-0.753436524096553,0.0228304000318145
+"flat_r",43,"whole model against intercept only","change in log BF, rescaled",0,-0.03777748603828,0.0206252237801217,-1.83161581377311,0.0159905219210325
+"flat_r",43,"whole model against intercept only","change in log BF, recoded",0,-0.00833800542122276,0.00936699018888262,-0.890147769250241,0.00726213027049835
+"flat_r",43,"x1: with it against without it","change in log BF, rescaled",0,0.0472402418389919,0.0233501986353267,2.02311948505319,0.0181031666429004
+"flat_r",44,"whole model against intercept only","change in log BF, rescaled",0,-0.0116239002792469,0.0188600495363983,-0.61632395274539,0.0146220006511734
+"flat_r",44,"whole model against intercept only","change in log BF, recoded",0,-0.00924291502430208,0.0058026478573629,-1.59287884626221,0.00449873265630315
+"flat_r",44,"x1: with it against without it","change in log BF, rescaled",0,0.0463775424036612,0.0247761471076887,1.87186257016003,0.0192086896931542
+"flat_r",45,"whole model against intercept only","change in log BF, rescaled",0,0.0434204610372149,0.0241791780578848,1.79577903488971,0.0187458657849711
+"flat_r",45,"whole model against intercept only","change in log BF, recoded",0,-0.00126170994019503,0.0153259859723722,-0.0823248789650135,0.0118820778511431
+"flat_r",45,"x1: with it against without it","change in log BF, rescaled",0,-0.0006425951287099,0.0292097206010743,-0.0219993589629291,0.02264599320512
+"flat_r",46,"whole model against intercept only","change in log BF, rescaled",0,0.0302115940924068,0.0229460085491297,1.31663831762813,0.0177898022642881
+"flat_r",46,"whole model against intercept only","change in log BF, recoded",0,-0.00692877339881193,0.0140146667208068,-0.494394446678148,0.0108654256460001
+"flat_r",46,"x1: with it against without it","change in log BF, rescaled",0,-0.0222288573565095,0.0274595797705989,-0.809511927793959,0.0212891271845154
+"flat_r",47,"whole model against intercept only","change in log BF, rescaled",0,0.0299524856602886,0.0231192207250555,1.29556640409716,0.0179240918664596
+"flat_r",47,"whole model against intercept only","change in log BF, recoded",0,0.00068448117360731,0.00317618714274638,0.215504043951092,0.00246246492512422
+"flat_r",47,"x1: with it against without it","change in log BF, rescaled",0,0.00215194801052121,0.0286108328096064,0.0752144484867518,0.0221816817164399
+"flat_r",48,"whole model against intercept only","change in log BF, rescaled",0,-0.0100076112248217,0.0231451719618919,-0.432384397113103,0.0179442115910229
+"flat_r",48,"whole model against intercept only","change in log BF, recoded",0,-0.00127514029605891,0.00335840806081956,-0.379685932431847,0.00260373891157804
+"flat_r",48,"x1: with it against without it","change in log BF, rescaled",0,0.0355183221047355,0.0251458950754084,1.41248987153656,0.0194953514547967
+"flat_r",49,"whole model against intercept only","change in log BF, rescaled",0,-0.0652294959708115,0.0236355097983977,-2.75980914002682,0.0183243654262949
+"flat_r",49,"whole model against intercept only","change in log BF, recoded",0,-0.00385320219582752,0.0150764139514821,-0.255578163894123,0.0116885872537336
+"flat_r",49,"x1: with it against without it","change in log BF, rescaled",0,0.0380574492233166,0.0300993684596794,1.26439361258684,0.023335727955961
+"flat_r",50,"whole model against intercept only","change in log BF, rescaled",0,0.0202778809129285,0.0193729673471123,1.0467101167107,0.0150196605060844
+"flat_r",50,"whole model against intercept only","change in log BF, recoded",0,-0.000159303209144923,0.00756154639736305,-0.0210675436972095,0.00586238843820316
+"flat_r",50,"x1: with it against without it","change in log BF, rescaled",0,0.0263198858321942,0.0258194113389875,1.0193836523473,0.020017521623312
+"flat_r_squared",1,"whole model against intercept only","change in log BF, rescaled",0,-0.0238346078933773,0.0233695528980965,-1.01990003819537,0.0181181718019418
+"flat_r_squared",1,"whole model against intercept only","change in log BF, recoded",0,-0.0226645822965281,0.014754717401343,-1.5360905722576,0.0114391792574007
+"flat_r_squared",1,"x1: with it against without it","change in log BF, rescaled",0,-0.0244673475396979,0.027926978004638,-0.876118695536427,0.0216514961840924
+"flat_r_squared",2,"whole model against intercept only","change in log BF, rescaled",0,0.00489635164684898,0.0204904855008852,0.238957327128118,0.0158860607316315
+"flat_r_squared",2,"whole model against intercept only","change in log BF, recoded",0,-0.015343731972294,0.0091204245236475,-1.68234844030677,0.00707097046942428
+"flat_r_squared",2,"x1: with it against without it","change in log BF, rescaled",0,0.0344025326321145,0.0237387786235989,1.44921241221377,0.0184044286746137
+"flat_r_squared",3,"whole model against intercept only","change in log BF, rescaled",0,0.0110135355513989,0.0177837707114036,0.619302606299161,0.013787572849192
+"flat_r_squared",3,"whole model against intercept only","change in log BF, recoded",0,-0.00757558104140799,0.00497182021049494,-1.52370373840486,0.00385460060510833
+"flat_r_squared",3,"x1: with it against without it","change in log BF, rescaled",0,-0.0083859975507039,0.0294735952987737,-0.284525775213206,0.0228505725194076
+"flat_r_squared",4,"whole model against intercept only","change in log BF, rescaled",0,-0.00355459489942689,0.017970208715947,-0.197804875592374,0.0139321162990157
+"flat_r_squared",4,"whole model against intercept only","change in log BF, recoded",0,-0.00565729796480241,0.00648805337183992,-0.87195613854793,0.00503012043763741
+"flat_r_squared",4,"x1: with it against without it","change in log BF, rescaled",0,0.00716921337578924,0.0224166297004646,0.319816737466143,0.0173793803375079
+"flat_r_squared",5,"whole model against intercept only","change in log BF, rescaled",0,-0.00397172367416943,0.0204756232099441,-0.193973274143888,0.0158745381517252
+"flat_r_squared",5,"whole model against intercept only","change in log BF, recoded",0,0.00119919453268835,0.0114357402846803,0.104863743215193,0.00886601074756124
+"flat_r_squared",5,"x1: with it against without it","change in log BF, rescaled",0,-0.00421585409327463,0.0272959861568826,-0.154449598158651,0.0211622947537908
+"flat_r_squared",6,"whole model against intercept only","change in log BF, rescaled",0,0.0108930820268966,0.0185719124239226,0.586535289325682,0.0143986109385368
+"flat_r_squared",6,"whole model against intercept only","change in log BF, recoded",0,0.0020370237315035,0.00462097678844667,0.440821026540633,0.00358259534150872
+"flat_r_squared",6,"x1: with it against without it","change in log BF, rescaled",0,-0.0287683292092566,0.0199026959008533,-1.44544886544859,0.0154303535555802
+"flat_r_squared",7,"whole model against intercept only","change in log BF, rescaled",0,0.0306493132981416,0.0242634931515355,1.26318634776634,0.0188112344019455
+"flat_r_squared",7,"whole model against intercept only","change in log BF, recoded",0,-0.00316004285019744,0.00434471202290261,-0.727330795122823,0.00336841013622145
+"flat_r_squared",7,"x1: with it against without it","change in log BF, rescaled",0,0.028695374394573,0.0290662288940924,0.987241052120293,0.0225347455740425
+"flat_r_squared",8,"whole model against intercept only","change in log BF, rescaled",0,-0.0130956334271417,0.0195569204023281,-0.669616338244274,0.0151622774004865
+"flat_r_squared",8,"whole model against intercept only","change in log BF, recoded",0,0.01011979196916,0.0103355747815657,0.979122321015898,0.0080130638519609
+"flat_r_squared",8,"x1: with it against without it","change in log BF, rescaled",0,-0.02530867038395,0.0247501189671074,-1.02256762553687,0.0191885103459158
+"flat_r_squared",9,"whole model against intercept only","change in log BF, rescaled",0,0.00184430453846574,0.0234386758621656,0.0786863792695214,0.0181717621185356
+"flat_r_squared",9,"whole model against intercept only","change in log BF, recoded",0,-0.00280076131561202,0.00532704902844643,-0.525762256111397,0.0041300058206343
+"flat_r_squared",9,"x1: with it against without it","change in log BF, rescaled",0,-0.000791642732906439,0.0283061768024384,-0.0279671372941556,0.0219454850762033
+"flat_r_squared",10,"whole model against intercept only","change in log BF, rescaled",0,0.0134415240011094,0.0233631927002358,0.575329073109677,0.0181132408065549
+"flat_r_squared",10,"whole model against intercept only","change in log BF, recoded",0,0.00454112102518422,0.00507090938617267,0.895523993697646,0.0039314234145335
+"flat_r_squared",10,"x1: with it against without it","change in log BF, rescaled",0,-0.00340696165532961,0.0243666066219093,-0.139820932319162,0.0188911772052791
+"flat_r_squared",11,"whole model against intercept only","change in log BF, rescaled",0,0.0570608571605646,0.0183897738976581,3.10285800565667,0.0142574008295971
+"flat_r_squared",11,"whole model against intercept only","change in log BF, recoded",0,-0.00257896303233451,0.0033838183353467,-0.762145829578134,0.00262343923367768
+"flat_r_squared",11,"x1: with it against without it","change in log BF, rescaled",0,-0.022107574142737,0.0190532087601256,-1.1603071388691,0.0147717549924687
+"flat_r_squared",12,"whole model against intercept only","change in log BF, rescaled",0,0.0135438156377319,0.0180309546165334,0.751142461714864,0.0139792119652395
+"flat_r_squared",12,"whole model against intercept only","change in log BF, recoded",0,0.000356304804029151,0.00620034706582283,0.0574652999657312,0.00480706472477675
+"flat_r_squared",12,"x1: with it against without it","change in log BF, rescaled",0,0.0159528705839591,0.0199797948500724,0.798450169467147,0.0154901275706755
+"flat_r_squared",13,"whole model against intercept only","change in log BF, rescaled",0,0.0135110318750122,0.0182376538136987,0.740831688825226,0.0141394637074057
+"flat_r_squared",13,"whole model against intercept only","change in log BF, recoded",0,0.00779532702222241,0.0064783264562384,1.20329333121454,0.00502257926093027
+"flat_r_squared",13,"x1: with it against without it","change in log BF, rescaled",0,-0.030886956594756,0.0255379002450727,-1.209455605134,0.0197992689940922
+"flat_r_squared",14,"whole model against intercept only","change in log BF, rescaled",0,-0.0205873058351642,0.0217712943424626,-0.945616990488748,0.016879058532588
+"flat_r_squared",14,"whole model against intercept only","change in log BF, recoded",0,-0.00146213524079997,0.0102791034190327,-0.142243460464916,0.00796928219072312
+"flat_r_squared",14,"x1: with it against without it","change in log BF, rescaled",0,-0.0013743892774869,0.0244202291222695,-0.0562807691363367,0.0189327501732436
+"flat_r_squared",15,"whole model against intercept only","change in log BF, rescaled",0,0.0522761755154875,0.023747774824668,2.2013083710557,0.0184114033359282
+"flat_r_squared",15,"whole model against intercept only","change in log BF, recoded",0,9.29206824054063e-05,0.00348117495411268,0.0266923333731415,0.00269891880971192
+"flat_r_squared",15,"x1: with it against without it","change in log BF, rescaled",0,-0.0574956612888542,0.0284160435467088,-2.02335209665434,0.0220306636226945
+"flat_r_squared",16,"whole model against intercept only","change in log BF, rescaled",0,-0.0324641957755887,0.0194737546612936,-1.66707429256645,0.0150977998646658
+"flat_r_squared",16,"whole model against intercept only","change in log BF, recoded",0,-0.0086396178035244,0.00922331951121576,-0.9367145736433,0.00715074388530645
+"flat_r_squared",16,"x1: with it against without it","change in log BF, rescaled",0,-0.0041323034731704,0.0228179677994787,-0.181098663539388,0.017690533600059
+"flat_r_squared",17,"whole model against intercept only","change in log BF, rescaled",0,-0.0181010332584322,0.0243386479979795,-0.743715643528548,0.0188695011743378
+"flat_r_squared",17,"whole model against intercept only","change in log BF, recoded",0,-0.00102014064127331,0.00504606323311696,-0.202165647584082,0.00391216044995546
+"flat_r_squared",17,"x1: with it against without it","change in log BF, rescaled",0,0.11028810835019,0.0280329142207807,3.93423628673017,0.0217336274329225
+"flat_r_squared",18,"whole model against intercept only","change in log BF, rescaled",0,0.00323297435780034,0.018642052874925,0.17342373071739,0.0144529901021892
+"flat_r_squared",18,"whole model against intercept only","change in log BF, recoded",0,0.00285949958971798,0.00382513507422447,0.747555193275819,0.00296558752076414
+"flat_r_squared",18,"x1: with it against without it","change in log BF, rescaled",0,0.016916871300225,0.0206230307250747,0.820290263140446,0.015988821668217
+"flat_r_squared",19,"whole model against intercept only","change in log BF, rescaled",0,0.00128747088031389,0.0232404861048135,0.0553977603784817,0.0180181076567344
+"flat_r_squared",19,"whole model against intercept only","change in log BF, recoded",0,-0.0131770770616697,0.0140509509673676,-0.937806778507208,0.0108935564457531
+"flat_r_squared",19,"x1: with it against without it","change in log BF, rescaled",0,0.010820488977302,0.0287358096064163,0.376550691471939,0.0222785749298331
+"flat_r_squared",20,"whole model against intercept only","change in log BF, rescaled",0,-0.0135293610918268,0.0232462932467311,-0.582000792480294,0.018022609873589
+"flat_r_squared",20,"whole model against intercept only","change in log BF, recoded",0,0.00134034846364273,0.00251332671937036,0.533296548082102,0.00194855611891797
+"flat_r_squared",20,"x1: with it against without it","change in log BF, rescaled",0,-0.0414624302000988,0.028420135118544,-1.45891038262675,0.0220338357758706
+"flat_r_squared",21,"whole model against intercept only","change in log BF, rescaled",0,-0.00269933674664458,0.0228369182288375,-0.118200569778981,0.0177052256712483
+"flat_r_squared",21,"whole model against intercept only","change in log BF, recoded",0,-0.011382809401141,0.00512363410771816,-2.22162807917804,0.00397230034390122
+"flat_r_squared",21,"x1: with it against without it","change in log BF, rescaled",0,0.0459110426783695,0.027792558267643,1.65191855446502,0.021547281957185
+"flat_r_squared",22,"whole model against intercept only","change in log BF, rescaled",0,-0.0146180071889717,0.0237888122800519,-0.614490837830924,0.0184432192491466
+"flat_r_squared",22,"whole model against intercept only","change in log BF, recoded",0,-0.00215751954605992,0.00383705481731954,-0.562285307033247,0.00297482877386698
+"flat_r_squared",22,"x1: with it against without it","change in log BF, rescaled",0,-0.0292805952323647,0.0248651728077551,-1.17757457222386,0.0192777103943899
+"flat_r_squared",23,"whole model against intercept only","change in log BF, rescaled",0,-0.0115001769781742,0.0186346222283702,-0.6171403335811,0.0144472291990403
+"flat_r_squared",23,"whole model against intercept only","change in log BF, recoded",0,-0.00526402212642552,0.00581522303897234,-0.905214140738404,0.00450848206408318
+"flat_r_squared",23,"x1: with it against without it","change in log BF, rescaled",0,0.0273379275183174,0.0246916972541001,1.10717085330284,0.0191432165981986
+"flat_r_squared",24,"whole model against intercept only","change in log BF, rescaled",0,-0.0201977549323544,0.0237320261173899,-0.85107587664225,0.0183991935266363
+"flat_r_squared",24,"whole model against intercept only","change in log BF, recoded",0,-0.00659422980515956,0.0144345092143015,-0.456837825745131,0.011190925173529
+"flat_r_squared",24,"x1: with it against without it","change in log BF, rescaled",0,0.0706998303071771,0.0286454774211496,2.46809746850223,0.022208541324182
+"flat_r_squared",25,"whole model against intercept only","change in log BF, rescaled",0,0.0053919295293241,0.0237165351899879,0.227348956587906,0.0183871835714067
+"flat_r_squared",25,"whole model against intercept only","change in log BF, recoded",0,-0.00681358145008915,0.00452473722719033,-1.50585130317503,0.00350798180856741
+"flat_r_squared",25,"x1: with it against without it","change in log BF, rescaled",0,0.00856094140523567,0.0288433138816591,0.296808523471341,0.0223619218786081
+"flat_r_squared",26,"whole model against intercept only","change in log BF, rescaled",0,0.0402313485282235,0.022353397717736,1.79978672755876,0.0173303572376031
+"flat_r_squared",26,"whole model against intercept only","change in log BF, recoded",0,0.0070221071870975,0.00472585694111762,1.48589076533426,0.00366390783529036
+"flat_r_squared",26,"x1: with it against without it","change in log BF, rescaled",0,0.00706803358296781,0.0281712149314618,0.25089558970615,0.0218408505384469
+"flat_r_squared",27,"whole model against intercept only","change in log BF, rescaled",0,0.0171232432067683,0.0233911727865501,0.732038678138197,0.0181349334770603
+"flat_r_squared",27,"whole model against intercept only","change in log BF, recoded",0,0.00858338032855954,0.00485113704906378,1.76935432698527,0.00376103620265931
+"flat_r_squared",27,"x1: with it against without it","change in log BF, rescaled",0,-0.0121072825505451,0.0288302702620019,-0.419950366074173,0.0223518092956717
+"flat_r_squared",28,"whole model against intercept only","change in log BF, rescaled",0,-0.0123842952545345,0.0200102232485266,-0.618898405116315,0.0155137183921711
+"flat_r_squared",28,"whole model against intercept only","change in log BF, recoded",0,-0.00663539640056854,0.0101675346339677,-0.652606225544686,0.0078827840696698
+"flat_r_squared",28,"x1: with it against without it","change in log BF, rescaled",0,-0.0129489809379351,0.0239896323219042,-0.539774047562694,0.0185989129432202
+"flat_r_squared",29,"whole model against intercept only","change in log BF, rescaled",0,0.0133290457902859,0.0192301151200317,0.693133957185794,0.0149089086571371
+"flat_r_squared",29,"whole model against intercept only","change in log BF, recoded",0,0.0103115468726287,0.00859861752504786,1.19920985467618,0.00666641891940921
+"flat_r_squared",29,"x1: with it against without it","change in log BF, rescaled",0,-0.026706756630702,0.0227340558237956,-1.17474668126521,0.0176254775162607
+"flat_r_squared",30,"whole model against intercept only","change in log BF, rescaled",0,-0.00235976151272155,0.0194265386834208,-0.121471022253462,0.0150611938070906
+"flat_r_squared",30,"whole model against intercept only","change in log BF, recoded",0,0.00768738624196885,0.00840285417512148,0.914854177135321,0.00651464562610078
+"flat_r_squared",30,"x1: with it against without it","change in log BF, rescaled",0,8.70358206839228e-06,0.0208466351892346,0.000417505366664011,0.016162179888419
+"flat_r_squared",31,"whole model against intercept only","change in log BF, rescaled",0,-0.00601720992641219,0.0229604342537495,-0.262068646433791,0.0178009863633509
+"flat_r_squared",31,"whole model against intercept only","change in log BF, recoded",0,-0.000741513713464315,0.0045926470130211,-0.161456717958504,0.00356063156066494
+"flat_r_squared",31,"x1: with it against without it","change in log BF, rescaled",0,0.0285437864138203,0.0279755538926035,1.02031175230339,0.0216891565658476
+"flat_r_squared",32,"whole model against intercept only","change in log BF, rescaled",0,-0.00400287251395071,0.0241126186408084,-0.16600737454439,0.0186942629597529
+"flat_r_squared",32,"whole model against intercept only","change in log BF, recoded",0,-0.00131649068720208,0.00312917579483883,-0.420714837873109,0.00242601751503709
+"flat_r_squared",32,"x1: with it against without it","change in log BF, rescaled",0,0.0519392363652003,0.0299055507381761,1.73677578520221,0.0231854630881747
+"flat_r_squared",33,"whole model against intercept only","change in log BF, rescaled",0,0.0048652644137519,0.0233536508077612,0.208329928960615,0.0181058430763577
+"flat_r_squared",33,"whole model against intercept only","change in log BF, recoded",0,-0.00247826462845069,0.00623903020043816,-0.397219527527955,0.00483705535753958
+"flat_r_squared",33,"x1: with it against without it","change in log BF, rescaled",0,-0.0478582759802748,0.0289749607981339,-1.65171150061943,0.0224639863665462
+"flat_r_squared",34,"whole model against intercept only","change in log BF, rescaled",0,0.0236948335908096,0.0232639815651422,1.01852013269788,0.0180363234432605
+"flat_r_squared",34,"whole model against intercept only","change in log BF, recoded",0,-0.00163621015879301,0.003379437605145,-0.48416640576585,0.00262004289902128
+"flat_r_squared",34,"x1: with it against without it","change in log BF, rescaled",0,-0.034610538097553,0.0283955102000841,-1.21887361254211,0.0220147443321785
+"flat_r_squared",35,"whole model against intercept only","change in log BF, rescaled",0,0.0094531001333138,0.02138611999094,0.442020344846027,0.0165804368556984
+"flat_r_squared",35,"whole model against intercept only","change in log BF, recoded",0,0.0296826478827228,0.0106885704323235,2.77704563680087,0.00828673771614033
+"flat_r_squared",35,"x1: with it against without it","change in log BF, rescaled",0,-0.0136657291876503,0.0232246537448141,-0.588414765524835,0.018005832992356
+"flat_r_squared",36,"whole model against intercept only","change in log BF, rescaled",0,-0.0505770113979906,0.0200026137922085,-2.52852011859028,0.0155078188596686
+"flat_r_squared",36,"whole model against intercept only","change in log BF, recoded",0,-0.0223483084452454,0.0105843978774348,-2.11143880871017,0.00820597381557487
+"flat_r_squared",36,"x1: with it against without it","change in log BF, rescaled",0,0.0191812609894555,0.0230977702446528,0.830437777598727,0.0179074615316447
+"flat_r_squared",37,"whole model against intercept only","change in log BF, rescaled",0,-0.00574146535952025,0.0191442670709549,-0.299905205994071,0.0148423515557318
+"flat_r_squared",37,"whole model against intercept only","change in log BF, recoded",0,-0.0092933509944686,0.00584860205314475,-1.5889867202491,0.00453436046731974
+"flat_r_squared",37,"x1: with it against without it","change in log BF, rescaled",0,-0.0227704243727374,0.0262273356289395,-0.868194341007031,0.0203337810913371
+"flat_r_squared",38,"whole model against intercept only","change in log BF, rescaled",0,0.00233475382327697,0.0203993597484292,0.114452308899389,0.0158154118815752
+"flat_r_squared",38,"whole model against intercept only","change in log BF, recoded",0,0.0101978192144401,0.00887209699854745,1.1494260281543,0.00687844471668383
+"flat_r_squared",38,"x1: with it against without it","change in log BF, rescaled",0,0.0100257689802703,0.0228979459003259,0.437845779875286,0.0177525397915279
+"flat_r_squared",39,"whole model against intercept only","change in log BF, rescaled",0,-0.00795417332780346,0.0208275399491081,-0.381906521232916,0.0161473755469444
+"flat_r_squared",39,"whole model against intercept only","change in log BF, recoded",0,0.00819704305897062,0.00905020809081206,0.905729788389331,0.00701653239784544
+"flat_r_squared",39,"x1: with it against without it","change in log BF, rescaled",0,0.0273826320169803,0.0234242019473078,1.16898889783212,0.0181605406425756
+"flat_r_squared",40,"whole model against intercept only","change in log BF, rescaled",0,0.00347694285287048,0.0183367014599144,0.189616592737324,0.01421625431947
+"flat_r_squared",40,"whole model against intercept only","change in log BF, recoded",0,-0.00540925796522629,0.00653074988640276,-0.828275168903428,0.0050632226022174
+"flat_r_squared",40,"x1: with it against without it","change in log BF, rescaled",0,0.0259925630054028,0.0203954397681874,1.27443013246253,0.0158123727615805
+"flat_r_squared",41,"whole model against intercept only","change in log BF, rescaled",0,0.0283332242399439,0.024125742760212,1.17439800803442,0.0187044379533072
+"flat_r_squared",41,"whole model against intercept only","change in log BF, recoded",0,-0.00918526687259202,0.00506070546446944,-1.81501708350359,0.00392351241994671
+"flat_r_squared",41,"x1: with it against without it","change in log BF, rescaled",0,0.00959689141211584,0.0296995554256992,0.323132493889508,0.0230257570605016
+"flat_r_squared",42,"whole model against intercept only","change in log BF, rescaled",0,0.02362362791321,0.0212377934267351,1.11233909467598,0.0164654408099985
+"flat_r_squared",42,"whole model against intercept only","change in log BF, recoded",0,0.0152508115689898,0.0127566329944637,1.19552013259365,0.00989008515549473
+"flat_r_squared",42,"x1: with it against without it","change in log BF, rescaled",0,-0.00966002940133137,0.027701527549179,-0.3487182930321,0.0214767067859963
+"flat_r_squared",43,"whole model against intercept only","change in log BF, rescaled",0,-0.00321471614400082,0.0193632206088041,-0.1660217692577,0.0150121039610385
+"flat_r_squared",43,"whole model against intercept only","change in log BF, recoded",0,-0.00103926377826724,0.00647083665595436,-0.160607326922853,0.00501677249650905
+"flat_r_squared",43,"x1: with it against without it","change in log BF, rescaled",0,-0.00965688735254844,0.0205357507515776,-0.470247592570074,0.015921154410671
+"flat_r_squared",44,"whole model against intercept only","change in log BF, rescaled",0,-0.0137035308968905,0.0181394259540936,-0.755455598846994,0.0140633086673917
+"flat_r_squared",44,"whole model against intercept only","change in log BF, recoded",0,-0.00767955869376635,0.00421527791734544,-1.82183923441103,0.00326806121762034
+"flat_r_squared",44,"x1: with it against without it","change in log BF, rescaled",0,0.0240847469048333,0.0219217952684455,1.0986667200337,0.016995740338406
+"flat_r_squared",45,"whole model against intercept only","change in log BF, rescaled",0,-0.0241814021114237,0.0217571185263638,-1.11142484617723,0.0168680681695018
+"flat_r_squared",45,"whole model against intercept only","change in log BF, recoded",0,-0.00953324477296746,0.0125151051511319,-0.761739087114683,0.00970283112545315
+"flat_r_squared",45,"x1: with it against without it","change in log BF, rescaled",0,0.0042560387072399,0.0255297577612317,0.166708934218832,0.0197929562108837
+"flat_r_squared",46,"whole model against intercept only","change in log BF, rescaled",0,-0.0513899128106203,0.0208192221568336,-2.46838774395576,0.016140926848927
+"flat_r_squared",46,"whole model against intercept only","change in log BF, recoded",0,-0.0181882321997477,0.0100408296749264,-1.81142722151404,0.00778455103003579
+"flat_r_squared",46,"x1: with it against without it","change in log BF, rescaled",0,-0.0175033894253005,0.0234960133024171,-0.744951460488825,0.0182162152408392
+"flat_r_squared",47,"whole model against intercept only","change in log BF, rescaled",0,-0.0216436190924014,0.0232936535860935,-0.929163774691096,0.0180593278531288
+"flat_r_squared",47,"whole model against intercept only","change in log BF, recoded",0,0.00276667072397174,0.00292144681942309,0.947020738347065,0.00226496739648175
+"flat_r_squared",47,"x1: with it against without it","change in log BF, rescaled",0,-0.0203221058231264,0.0285632034825078,-0.711478522903488,0.0221447551935002
+"flat_r_squared",48,"whole model against intercept only","change in log BF, rescaled",0,-0.0161986384250099,0.0226746022891851,-0.714395702223013,0.0175793838079641
+"flat_r_squared",48,"whole model against intercept only","change in log BF, recoded",0,-0.00395020361740706,0.00298047595979276,-1.32535999977726,0.0023107320763283
+"flat_r_squared",48,"x1: with it against without it","change in log BF, rescaled",0,-0.0481668864401428,0.0282280472624996,-1.70634851189765,0.0218849120548198
+"flat_r_squared",49,"whole model against intercept only","change in log BF, rescaled",0,0.0205543383028868,0.0215170792400975,0.955256894931322,0.016681968202303
+"flat_r_squared",49,"whole model against intercept only","change in log BF, recoded",0,-0.00749110416812471,0.0119392172488549,-0.62743679187538,0.00925635121213977
+"flat_r_squared",49,"x1: with it against without it","change in log BF, rescaled",0,0.0397533888106238,0.0278170847565802,1.42909974781668,0.0215662970894898
+"flat_r_squared",50,"whole model against intercept only","change in log BF, rescaled",0,-0.0479691461316349,0.0187894314990172,-2.5529854979457,0.0145672512197586
+"flat_r_squared",50,"whole model against intercept only","change in log BF, recoded",0,-0.00494740769471491,0.0051109358461497,-0.968004264510973,0.00396245551350646
+"flat_r_squared",50,"x1: with it against without it","change in log BF, rescaled",0,-0.00543764087980492,0.0225135507005246,-0.241527467263447,0.0174545221828808
