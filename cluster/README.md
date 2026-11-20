@@ -1,7 +1,8 @@
 # Running the validation elsewhere, and how long it takes
 
 The validation is one pipeline ([`_targets.R`](../_targets.R)); `Rscript
-run_all.R` runs it and then the figures. It saves every finished piece as it
+run_all.R` runs it (only the simulation: the figures come after, from the
+results files, with `Rscript make_figures.R`, on any machine). It saves every finished piece as it
 goes, so it can run anywhere a run may stop (a laptop, Colab, a cloud
 machine) and continue where it was, as long as the project folder (with its
 `_targets/` store) survives and flatcor stays the same: `run_all.R` refuses
@@ -124,9 +125,9 @@ sbatch run_validation.sbatch
   the run started with (the image fixes flatcor, so this only happens with a
   new `.sif`), and `VALIDATION_FRESH=1` (as `apptainer exec --env
   VALIDATION_FRESH=1 ...`) starts from scratch.
-- **Afterwards.** The results are in `results/` (one file per study, and the
-  figures). Copy them back and commit them; the notebook and the docs read
-  them from there.
+- **Afterwards.** The results are in `results/studies/` (one file per
+  study). Copy them back, draw the figures with `Rscript make_figures.R`,
+  and commit both; the notebook and the docs read them from there.
 
 A SLURM array script was here until 17 November 2026 (in the git history);
 one job on one node replaces it.
@@ -137,8 +138,9 @@ one job on one node replaces it.
 instance (Amazon Linux 2023), given to it as user data with five values
 filled in: the S3 bucket, a name for the run, smoke test or not, the studies,
 and a safety cutoff in hours. It installs Docker, clones this repository,
-runs `run_all.R` in the published image, copies the results and logs to
-`s3://<bucket>/<run name>/`, and shuts down. Launched with shutdown behaviour
+runs `run_all.R` in the published image (only the simulation), copies the
+results and logs to `s3://<bucket>/<run name>/`, and shuts down. The figures
+are drawn afterwards from the downloaded results: `Rscript make_figures.R`. Launched with shutdown behaviour
 "terminate", the instance then deletes itself.
 
 AWS can take a spot instance back at any moment, its disk included. A real

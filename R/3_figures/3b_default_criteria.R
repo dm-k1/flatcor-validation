@@ -4,10 +4,12 @@
 ## =====================================================================
 library(ggplot2)
 source("R/shared/figures.R") # read_results(), figure_folder
-source("R/shared/comparison_methods.R") # method_scales(): the colours of the methods
+source("R/shared/comparison_methods.R") # contenders, method_scales(): names and colours
 
 results <- read_results("3b")
 medians <- results$tables$growing_medians
+rates <- as.data.frame(results$tables$rates)
+rates$prior <- names(contenders)[match(rates$prior, contenders)]
 
 
 ## Growing k (3b.8, 3b.9): the median log Bayes factor for the truth against
@@ -30,3 +32,27 @@ figure <- ggplot(medians, aes(n, median_log_bf, colour = method)) +
   theme_bw()
 
 ggsave(file.path(figure_folder, "3b_growing_k.png"), figure, width = 11, height = 7, dpi = 150)
+
+
+## The rates (3b.3-3b.5): each slope of the median log Bayes factor against
+## log n as a share of its theoretical value, with 2 Monte Carlo SEs either
+## side; 1 is the theory
+rates$row <- sprintf(
+  "%s: %s, q = %s (theory %s)", rates$item, rates$setting, rates$q, rates$expected
+)
+rates$row <- factor(rates$row, levels = rev(unique(rates$row))) # 3b.3 at the top
+figure <- ggplot(rates, aes(estimate / expected, row, colour = prior)) +
+  geom_vline(xintercept = 1) +
+  geom_pointrange(
+    aes(xmin = (estimate - 2 * mcse) / expected, xmax = (estimate + 2 * mcse) / expected),
+    position = position_dodge(width = 0.6)
+  ) +
+  method_scales(rates$prior) +
+  labs(
+    x = "slope as a share of its theoretical value (2 Monte Carlo SEs either side)",
+    y = NULL,
+    title = "Model-selection consistency: do the Bayes factors grow at the theoretical rate?"
+  ) +
+  theme_bw()
+
+ggsave(file.path(figure_folder, "3b_rates.png"), figure, width = 10, height = 7, dpi = 150)

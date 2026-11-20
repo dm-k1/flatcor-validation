@@ -1,8 +1,8 @@
 ## =====================================================================
-##  Run the whole validation: the pipeline (_targets.R), then the figures
+##  Run the whole validation: the pipeline (_targets.R), in rounds
 ##
-##    Rscript run_all.R                  every study, then every figure
-##    Rscript run_all.R 3a               one study (its targets end in _3a), then the figures
+##    Rscript run_all.R                  every study
+##    Rscript run_all.R 3a               one study (its targets end in _3a)
 ##    VALIDATION_SMOKE=1 Rscript run_all.R   the smoke test (results in cache/)
 ##    VALIDATION_SMOKE=1 VALIDATION_RECORD=1 Rscript run_all.R
 ##                                       the smoke test, recording the expensive calls
@@ -20,9 +20,13 @@
 ##  (R/shared/rounds.R; docs/validation_tests.md, "How many datasets"),
 ##  until every cell reaches its targets or the run reaches its budget; the
 ##  smoke test runs two rounds.
-##  Each study writes results/studies/study_<cell>.rds; each
-##  script in R/3_figures/ reads those files and writes its figures. The
-##  notebook (validation.ipynb) presents the same results.
+##  Each study writes results/studies/study_<cell>.rds.
+##
+##  Only the simulation runs here, so a cloud machine does nothing else. The
+##  figures come after, from those files: Rscript make_figures.R (with the
+##  same VALIDATION_SMOKE or VALIDATION_DRY), on any machine, also after
+##  downloading the results. The notebook (validation.ipynb) runs both, and
+##  so does the smoke test in CI.
 ## =====================================================================
 dry <- identical(Sys.getenv("VALIDATION_DRY"), "1")
 recording <- identical(Sys.getenv("VALIDATION_RECORD"), "1")
@@ -30,8 +34,7 @@ if (dry && recording) stop("VALIDATION_DRY=1 replays recordings; it cannot also 
 if (recording && !identical(Sys.getenv("VALIDATION_SMOKE"), "1")) {
   stop("Recordings for the dry run come from a smoke test: VALIDATION_SMOKE=1 VALIDATION_RECORD=1")
 }
-# the dry run has the smoke test's design (set here, so the pipeline and the
-# figure scripts inherit it)
+# the dry run has the smoke test's design (set here, so the pipeline inherits it)
 if (dry) Sys.setenv(VALIDATION_SMOKE = "1")
 smoke <- identical(Sys.getenv("VALIDATION_SMOKE"), "1")
 fresh <- identical(Sys.getenv("VALIDATION_FRESH"), "1")
@@ -50,6 +53,8 @@ results_root <- if (dry) {
 } else {
   "results"
 }
+# the figures of an earlier run, removed with its results when starting
+# from scratch (make_figures.R draws new ones)
 figure_folder <- if (dry) {
   file.path("cache", "dry_figures")
 } else if (smoke) {
@@ -62,7 +67,8 @@ figure_folder <- if (dry) {
 if (fresh && length(requested) > 0) {
   stop(
     "VALIDATION_FRESH=1 starts the whole validation from scratch: run it without ",
-    "naming studies (to redo one study, use run_studies(fresh = TRUE) in the notebook)."
+    "naming studies. To redo one study, mark its steps outdated first, ",
+    "targets::tar_invalidate(names = tidyselect::ends_with(\"_3a\")), then Rscript run_all.R 3a."
   )
 }
 if (smoke || fresh) {
@@ -256,18 +262,8 @@ repeat {
   round <- round + 1
 }
 
-## ---- The figures, each script in its own R process ----------------------------------
-results_folder <- file.path(results_root, "studies")
-failed_figures <- character(0)
-for (script in list.files(file.path("R", "3_figures"), pattern = "[.]R$", full.names = TRUE)) {
-  study <- sub("^([0-9][a-z]).*", "\\1", basename(script))
-  if (!file.exists(file.path(results_folder, sprintf("study_%s.rds", study)))) next
-  status <- system2(file.path(R.home("bin"), "Rscript"), script)
-  message(sprintf("%s: %s", script, if (status == 0) "done" else "stopped (see above)"))
-  if (status != 0) failed_figures <- c(failed_figures, script)
-}
-
 ## ---- Which results there are -------------------------------------------------------
+results_folder <- file.path(results_root, "studies")
 for (file in sort(list.files(results_folder, pattern = "^study_.*[.]rds$", full.names = TRUE))) {
   setup <- readRDS(file)$setup
   cat(sprintf(
@@ -281,6 +277,6 @@ for (file in sort(list.files(results_folder, pattern = "^study_.*[.]rds$", full.
 source(file.path("R", "shared", "check_results.R"))
 studies_run <- if (length(requested) > 0) requested else
   sub("^([0-9][a-z]).*", "\\1", list.files(file.path("R", "2_studies")))
-check_results(results_folder, studies_run, flatcor_commit, failed_figures, smoke)
+check_results(results_folder, studies_run, flatcor_commit, smoke)
 
 cat(sprintf("Run took %.1f minutes.\n", as.numeric(difftime(Sys.time(), started, units = "mins"))))

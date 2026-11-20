@@ -113,14 +113,21 @@ container image of `cluster/Dockerfile`, published by GitHub Actions as
 `ghcr.io/dm-k1/flatcor-validation`. Then:
 
 ```bash
-VALIDATION_SMOKE=1 Rscript run_all.R   # first: a corner of every study, about 10 minutes
-Rscript run_all.R                      # the studies, then the figures
-VALIDATION_FRESH=1 Rscript run_all.R   # the same, from scratch
+VALIDATION_SMOKE=1 Rscript run_all.R        # first: a corner of every study, about 10 minutes
+VALIDATION_SMOKE=1 Rscript make_figures.R   # and its figures
+Rscript run_all.R                           # the studies
+Rscript make_figures.R                      # then the figures, from the results files
+VALIDATION_FRESH=1 Rscript run_all.R        # the studies, from scratch
 ```
 
-The smoke test runs every step and every figure on a small part of each
-design, from scratch, with its results in `cache/` (never mixed with real
-ones).
+`run_all.R` only simulates, so a cloud machine spends its time on the
+studies alone; `make_figures.R` draws the figures from the results files
+afterwards, on any machine (also after downloading the results). The
+notebook ([`validation.ipynb`](validation.ipynb)) runs nothing: it presents
+the results, each study's deciding tables, figures and result in a line, the
+rest under Details, and draws figures that are missing. The smoke test runs
+every step and every figure on a small part of each design, from scratch,
+with its results in `cache/` (never mixed with real ones).
 
 ### Faster checks while working on the code
 
@@ -133,6 +140,7 @@ is not made.
 Rscript R/shared/static_check.R                         # seconds: parses, the pipeline is valid, every function called exists, the rules below
 VALIDATION_SMOKE=1 VALIDATION_RECORD=1 Rscript run_all.R # once: the smoke test, recording what Stan and bridge sampling returned
 VALIDATION_DRY=1 Rscript run_all.R                      # then, after every change: the dry run
+VALIDATION_DRY=1 Rscript make_figures.R                 # and its figures
 ```
 
 The dry run ([`R/dry_run/replay.R`](R/dry_run/replay.R)) is the smoke
@@ -143,8 +151,8 @@ studies, only in a recording run or the dry run, and replaces a few
 functions (the seams: flatcor's Bayes factors and fit, 1a's prior draws of a
 setting, 2a's SBC fits of a batch) by versions that record or replay the
 original. Everything else runs for real: the data, every step, the
-hand-overs between them, both rounds, the results files, the figures and
-the check at the end. Its results go to `cache/dry_results/` and
+hand-overs between them, both rounds, the results files, the check at the
+end and, with `make_figures.R`, the figures. Its results go to `cache/dry_results/` and
 `cache/dry_figures/`. It does not test the code inside the seams or whether
 the numbers are right: run the smoke test for that, and record again when
 flatcor changes. When the design or a data step has changed since the
@@ -171,12 +179,12 @@ Every run ends with a check of its outputs
 ([`R/shared/check_results.R`](R/shared/check_results.R)): a results file
 for every study run, all with the run's flatcor; no empty table, no NaN,
 Inf or NA in any table, except blanks that are there by design (listed in
-that file, each with its reason); and every figure script done. The smoke
-test, and so every push to `main`, fails when the check finds a problem; a
-real run reports it in its log.
+that file, each with its reason). The smoke test, and so every push to
+`main` or `v2`, fails when the check finds a problem; a real run reports it
+in its log. `make_figures.R` stops with an error when a figure script stops
+(after running the others).
 
-or open [`validation.ipynb`](validation.ipynb), which runs through
-`run_all.R` too. A stopped run continues where it was. It refuses to
+A stopped run continues where it was. It refuses to
 continue with another flatcor than the one it started with (each results
 file records the flatcor commit), so one results file never mixes two
 versions; start from scratch then. (`targets::tar_make()` runs the pipeline
@@ -202,13 +210,14 @@ corner of each design.
 | Path | What it is |
 |---|---|
 | `_targets.R` | The pipeline: the steps of every study, in order |
-| `run_all.R` | Runs the pipeline, then the figures |
+| `run_all.R` | Runs the pipeline, in rounds (only the simulation) |
+| `make_figures.R` | Draws the figures from the results files, after `run_all.R` |
 | `R/shared/` | Used by every step: the random streams and the one root seed, the pipeline's helpers, the reporting rule, the results file, the comparison methods; the static check (`static_check.R`) |
 | `R/1_data/` | One file per data set, numbered in the order the studies first use them (what each is and which study needs it: `docs/validation_tests.md`, "The data sets") |
 | `R/2_studies/` | The six studies, one folder per cell, each with `design.R` and `code.R` |
 | `R/3_figures/` | One script per study that draws its figures from its results file |
 | `R/dry_run/` | The dry run: records the expensive calls in a smoke test, replays them after (`replay.R`); changes no study's code |
-| `R/4_notebook/` | The notebook's helpers: they present the results, they compute nothing |
+| `R/4_notebook/` | The notebook's helpers: they present the results, they run and compute nothing |
 | `R/timing/` | The run-time estimate: time a study on a fraction of its datasets, scale up to the full run |
 | `results/` | Each study's tables and setup, `studies/study_<cell>.rds`, and its figures, `figures/<cell>_*.png` |
 | `validation.ipynb` | The notebook (R kernel) |

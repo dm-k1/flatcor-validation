@@ -9,13 +9,15 @@
 #               after waiting for an image build still running (as smoke does)
 #   links       every link in the README, the docs and the notebook (seconds)
 #   workflows   actionlint on these workflow files (seconds)
-#   smoke       the smoke test (VALIDATION_SMOKE=1 Rscript run_all.R: a corner
-#               of every study, from scratch, and every figure) inside the
+#   smoke       the smoke test (VALIDATION_SMOKE=1: Rscript run_all.R, a corner
+#               of every study from scratch, then Rscript make_figures.R, every
+#               figure) inside the
 #               published image, so with exactly the packages and CmdStan of
 #               the real run (about 40 minutes); skipped when this commit's
 #               own image build already ran it before publishing. It fails
 #               when the outputs check (R/shared/check_results.R) finds a
-#               missing file or figure, an empty table, or NA/NaN/Inf. It runs
+#               missing file, an empty table, or NA/NaN/Inf, or when a figure
+#               script stops (make_figures.R). It runs
 #               with 3 workers (16 cores pretended: (16 - 1) %/% 4), as a
 #               real run has several: clashes between workers only show then
 #
@@ -151,4 +153,4 @@ jobs:
           docker run --rm -v "$PWD":/project \
             -e VALIDATION_SMOKE=1 -e R_PARALLELLY_AVAILABLECORES_SYSTEM=16 \
             ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
-            Rscript run_all.R
+            sh -c "Rscript run_all.R && Rscript make_figures.R"

@@ -7,8 +7,9 @@
 ##    targets::tar_visnetwork()                    the steps and what depends on what
 ##
 ##  Each study writes its tables to results/studies/study_<cell>.rds; the
-##  figures are made from those files by the scripts in R/3_figures/
-##  (Rscript run_all.R does both). Every finished piece is saved in _targets/
+##  figures are made from those files afterwards by the scripts in
+##  R/3_figures/ (Rscript run_all.R runs this pipeline in rounds, then
+##  Rscript make_figures.R the figures). Every finished piece is saved in _targets/
 ##  as soon as it is done, so a run that stops (a laptop closed, Colab or a
 ##  cloud machine shutting down) continues where it was.
 ##

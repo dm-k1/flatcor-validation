@@ -7,11 +7,11 @@
 ##    - every table of every file: no NaN, no Inf, no NA except the blanks
 ##      listed below (each with its reason), and no empty table except
 ##      those listed below
-##    - every figure script ran
 ##
-##  The smoke test (and so every push to main, check.yml, and every image
-##  build) stops with an error when something is wrong; a real run reports
-##  it in its log, as its results are written and should not be lost.
+##  The smoke test (and so every push to main or v2, check.yml, and every image build)
+##  stops with an error when something is wrong; a real run reports it in
+##  its log, as its results are written and should not be lost. The figures
+##  are checked by make_figures.R, which draws them.
 ## =====================================================================
 
 ## Blanks by design: the rows (when) where a column is NA on purpose
@@ -82,19 +82,17 @@ check_results_file <- function(file, study, flatcor_commit, smoke) {
   problems
 }
 
-## Checks the results of the studies that were run and the figure scripts;
-## stops in the smoke test when anything is wrong
-check_results <- function(results_folder, studies, flatcor_commit, failed_figures, smoke) {
+## Checks the results of the studies that were run; stops in the smoke test
+## when anything is wrong
+check_results <- function(results_folder, studies, flatcor_commit, smoke) {
   problems <- character(0)
   for (study in studies) {
     file <- file.path(results_folder, sprintf("study_%s.rds", study))
     problems <- c(problems, check_results_file(file, study, flatcor_commit, smoke))
   }
-  problems <- c(problems, sprintf("figure script %s stopped", failed_figures))
 
   if (length(problems) == 0) {
-    message("Check of the outputs: every results file and figure is there, ",
-            "every number is a number.")
+    message("Check of the outputs: every results file is there, every number is a number.")
     return(invisible(TRUE))
   }
   report <- paste0("Check of the outputs found ", length(problems), " problem(s):\n",

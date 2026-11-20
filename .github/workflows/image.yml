@@ -56,12 +56,13 @@ jobs:
 
       - name: Smoke test the whole pipeline inside the image
         # The pipeline runs end to end on a corner of each design and a handful
-        # of datasets (run_all.R with VALIDATION_SMOKE=1). An error fails the job.
+        # of datasets (run_all.R, then make_figures.R, with VALIDATION_SMOKE=1).
+        # An error fails the job.
         # With 3 workers (16 cores pretended), as a real run has several.
         run: |
           docker run --rm -v "$PWD":/project -e VALIDATION_SMOKE=1 \
             -e R_PARALLELLY_AVAILABLECORES_SYSTEM=16 \
-            flatcor-validation:test Rscript run_all.R
+            flatcor-validation:test sh -c "Rscript run_all.R && Rscript make_figures.R"
 
       - uses: docker/login-action@v3
         with:
