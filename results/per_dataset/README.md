@@ -40,7 +40,7 @@ leapfrog steps, warmup and sampling seconds), as flatcor returns them.
 | `study_3a_repeated_runs.csv` (+ both) | one of several runs on the same dataset (`run`) |
 | `study_3b_formula.csv` (+ both) | one prior at one small *n* (3b.1, 3b.2) |
 | `study_3b_rates.csv` (+ both) | one dataset's log BF (3b.3–3b.6): `log_bf` for the truth, `log_bf_smaller` of the smaller model against the larger |
-| `study_3b_growing_k.csv` (+ both) | one method on one dataset as *k* grows with *n* (3b.8, 3b.9) |
+| `study_3b_growing_k.csv` (+ both, one per growth rule: `_k_n_4`, `_k_sqrt_n`) | one method on one dataset as *k* grows with *n* (3b.8, 3b.9); its `_variables` and `_chains` are split by `growth` to stay under GitHub's 100 MB per file |
 | `study_3b_intrinsic_draws.csv.gz` | one prior draw of x1's coefficient with the sample or the population covariance (3b.7) |
 
 Numbers are written with 15 significant digits (`data.table::fwrite`).

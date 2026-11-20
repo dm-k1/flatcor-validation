@@ -44,7 +44,10 @@ machine_of <- function() paste(Sys.info()[["nodename"]], Sys.info()[["machine"]]
 ## it has them, its list columns `variables` and `chains` (a data frame per
 ## row, joined back by the row's `id`) to study_<file>_variables.csv.gz and
 ## study_<file>_chains.csv.gz. Returns the paths (a targets "file" step).
-write_per_dataset <- function(table, file, gzip = FALSE) {
+##   split_by  a column: those two files are written once per value of it
+##             (study_<file>_variables_<value>.csv.gz), to keep each under
+##             GitHub's 100 MB limit (3b's growing k: one per growth rule)
+write_per_dataset <- function(table, file, gzip = FALSE, split_by = NULL) {
   folder <- per_dataset_folder()
   dir.create(folder, recursive = TRUE, showWarnings = FALSE)
   table <- as.data.frame(table)
@@ -58,30 +61,39 @@ write_per_dataset <- function(table, file, gzip = FALSE) {
 
   for (column in nested) {
     keep <- !vapply(table[[column]], is.null, logical(1))
-    long <- data.table::rbindlist(
-      Map(
-        function(id, rows) cbind(id = id, as.data.frame(rows)),
-        table$id[keep], table[[column]][keep]
-      ),
-      fill = TRUE
-    )
-    path <- file.path(folder, sprintf("study_%s_%s.csv.gz", file, column))
-    data.table::fwrite(long, path)
-    paths <- c(paths, path)
+    groups <- if (is.null(split_by)) "" else sort(unique(table[[split_by]]))
+    for (group in groups) {
+      rows <- if (group == "") keep else keep & table[[split_by]] == group
+      long <- data.table::rbindlist(
+        Map(
+          function(id, part) cbind(id = id, as.data.frame(part)),
+          table$id[rows], table[[column]][rows]
+        ),
+        fill = TRUE
+      )
+      # "k = sqrt(n)" -> "k_sqrt_n"
+      suffix <- if (group == "") "" else paste0("_", gsub("^_|_$", "", gsub("[^A-Za-z0-9]+", "_", group)))
+      path <- file.path(folder, sprintf("study_%s_%s%s.csv.gz", file, column, suffix))
+      data.table::fwrite(long, path)
+      paths <- c(paths, path)
+    }
   }
   paths
 }
 
 ## Reads a file written by write_per_dataset() back, as a data frame. `paths`:
 ## the step's paths; `part`: "" for the main file, or "variables", "chains"
+## (the files of a split_by, bound back into one table)
 read_per_dataset <- function(paths, part = "") {
+  nested <- "_(variables|chains)(_[A-Za-z0-9_]+)?[.]csv[.]gz$"
   path <- if (part == "") {
-    paths[!grepl("_(variables|chains)[.]csv[.]gz$", paths)]
+    paths[!grepl(nested, paths)]
   } else {
-    paths[grepl(sprintf("_%s[.]csv[.]gz$", part), paths)]
+    paths[grepl(sprintf("_%s(_[A-Za-z0-9_]+)?[.]csv[.]gz$", part), paths)]
   }
-  stopifnot(length(path) == 1)
-  as.data.frame(data.table::fread(path, na.strings = c("", "NA")))
+  stopifnot(length(path) >= 1, part != "" || length(path) == 1)
+  tables <- lapply(path, data.table::fread, na.strings = c("", "NA"))
+  as.data.frame(data.table::rbindlist(tables, fill = TRUE))
 }
 
 ## The pieces of a study as one table (targets' branches, as a list or

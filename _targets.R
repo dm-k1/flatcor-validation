@@ -353,7 +353,7 @@ list(
   tar_target(per_dataset_rates_3b, write_per_dataset(rates_3b, "3b_rates"), format = "file"),
   tar_target(
     per_dataset_growing_3b,
-    write_per_dataset(growing_3b, "3b_growing_k"),
+    write_per_dataset(growing_3b, "3b_growing_k", split_by = "growth"),
     format = "file"
   ),
   tar_target(

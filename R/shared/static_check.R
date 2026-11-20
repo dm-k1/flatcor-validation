@@ -156,7 +156,7 @@ expensive_calls <- c(
 file_calls <- c(
   "readRDS", "saveRDS", "load", "save", "read.csv", "write.csv", "readLines", "writeLines",
   "read_csv", "write_csv", "fread", "fwrite", "file.exists", "file.rename", "file.copy",
-  "unlink", "dir.create", "list.files", "ggsave", "png", "pdf", "fread", "fwrite"
+  "unlink", "dir.create", "list.files", "ggsave", "png", "pdf"
 )
 allowed_file_use <- c(
   "save_study_results_file", "read_plan", "write_plan",
