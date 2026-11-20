@@ -50,12 +50,14 @@ sbc_batch_2a <- function(setting, replications, model) {
     sbc_dataset_2a(setting, r)
   }))
 
+  # SBC seeds each fit from the batch's seed
+  seed_name <- name_of("2a", setting$prior, setting$k, replications[1])
   backend <- SBC::SBC_backend_cmdstan_sample(
     model,
     chains = 1,
     iter_warmup = iterations_2a[["warmup"]],
     iter_sampling = iterations_2a[["sampling"]],
-    seed = seed_of("2a", setting$prior, setting$k, replications[1]),
+    seed = seed_of(seed_name),
     refresh = 0,
     show_messages = FALSE
   )
@@ -66,9 +68,24 @@ sbc_batch_2a <- function(setting, replications, model) {
     thin_ranks = iterations_2a[["sampling"]] / 100
   )
 
+  # every row: its dataset (replication), the seed's name, the machine
+  per_fit <- function(table) {
+    table <- as.data.frame(table)
+    tibble(
+      setting,
+      replication = replications[table$sim_id],
+      id = name_of("2a", setting$prior, setting$k, replications[table$sim_id]),
+      batch_seed_name = seed_name,
+      machine = machine_of(),
+      table
+    )
+  }
   list(
-    stats = cbind(setting, as.data.frame(result$stats)),
-    diagnostics = cbind(setting, as.data.frame(result$backend_diagnostics))
+    stats = per_fit(result$stats),
+    diagnostics = per_fit(merge(
+      as.data.frame(result$backend_diagnostics), as.data.frame(result$default_diagnostics),
+      by = "sim_id", all = TRUE
+    ))
   )
 }
 
@@ -123,15 +140,14 @@ divergences_2a <- function(diagnostics) {
 
 ## ---- The results file ---------------------------------------------------------
 
-save_results_2a <- function(batches) {
-  stats <- bind_rows(lapply(batches, `[[`, "stats"))
-  diagnostics <- bind_rows(lapply(batches, `[[`, "diagnostics"))
+## `stats`, `diagnostics`: the per-fit rows, read from results/per_dataset/
+## (study_2a_sbc_fits, study_2a_sbc_diagnostics)
+save_results_2a <- function(stats, diagnostics) {
   ranks <- rank_summaries_2a(stats)
 
   save_study_results_file("2a", list(
     ranks = ranks,
     beyond_reference = beyond_reference(ranks),
-    divergences = divergences_2a(diagnostics),
-    sbc_stats = stats
+    divergences = divergences_2a(diagnostics)
   ))
 }

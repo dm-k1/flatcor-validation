@@ -82,11 +82,33 @@ models_as_formulas <- function(predictors_a, predictors_b, outcome) {
 }
 
 ## The log BF of model A (columns predictors_a) against model B
-## (predictors_b), for one method, with its approximate Monte Carlo SE and,
-## for the three priors, the divergent transitions of the two Stan fits.
-## `seed` fixes the Stan fits and bridge sampling (derive it from the
-## dataset's ID).
-log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome, seed) {
+## (predictors_b), for one method, with everything computed on the way, as
+## one row (a tibble) for the per-dataset files (R/shared/per_dataset.R):
+##   id, seed        the name the Stan fits and bridge sampling are seeded
+##                   from, and the seed (model B's is seed + 1)
+##   log_bf, error   the log BF and its approximate Monte Carlo SE
+##   divergent       Stan's divergent transitions of both fits
+##   n, k_a, k_b, r_squared_a, r_squared_b
+##                   the data's size, both models' numbers of predictors and
+##                   their sample R-squared
+##   log_ml_a, error_a, ... (and _b)
+##                   per model: the log marginal likelihood, its error,
+##                   divergences, bridge sampling's iterations, seconds
+##   variables       per model, the summary of every Stan variable (flatcor)
+##   chains          per model, the sampler per chain (flatcor)
+## For JZS and Zellner-Siow: BayesFactor's Bayes factor of each model against
+## the intercept-only model and its error, no Stan.
+log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome, name) {
+  seed <- seed_of(name)
+  sample_r_squared <- function(predictors) {
+    if (ncol(predictors) == 0) 0 else summary(lm(outcome ~ predictors))$r.squared
+  }
+  common <- tibble(
+    id = name, seed = seed, method = method, n = length(outcome),
+    k_a = ncol(predictors_a), k_b = ncol(predictors_b),
+    r_squared_a = sample_r_squared(predictors_a), r_squared_b = sample_r_squared(predictors_b)
+  )
+
   # the three priors: flatcor
   if (method %in% names(contenders)) {
     compile_flatcor_models() # once per worker, one worker at a time (R/shared/pipeline.R)
@@ -99,10 +121,28 @@ log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome
       iter_sampling = bayes_factor_draws,
       seed = seed
     ))
-    return(c(
-      log_bf = result$log_bayes_factor,
-      error = result$error,
-      divergent = sum(result$divergent)
+    per_model <- function(part) {
+      m <- result$models[[part]]
+      row <- tibble(
+        log_ml = m$log_marginal_likelihood, error = m$error, divergent = m$divergent,
+        bridge_iterations = m$bridge_sampling$iterations,
+        seconds_sampling = m$seconds[["sampling"]],
+        seconds_bridge = m$seconds[["bridge_sampling"]]
+      )
+      names(row) <- paste0(names(row), "_", part)
+      row
+    }
+    long <- function(table) {
+      bind_rows(lapply(c("a", "b"), function(part) {
+        cbind(model = part, as.data.frame(result$models[[part]][[table]]))
+      }))
+    }
+    return(bind_cols(
+      common,
+      tibble(log_bf = result$log_bayes_factor, error = result$error,
+             divergent = sum(result$divergent)),
+      per_model("a"), per_model("b"),
+      tibble(variables = list(long("summary")), chains = list(long("sampler")))
     ))
   }
 
@@ -117,7 +157,7 @@ log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome
     if (ncol(predictors) == 0) {
       return(c(bf = 0, error = 0))
     }
-    r_squared <- summary(lm(outcome ~ predictors))$r.squared
+    r_squared <- sample_r_squared(predictors)
     bf <- BayesFactor::linearReg.R2stat(
       length(outcome), ncol(predictors), r_squared,
       rscale = scale,
@@ -128,9 +168,11 @@ log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome
   a <- log_bf_against_intercept(predictors_a)
   b <- log_bf_against_intercept(predictors_b)
 
-  c(
+  bind_cols(common, tibble(
     log_bf = a[["bf"]] - b[["bf"]],
     error = sqrt(a[["error"]]^2 + b[["error"]]^2),
-    divergent = 0
-  )
+    divergent = 0,
+    log_bf_intercept_a = a[["bf"]], error_intercept_a = a[["error"]],
+    log_bf_intercept_b = b[["bf"]], error_intercept_b = b[["error"]]
+  ))
 }

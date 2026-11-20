@@ -7,9 +7,12 @@
 
 ## ---- One dataset -------------------------------------------------------------------
 
-## Dataset `replication` of a cell (R/1_data/4_known_slopes.R), and for each method: x1's
-## estimate and 95% interval, and the excess prediction error of the
-## estimated slopes, (b - beta)' Sigma (b - beta)
+## Dataset `replication` of a cell (R/1_data/4_known_slopes.R), and for each method:
+## x1's estimate and 95% interval, the excess prediction error of the
+## estimated slopes, (b - beta)' Sigma (b - beta), and everything else
+## computed: per method the summary of every parameter (list column
+## `variables`; for OLS its coefficient table), and for the three priors
+## Stan's sampler per chain (`chains`), seeds and seconds
 estimates_2b <- function(cell, replication) {
   # the data, and the truth it came from
   data <- data_known_slopes(cell, replication)
@@ -21,46 +24,71 @@ estimates_2b <- function(cell, replication) {
   columns <- colnames(data$predictors)
   frame <- data.frame(data$predictors, y = data$outcome)
   formula <- reformulate(columns, response = "y")
+  sample_r_squared <- summary(lm(formula, frame))$r.squared
 
-  # one row per method: x1's estimate and interval, and the prediction error
-  summary_of <- function(method, slopes, lower, upper, divergent = NA) {
+  # the summary of every parameter from posterior draws (the posterior package)
+  summary_of_draws <- function(draws) {
+    as.data.frame(posterior::summarise_draws(
+      posterior::as_draws(draws),
+      "mean", "median", "sd", "mad",
+      ~ posterior::quantile2(.x, probs = c(0.025, 0.05, 0.95, 0.975)),
+      "rhat", "ess_bulk", "ess_tail"
+    ))
+  }
+
+  # one row per method: x1's estimate and interval, the prediction error, the rest
+  row_of <- function(method, slopes, lower, upper, name, seed = NA, divergent = NA,
+                     variables = NULL, chains = NULL, seconds = NA) {
     error <- slopes - true_slopes
-    data.frame(
-      cell, replication, method,
+    tibble(
+      cell, replication, dataset = dataset_id, id = name, seed = seed, method,
       estimate = slopes[[1]],
       lower,
       upper,
       prediction_error = drop(t(error) %*% covariance %*% error),
-      divergent
+      divergent,
+      sample_r_squared = sample_r_squared,
+      seconds = seconds,
+      machine = machine_of(),
+      variables = list(variables),
+      chains = list(chains)
     )
   }
-  from_draws <- function(method, draws, divergent = NA) {
-    summary_of(
+  from_draws <- function(method, draws, name, ...) {
+    slopes <- as.matrix(as.data.frame(draws)[, columns, drop = FALSE])
+    row_of(
       method,
-      slopes = colMeans(draws),
-      lower = quantile(draws[, 1], 0.025, names = FALSE),
-      upper = quantile(draws[, 1], 0.975, names = FALSE),
-      divergent = divergent
+      slopes = colMeans(slopes),
+      lower = quantile(slopes[, 1], 0.025, names = FALSE),
+      upper = quantile(slopes[, 1], 0.975, names = FALSE),
+      name = name,
+      variables = summary_of_draws(draws),
+      ...
     )
   }
 
   # the three priors: flatcor's Stan model
   priors <- lapply(names(contenders), function(method) {
+    name <- name_of(dataset_id, method)
     fit <- suppressWarnings(fit_regression(
       formula, frame,
       prior = contenders[[method]],
       chains = stan_draws_2b[["chains"]],
       iter_warmup = stan_draws_2b[["warmup"]],
       iter_sampling = stan_draws_2b[["sampling"]],
-      seed = seed_of(dataset_id, method)
+      seed = seed_of(name)
     ))
-    draws <- as.matrix(as.data.frame(fit$draws)[, columns, drop = FALSE])
-    from_draws(method, draws, fit$divergent)
+    from_draws(
+      method, fit$draws, name,
+      seed = fit$seed, divergent = fit$divergent, chains = fit$sampler,
+      seconds = sum(unlist(fit$seconds))
+    )
   })
 
   # the references JZS and Zellner-Siow: BayesFactor's posterior sampler
   bayesfactor_draws <- function(scale, label) {
     with_stream_of(paste(dataset_id, label), {
+      started <- Sys.time()
       posterior <- BayesFactor::lmBF(
         formula, frame,
         rscaleCont = scale,
@@ -68,32 +96,47 @@ estimates_2b <- function(cell, replication) {
         iterations = bayesfactor_draws_2b,
         progress = FALSE
       )
-      as.matrix(as.data.frame(posterior)[, columns, drop = FALSE])
+      draws <- as.matrix(posterior)
+      attr(draws, "seconds") <- as.numeric(difftime(Sys.time(), started, units = "secs"))
+      draws
     })
   }
-  references <- list(
-    from_draws("JZS default", bayesfactor_draws(sqrt(2) / 4, "JZS")),
-    from_draws("Zellner-Siow", bayesfactor_draws(1, "ZS"))
+  references <- lapply(
+    list(c("JZS default", "JZS", sqrt(2) / 4), c("Zellner-Siow", "ZS", 1)),
+    function(reference) {
+      draws <- bayesfactor_draws(as.numeric(reference[3]), reference[2])
+      from_draws(
+        reference[1], posterior::as_draws_matrix(draws),
+        name = paste(dataset_id, reference[2]), seconds = attr(draws, "seconds")
+      )
+    }
   )
 
-  # ordinary least squares
+  # ordinary least squares, with its coefficient table
   ols <- lm(formula, frame)
-  ols_row <- summary_of(
+  coefficients <- summary(ols)$coefficients
+  ols_row <- row_of(
     "OLS",
     slopes = coef(ols)[columns],
     lower = confint(ols)["x1", 1],
-    upper = confint(ols)["x1", 2]
+    upper = confint(ols)["x1", 2],
+    name = paste(dataset_id, "OLS"),
+    variables = data.frame(
+      variable = rownames(coefficients),
+      mean = coefficients[, 1], sd = coefficients[, 2],
+      t = coefficients[, 3], p = coefficients[, 4],
+      q2.5 = confint(ols)[, 1], q97.5 = confint(ols)[, 2]
+    )
   )
 
-  do.call(rbind, c(priors, references, list(ols_row)))
+  bind_rows(c(priors, references, list(ols_row)))
 }
 
 ## One batch of datasets of one cell. `model`: flatcor's Stan model, compiled
 ## before, so that parallel workers find it instead of compiling it at once.
 estimates_batch_2b <- function(cell, replications, model) {
   compile_flatcor_models() # once per worker, one worker at a time (R/shared/pipeline.R)
-  rows <- lapply(replications, function(r) estimates_2b(cell, r))
-  do.call(rbind, rows)
+  bind_rows(lapply(replications, function(r) estimates_2b(cell, r)))
 }
 
 
@@ -193,13 +236,14 @@ divergent_2b <- function(estimates) {
 
 ## ---- The results file ---------------------------------------------------------
 
+## `estimates`: the per-dataset rows, read from results/per_dataset/
+## (study_2b_fits)
 save_results_2b <- function(estimates) {
   table <- results_table_2b(bias_and_coverage_2b(estimates), prediction_2b(estimates))
 
   save_study_results_file("2b", list(
     estimates = table,
     beyond_reference = beyond_reference(table, by = c("quantity", "method")),
-    divergent = divergent_2b(estimates),
-    per_dataset = estimates
+    divergent = divergent_2b(estimates)
   ))
 }

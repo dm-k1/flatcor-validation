@@ -131,7 +131,7 @@ compile_flatcor_models()
 
 in_rounds <- list(
   "1b" = list(
-    study = "1b", tables = "pooled", by = "prior", pieces = "changes_1b",
+    study = "1b", tables = "pooled", by = "prior", pieces = "log_bfs_1b",
     cells = priors_1b, first_round = first_round_1b, batch_size = batch_size_1b
   ),
   "2b" = list(

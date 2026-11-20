@@ -82,7 +82,8 @@ studies <- c(
 )
 tar_source(c(
   "R/shared/random_streams.R", "R/shared/pipeline.R", "R/shared/expectations.R",
-  "R/shared/results.R", "R/shared/comparison_methods.R", "R/shared/rounds.R",
+  "R/shared/results.R", "R/shared/per_dataset.R", "R/shared/comparison_methods.R",
+  "R/shared/rounds.R",
   list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
   file.path("R", "2_studies", studies, "design.R"),
   file.path("R", "2_studies", studies, "code.R"),
@@ -128,11 +129,30 @@ list(
     pattern = map(design_1a),
     iteration = "list"
   ),
+  # layer 1: the draws, the recipe's draws, each setting's run (R/shared/per_dataset.R)
+  tar_target(
+    per_dataset_draws_1a,
+    write_per_dataset(draws_table_1a(samples_1a), "1a_prior_draws", gzip = TRUE),
+    format = "file"
+  ),
+  tar_target(
+    per_dataset_recipe_1a,
+    write_per_dataset(
+      recipe_table_1a(predictors_1a[["three_correlated"]]), "1a_recipe_draws", gzip = TRUE
+    ),
+    format = "file"
+  ),
+  tar_target(
+    per_dataset_settings_1a,
+    write_per_dataset(settings_table_1a(samples_1a), "1a_settings"),
+    format = "file"
+  ),
   tar_target(
     comparisons_1a,
-    compare_setting_1a(samples_1a, predictors_1a[[samples_1a$setting$design]]),
-    pattern = map(samples_1a),
-    iteration = "list"
+    compare_1a(
+      read_per_dataset(per_dataset_draws_1a), read_per_dataset(per_dataset_recipe_1a),
+      read_per_dataset(per_dataset_settings_1a), predictors_1a
+    )
   ),
   tar_target(results_1a, save_results_1a(comparisons_1a), format = "file"),
 
@@ -146,10 +166,17 @@ list(
   ),
   tar_target(pieces_1b, pieces_of_plan(plan_1b, batch_size_1b)),
   tar_target(
-    changes_1b,
+    log_bfs_1b,
     invariance_batch_1b(pieces_1b["prior"], pieces_1b$from:pieces_1b$to),
     pattern = map(pieces_1b)
   ),
+  # layer 1: every log Bayes factor's row (R/shared/per_dataset.R)
+  tar_target(
+    per_dataset_1b,
+    write_per_dataset(log_bfs_1b, "1b_log_bayes_factors"),
+    format = "file"
+  ),
+  tar_target(changes_1b, changes_of_1b(read_per_dataset(per_dataset_1b))),
   # a change of one dataset is judged against bridge sampling's error as
   # measured in 3a, part B (shortfall_3a, below)
   tar_target(results_1b, save_results_1b(changes_1b, shortfall_3a), format = "file"),
@@ -168,7 +195,24 @@ list(
     pattern = cross(design_2a, batches_2a),
     iteration = "list"
   ),
-  tar_target(results_2a, save_results_2a(sbc_2a), format = "file"),
+  # layer 1: every fit's rows (R/shared/per_dataset.R)
+  tar_target(
+    per_dataset_fits_2a,
+    write_per_dataset(bind_rows(lapply(sbc_2a, `[[`, "stats")), "2a_sbc_fits"),
+    format = "file"
+  ),
+  tar_target(
+    per_dataset_diagnostics_2a,
+    write_per_dataset(bind_rows(lapply(sbc_2a, `[[`, "diagnostics")), "2a_sbc_diagnostics"),
+    format = "file"
+  ),
+  tar_target(
+    results_2a,
+    save_results_2a(
+      read_per_dataset(per_dataset_fits_2a), read_per_dataset(per_dataset_diagnostics_2a)
+    ),
+    format = "file"
+  ),
 
 
   ## ---- 2b. How close are the estimates to a known truth? ----
@@ -186,7 +230,9 @@ list(
     estimates_batch_2b(pieces_2b[names(cells_2b)], pieces_2b$from:pieces_2b$to, stan_model),
     pattern = map(pieces_2b)
   ),
-  tar_target(results_2b, save_results_2b(fits_2b), format = "file"),
+  # layer 1: every fit's row (R/shared/per_dataset.R)
+  tar_target(per_dataset_2b, write_per_dataset(fits_2b, "2b_fits"), format = "file"),
+  tar_target(results_2b, save_results_2b(read_per_dataset(per_dataset_2b)), format = "file"),
 
 
   ## ---- 3a. Are the Bayes factors right? ----
@@ -203,10 +249,17 @@ list(
     calibration_batch_3a(pieces_3a[names(cells_3a)], pieces_3a$from:pieces_3a$to),
     pattern = map(pieces_3a)
   ),
+  # layer 1: every dataset's row (R/shared/per_dataset.R)
+  tar_target(
+    per_dataset_calibration_3a,
+    write_per_dataset(calibration_runs_3a, "3a_calibration"),
+    format = "file"
+  ),
+  tar_target(calibration_rows_3a, read_per_dataset(per_dataset_calibration_3a)),
   # the data-averaged posterior decides; the bins and the line describe
-  tar_target(averaged_table_3a, data_averaged_posterior_3a(calibration_runs_3a)),
-  tar_target(bins_table_3a, calibration_bins_3a(calibration_runs_3a)),
-  tar_target(line_table_3a, calibration_line_3a(calibration_runs_3a)),
+  tar_target(averaged_table_3a, data_averaged_posterior_3a(calibration_rows_3a)),
+  tar_target(bins_table_3a, calibration_bins_3a(calibration_rows_3a)),
+  tar_target(line_table_3a, calibration_line_3a(calibration_rows_3a)),
 
   # part B, bridge sampling's error: each dataset run repeat_runs_3a times;
   # its own plan and pieces
@@ -225,18 +278,24 @@ list(
     ),
     pattern = map(pieces_repeats_3a)
   ),
-  tar_target(spread_table_3a, repeat_spread_3a(repeated_3a, repeat_runs_3a)),
+  tar_target(
+    per_dataset_repeats_3a,
+    write_per_dataset(repeated_3a, "3a_repeated_runs"),
+    format = "file"
+  ),
+  tar_target(repeated_rows_3a, read_per_dataset(per_dataset_repeats_3a)),
+  tar_target(spread_table_3a, repeat_spread_3a(repeated_rows_3a, repeat_runs_3a)),
   # the factor by which the reported error falls short, over every cell:
   # used by 1b and 3b for quantities about one given dataset
-  tar_target(shortfall_3a, bridge_shortfall_3a(repeated_3a)),
+  tar_target(shortfall_3a, bridge_shortfall_3a(repeated_rows_3a)),
 
   # also reported, and the results file
-  tar_target(diagnostics_table_3a, diagnostics_3a(calibration_runs_3a)),
+  tar_target(diagnostics_table_3a, diagnostics_3a(calibration_rows_3a)),
   tar_target(
     results_3a,
     save_results_3a(
       averaged_table_3a, bins_table_3a, line_table_3a, spread_table_3a, shortfall_3a,
-      diagnostics_table_3a, calibration_runs_3a, repeated_3a
+      diagnostics_table_3a
     ),
     format = "file"
   ),
@@ -286,10 +345,33 @@ list(
     pattern = map(pieces_growing_3b)
   ),
 
-  # the results file (3b.7 is computed in it)
+  # 3b.7: the prior's draws with the sample and the population covariance
+  tar_target(draws_intrinsic_3b, intrinsic_draws_of_3b()),
+
+  # layer 1: every Bayes factor's row and the draws (R/shared/per_dataset.R)
+  tar_target(per_dataset_formula_3b, write_per_dataset(formula_3b, "3b_formula"), format = "file"),
+  tar_target(per_dataset_rates_3b, write_per_dataset(rates_3b, "3b_rates"), format = "file"),
+  tar_target(
+    per_dataset_growing_3b,
+    write_per_dataset(growing_3b, "3b_growing_k"),
+    format = "file"
+  ),
+  tar_target(
+    per_dataset_intrinsic_3b,
+    write_per_dataset(draws_intrinsic_3b, "3b_intrinsic_draws", gzip = TRUE),
+    format = "file"
+  ),
+
+  # the results file, from the per-dataset files
   tar_target(
     results_3b,
-    save_results_3b(formula_3b, rates_3b, growing_3b, shortfall_3a),
+    save_results_3b(
+      read_per_dataset(per_dataset_formula_3b),
+      read_per_dataset(per_dataset_rates_3b),
+      read_per_dataset(per_dataset_growing_3b),
+      read_per_dataset(per_dataset_intrinsic_3b),
+      shortfall_3a
+    ),
     format = "file"
   )
 )

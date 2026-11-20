@@ -212,14 +212,14 @@ corner of each design.
 | `_targets.R` | The pipeline: the steps of every study, in order |
 | `run_all.R` | Runs the pipeline, in rounds (only the simulation) |
 | `make_figures.R` | Draws the figures from the results files, after `run_all.R` |
-| `R/shared/` | Used by every step: the random streams and the one root seed, the pipeline's helpers, the reporting rule, the results file, the comparison methods; the static check (`static_check.R`) |
+| `R/shared/` | Used by every step: the random streams and the one root seed, the pipeline's helpers, the reporting rule, the results file, the per-dataset files (`per_dataset.R`), the comparison methods; the static check (`static_check.R`) |
 | `R/1_data/` | One file per data set, numbered in the order the studies first use them (what each is and which study needs it: `docs/validation_tests.md`, "The data sets") |
 | `R/2_studies/` | The six studies, one folder per cell, each with `design.R` and `code.R` |
 | `R/3_figures/` | One script per study that draws its figures from its results file |
 | `R/dry_run/` | The dry run: records the expensive calls in a smoke test, replays them after (`replay.R`); changes no study's code |
 | `R/4_notebook/` | The notebook's helpers: they present the results, they run and compute nothing |
 | `R/timing/` | The run-time estimate: time a study on a fraction of its datasets, scale up to the full run |
-| `results/` | Each study's tables and setup, `studies/study_<cell>.rds`, and its figures, `figures/<cell>_*.png` |
+| `results/` | Each study's metrics and setup, `studies/study_<cell>.rds` (layer 2); every dataset's numbers and everything else computed, `per_dataset/` (layer 1, its README lists the files and columns); the figures, `figures/<cell>_*.png` |
 | `validation.ipynb` | The notebook (R kernel) |
 | `docs/` | What the validation tests, working notes |
 | `cluster/` | The container image, the run-time estimate, and how to run the validation on a cluster |

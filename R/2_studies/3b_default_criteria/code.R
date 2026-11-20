@@ -10,19 +10,23 @@
 ## The method's name for a prior ("flat_r" -> "flat R")
 method_of <- function(prior) names(contenders)[contenders == prior]
 
-## One Bayes factor as a row: its log, its error, Stan's divergent transitions
-as_row <- function(result) {
-  data.frame(
-    log_bf = result[["log_bf"]],
-    error = result[["error"]],
-    divergent = result[["divergent"]]
+## One Bayes factor as the row of its dataset: the design columns `design`
+## (a one-row data frame), then everything computed (R/shared/comparison_methods.R),
+## then the seconds it took and the machine
+bayes_factor_row <- function(design, method, predictors_a, predictors_b, outcome, name) {
+  started <- Sys.time()
+  result <- log_bayes_factor_between(method, predictors_a, predictors_b, outcome, name)
+  bind_cols(
+    as_tibble(design),
+    select(result, -any_of(names(design))),
+    tibble(seconds = as.numeric(difftime(Sys.time(), started, units = "secs")),
+           machine = machine_of())
   )
 }
 
 ## One batch of datasets of one cell; `one` computes one dataset
 batch_3b <- function(cell, replications, one) {
-  rows <- lapply(replications, function(r) one(cell, r))
-  do.call(rbind, rows)
+  bind_rows(lapply(replications, function(r) one(cell, r)))
 }
 
 ## Slope of the median log BF against log n, with a bootstrap MCSE from
@@ -47,37 +51,35 @@ slope_of_medians <- function(rows) {
 ## the design
 formula_check_3b <- function(check) {
   data <- data_set_r_squared(check$n, check$k, check$r_squared)
-  result <- log_bayes_factor_between(
-    method_of(check$prior),
+  bayes_factor_row(
+    check, method_of(check$prior),
     predictors_a = data$x,
     predictors_b = data$x[, 0, drop = FALSE],
     outcome = data$y,
-    seed = seed_of("3b-formula", check$prior, check$k, check$r_squared)
+    name = name_of("3b-formula", check$prior, check$k, check$r_squared)
   )
-  cbind(check, as_row(result))
 }
 
 
 ## ---- 3b.3-3b.6: the rates ----------------------------------------------------------
 
 ## Dataset `replication` of a rate cell (R/1_data/6_nested_models.R), and the
-## log BF for the true model
+## log BF of the smaller model against the larger one (log_bf_smaller) and
+## for the true model (log_bf): the truth is the smaller model, except under
+## the alternative
 rate_bayes_factor_3b <- function(cell, replication) {
   data <- data_nested_models(cell, replication)
-
-  # the smaller model against the larger one
-  result <- log_bayes_factor_between(
-    method_of(cell$prior),
+  row <- bayes_factor_row(
+    cbind(cell, replication = replication), method_of(cell$prior),
     predictors_a = data$smaller,
     predictors_b = data$larger,
     outcome = data$y,
-    seed = seed_of("3b-rate", cell$setting, cell$q, cell$n, replication, cell$prior)
+    name = name_of("3b-rate", cell$setting, cell$q, cell$n, replication, cell$prior)
   )
-
-  # the truth is the smaller model, except under the alternative
-  if (cell$setting == "alternative") result[["log_bf"]] <- -result[["log_bf"]]
-
-  cbind(cell, replication, as_row(result))
+  row$truth <- if (cell$setting == "alternative") "larger model" else "smaller model"
+  row$log_bf_smaller <- row$log_bf
+  if (cell$setting == "alternative") row$log_bf <- -row$log_bf
+  row
 }
 
 ## 3b.3-3b.5: the slopes against their asymptotic values, q/2 (or a against
@@ -150,37 +152,50 @@ alternative_3b <- function(rates) {
 
 ## ---- 3b.7: intrinsic consistency -----------------------------------------------------
 
-## The prior with the sample covariance against that with the population
-## covariance (three predictors, correlation .5), by a two-sample KS distance
-intrinsic_3b <- function() {
+## The draws of x1's coefficient from the prior with the population
+## covariance (three predictors, correlation .5; the limit) and with a sample
+## covariance at each n: one row per draw (layer 1)
+intrinsic_draws_of_3b <- function() {
   population <- matrix(0.5, 3, 3)
   diag(population) <- 1
 
   per_prior <- lapply(priors_3b, function(p) {
-    # the limit: the prior with the population covariance
     limit <- with_stream_of(paste0("I5-", p, "-limit"), {
       draw_coefficients_from_prior(intrinsic_draws_3b, population, prior = p)[, 1]
     })
-
-    # at each n: the prior with a sample covariance
     per_n <- lapply(intrinsic_n_3b, function(n) {
       with_stream_of(sprintf("I5-%s-n%d", p, n), {
         x <- matrix(rnorm(n * 3), n) %*% chol(population)
         sample_covariance <- crossprod(scale(x, scale = FALSE)) / n
         draws <- draw_coefficients_from_prior(intrinsic_draws_3b, sample_covariance, prior = p)[, 1]
-        tibble(
-          prior = p,
-          n = n,
-          ks_distance = suppressWarnings(unname(ks.test(draws, limit)$statistic)),
-          critical_at_01 = 1.63 * sqrt(2 / intrinsic_draws_3b),
-          expected = "falls below the critical value as n grows"
-        )
+        tibble(prior = p, n = n, covariance = "sample", draw = seq_along(draws), value = draws)
       })
     })
-    bind_rows(per_n)
+    bind_rows(
+      tibble(prior = p, n = NA_real_, covariance = "population", draw = seq_along(limit),
+             value = limit),
+      per_n
+    )
   })
-
   bind_rows(per_prior)
+}
+
+## The prior with the sample covariance against that with the population
+## covariance, per prior and n, by a two-sample KS distance (from the draws'
+## file)
+intrinsic_3b <- function(draws) {
+  draws |>
+    filter(covariance == "sample") |>
+    group_by(prior, n) |>
+    group_modify(function(rows, keys) {
+      limit <- draws$value[draws$covariance == "population" & draws$prior == keys$prior]
+      tibble(
+        ks_distance = suppressWarnings(unname(ks.test(rows$value, limit)$statistic)),
+        critical_at_01 = 1.63 * sqrt(2 / length(limit))
+      )
+    }) |>
+    ungroup() |>
+    mutate(expected = "falls below the critical value as n grows")
 }
 
 
@@ -196,14 +211,13 @@ growing_bayes_factor_3b <- function(cell, replication) {
     data$predictors[, 1:3]
   }
 
-  result <- log_bayes_factor_between(
-    cell$method,
+  bayes_factor_row(
+    cbind(cell, replication = replication), cell$method,
     predictors_a = smaller,
     predictors_b = data$predictors,
     outcome = data$outcome,
-    seed = seed_of("3b-growing", cell$growth, cell$n, cell$truth, replication, cell$method)
+    name = name_of("3b-growing", cell$growth, cell$n, cell$truth, replication, cell$method)
   )
-  cbind(cell, replication, as_row(result))
 }
 
 ## The slopes, expected positive (a direction: its Δ by the relative rule,
@@ -236,7 +250,7 @@ growing_medians_3b <- function(growing) {
 ## `shortfall`: by how much bridge sampling's reported error falls short of
 ## the real spread (study 3a, part B); 3b.1 and 3b.2 are about one given
 ## dataset each, so their errors are the reported ones times that factor
-save_results_3b <- function(formula_checks, rates, growing, shortfall) {
+save_results_3b <- function(formula_checks, rates, growing, intrinsic_draws, shortfall) {
   formula_checks$bridge_error <- formula_checks$error
   formula_checks$error <- formula_checks$error * shortfall
 
@@ -283,7 +297,7 @@ save_results_3b <- function(formula_checks, rates, growing, shortfall) {
     beyond_reference = rbind(beyond_reference(matching), beyond_reference(slopes)),
     alternative = alternative_3b(rates),
     alternative_slopes = alternative_slopes_3b(rates),
-    intrinsic_consistency = intrinsic_3b(),
+    intrinsic_consistency = intrinsic_3b(intrinsic_draws),
     growing_slopes = growing_slopes_3b(growing),
     growing_medians = growing_medians_3b(growing),
     divergences = divergences

@@ -23,20 +23,29 @@ bayes_factor_3a <- function(prior, k, n, replication, purpose, run = 1) {
   )
 
   # the Bayes factor: each model fitted with flatcor's Stan model, the
-  # marginal likelihoods by bridge sampling
+  # marginal likelihoods by bridge sampling; with everything computed on the
+  # way (R/shared/comparison_methods.R)
+  started <- Sys.time()
   result <- log_bayes_factor_between(
     method = names(contenders)[contenders == prior],
     predictors_a = data$predictors,
     predictors_b = data$predictors[, -1, drop = FALSE],
     outcome = data$outcome,
-    seed = seed_of("3a", purpose, prior, k, n, replication, run)
+    name = name_of("3a", purpose, prior, k, n, replication, run)
   )
 
-  data.frame(
-    prior, k, n, replication, run, from_model_without_x1,
-    log_BF10 = result[["log_bf"]],
-    error = result[["error"]],
-    divergent = result[["divergent"]]
+  # the dataset's design and truth first, then the Bayes factor
+  bind_cols(
+    tibble(
+      prior, k, n, replication, run, from_model_without_x1,
+      true_r_squared = data$r_squared,
+      true_x1 = data$coefficients[1],
+      true_noise_sd = data$noise_sd,
+      true_intercept = data$intercept
+    ),
+    rename(select(result, -method, -n), log_BF10 = log_bf),
+    tibble(seconds = as.numeric(difftime(Sys.time(), started, units = "secs")),
+           machine = machine_of())
   )
 }
 
@@ -226,9 +235,10 @@ diagnostics_3a <- function(results) {
 ## ---- The results file ---------------------------------------------------------
 
 ## Every table of the study in results/studies/study_3a.rds
-## (R/3_figures/3a_bayes_factors.R makes the figures from it)
-save_results_3a <- function(averaged, bins, line, spread, shortfall, diagnostics,
-                            calibration, repeats) {
+## (R/3_figures/3a_bayes_factors.R makes the figures from it); the
+## per-dataset rows are in results/per_dataset/ (study_3a_calibration,
+## study_3a_repeated_runs)
+save_results_3a <- function(averaged, bins, line, spread, shortfall, diagnostics) {
   distances <- rbind(
     averaged[, c("quantity", "distance_in_mcse")],
     bins[, c("quantity", "distance_in_mcse")],
@@ -246,8 +256,6 @@ save_results_3a <- function(averaged, bins, line, spread, shortfall, diagnostics
       factor = shortfall
     ),
     beyond_reference = beyond_reference(distances),
-    diagnostics = diagnostics,
-    bayes_factors = calibration,
-    repeats = repeats
+    diagnostics = diagnostics
   ))
 }

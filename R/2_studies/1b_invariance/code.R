@@ -24,11 +24,13 @@ recoded_1b <- function(data) {
 }
 
 
-## ---- The change in log Bayes factor -------------------------------------------------
+## ---- The log Bayes factors of one dataset -----------------------------------------
 
-## For one prior and one dataset: the change after rescaling and recoding,
-## expected 0. Its MCSE combines bridge sampling's reported errors of both
-## Bayes factors (save_results_1b() corrects them by study 3a's part B).
+## For one prior and one dataset: the five log Bayes factors, one row each
+## with everything computed (R/shared/comparison_methods.R): the whole model
+## against the intercept-only model on the original, rescaled and recoded
+## data, and x1 (with it against without it) on the original and rescaled
+## data. The changes are computed from these rows (changes_of_1b()).
 invariance_1b <- function(prior, replication) {
   method <- names(contenders)[contenders == prior]
   original <- data_ordinary_regression(replication)
@@ -38,57 +40,60 @@ invariance_1b <- function(prior, replication) {
     recoded = recoded_1b(original)
   )
 
-  log_bf <- function(version, without_columns, label) {
+  log_bf <- function(version, bayes_factor, without_columns, label) {
     data <- versions[[version]]
-    log_bayes_factor_between(
+    started <- Sys.time()
+    result <- log_bayes_factor_between(
       method,
       predictors_a = data$x,
       predictors_b = data$x[, without_columns, drop = FALSE],
       outcome = data$y,
-      seed = seed_of("1b", prior, replication, label)
+      name = name_of("1b", prior, replication, label)
+    )
+    bind_cols(
+      tibble(prior, replication, bayes_factor, version),
+      select(result, -method),
+      tibble(seconds = as.numeric(difftime(Sys.time(), started, units = "secs")),
+             machine = machine_of())
     )
   }
 
-  # the whole model against the intercept-only model (no columns left)
-  whole <- lapply(names(versions), function(v) log_bf(v, 0, paste("whole", v)))
-  names(whole) <- names(versions)
-
-  # x1: the model with it against the model without it
-  term <- lapply(c("original", "rescaled"), function(v) log_bf(v, -1, paste("x1", v)))
-  names(term) <- c("original", "rescaled")
-
-  # the change, and its MCSE
-  change <- function(pair, after) {
-    c(
-      estimate = pair[[after]][["log_bf"]] - pair$original[["log_bf"]],
-      mcse = sqrt(pair[[after]][["error"]]^2 + pair$original[["error"]]^2)
-    )
-  }
-  values <- rbind(
-    change(whole, "rescaled"),
-    change(whole, "recoded"),
-    change(term, "rescaled")
-  )
-
-  expectation_rows(
-    prior = prior,
-    replication = replication,
-    bayes_factor = c(
-      "whole model against intercept only",
-      "whole model against intercept only",
-      "x1: with it against without it"
-    ),
-    quantity = paste("change in log BF,", c("rescaled", "recoded", "rescaled")),
-    expected = 0,
-    estimate = values[, "estimate"],
-    mcse = values[, "mcse"]
+  whole <- "whole model against intercept only"
+  term <- "x1: with it against without it"
+  bind_rows(
+    # the whole model against the intercept-only model (no columns left)
+    lapply(names(versions), function(v) log_bf(v, whole, 0, paste("whole", v))),
+    # x1: the model with it against the model without it
+    lapply(c("original", "rescaled"), function(v) log_bf(v, term, -1, paste("x1", v)))
   )
 }
 
 ## One batch of datasets for one prior
 invariance_batch_1b <- function(prior_row, replications) {
-  rows <- lapply(replications, function(r) invariance_1b(prior_row$prior, r))
-  do.call(rbind, rows)
+  bind_rows(lapply(replications, function(r) invariance_1b(prior_row$prior, r)))
+}
+
+## The change in log BF per dataset after rescaling and recoding, expected 0,
+## from its rows: the changed log BF minus the original one. Its MCSE combines
+## bridge sampling's reported errors of both (save_results_1b() corrects them
+## by study 3a's part B).
+changes_of_1b <- function(rows) {
+  original <- rows[rows$version == "original", ]
+  changed <- rows[rows$version != "original", ]
+  paired <- merge(
+    changed, original,
+    by = c("prior", "replication", "bayes_factor"), suffixes = c("", "_original")
+  )
+  expectation_rows(
+    prior = paired$prior,
+    replication = paired$replication,
+    bayes_factor = paired$bayes_factor,
+    quantity = paste("change in log BF,", paired$version),
+    expected = 0,
+    estimate = paired$log_bf - paired$log_bf_original,
+    mcse = sqrt(paired$error^2 + paired$error_original^2)
+  ) |>
+    arrange(prior, replication, bayes_factor, quantity)
 }
 
 

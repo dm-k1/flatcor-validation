@@ -52,7 +52,7 @@ if (!is.null(manifest)) cat(sprintf("2. the pipeline is valid: %d steps\n", nrow
 studies <- basename(list.dirs(file.path("R", "2_studies"), recursive = FALSE))
 pipeline_files <- c(
   file.path("R", "shared", c(
-    "random_streams.R", "pipeline.R", "expectations.R", "results.R",
+    "random_streams.R", "pipeline.R", "expectations.R", "results.R", "per_dataset.R",
     "comparison_methods.R", "rounds.R", "check_results.R"
   )),
   list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
@@ -156,11 +156,12 @@ expensive_calls <- c(
 file_calls <- c(
   "readRDS", "saveRDS", "load", "save", "read.csv", "write.csv", "readLines", "writeLines",
   "read_csv", "write_csv", "fread", "fwrite", "file.exists", "file.rename", "file.copy",
-  "unlink", "dir.create", "list.files", "ggsave", "png", "pdf"
+  "unlink", "dir.create", "list.files", "ggsave", "png", "pdf", "fread", "fwrite"
 )
 allowed_file_use <- c(
   "save_study_results_file", "read_plan", "write_plan",
-  "compile_flatcor_models", "check_results_file", "check_results"
+  "compile_flatcor_models", "check_results_file", "check_results",
+  "write_per_dataset", "read_per_dataset"
 )
 
 ## The seams, as the dry run's file lists them (sourced on its own, it

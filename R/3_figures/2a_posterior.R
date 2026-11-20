@@ -1,22 +1,16 @@
 ## =====================================================================
-##  Figures of study 2a, from its results file. Nothing is computed here.
+##  Figures of study 2a, from its per-dataset file. Nothing is computed here.
 ##    Rscript R/3_figures/2a_posterior.R
 ## =====================================================================
 library(ggplot2)
-source("R/shared/figures.R") # read_results(), figure_folder
+source("R/shared/figures.R") # read_per_dataset_file(), figure_folder
 
-results <- read_results("2a")
-stats <- as.data.frame(results$tables$sbc_stats)
+stats <- read_per_dataset_file("2a_sbc_fits") # one row per variable of each SBC fit
 
 
-## The fits numbered through per prior and setting: the SBC package numbers
-## them (sim_id) within each batch, so in a run of several batches the same
-## sim_id occurs once per batch
-stats$sim_id <- ave(
-  seq_len(nrow(stats)),
-  stats$prior, stats$k, stats$variable,
-  FUN = seq_along
-)
+## Each fit by its dataset: the SBC package numbers fits (sim_id) within
+## each batch, the replication numbers them through
+stats$sim_id <- stats$replication
 
 
 ## Simulation-based calibration: the ECDF difference of the ranks (the SBC

@@ -132,17 +132,17 @@ replace_function <- function(name, make) {
 ## flatcor's Bayes factor between two models (the three priors; the
 ## references are cheap and run as they are)
 replace_function("log_bayes_factor_between", function(original) {
-  function(method, predictors_a, predictors_b, outcome, seed) {
+  function(method, predictors_a, predictors_b, outcome, name) {
     if (!(method %in% names(contenders))) {
-      return(original(method, predictors_a, predictors_b, outcome, seed))
+      return(original(method, predictors_a, predictors_b, outcome, name))
     }
     replayable(
       "bayes_factor",
       shape = list(
         prior = contenders[[method]], k_a = ncol(predictors_a), k_b = ncol(predictors_b)
       ),
-      inputs = list(method, predictors_a, predictors_b, outcome, seed, bayes_factor_draws),
-      original(method, predictors_a, predictors_b, outcome, seed)
+      inputs = list(method, predictors_a, predictors_b, outcome, name, bayes_factor_draws),
+      original(method, predictors_a, predictors_b, outcome, name)
     )
   }
 })
@@ -172,8 +172,9 @@ replace_function("sbc_batch_2a", function(original) {
   }
 })
 
-## flatcor's fit (2b). What is kept of the fit: the parts the studies use,
-## its draws and its divergent transitions.
+## flatcor's fit (2b). What is kept of the fit: everything but the CmdStan
+## fit object itself (its draws, divergences, sampler per chain, seconds,
+## seed).
 if (exists("estimates_2b", envir = overlay_env, inherits = FALSE)) {
   fit_regression <- function(formula, data, prior, ..., seed) {
     replayable(
@@ -182,7 +183,7 @@ if (exists("estimates_2b", envir = overlay_env, inherits = FALSE)) {
       inputs = list(deparse(formula), data, prior, list(...), seed),
       {
         fit <- flatcor::fit_regression(formula, data, prior = prior, ..., seed = seed)
-        list(draws = fit$draws, divergent = fit$divergent)
+        fit[c("draws", "divergent", "sampler", "seconds", "seed")]
       }
     )
   }
@@ -197,6 +198,9 @@ if (exists("estimates_2b", envir = overlay_env, inherits = FALSE)) {
 if (dry) {
   replace_function("save_study_results_file", function(original) {
     function(study, tables) {
+      # the tables first, while still in the project folder: they may read
+      # per-dataset files (R arguments are evaluated when first used)
+      force(tables)
       project <- getwd()
       scratch <- tempfile("dry_results_")
       dir.create(scratch)

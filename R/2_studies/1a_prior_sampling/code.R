@@ -72,7 +72,9 @@ sample_setting_1a <- function(setting, predictors, model) {
     per_observation = 0L,   # no log_lik or y_rep: not needed here
     r_squared_shape = prior_shape(setting$prior, ncol(predictors))
   )
-  seed <- seed_of("1a", setting$prior, setting$design)
+  name <- name_of("1a", setting$prior, setting$design)
+  seed <- seed_of(name)
+  started <- Sys.time()
 
   # the largest Monte Carlo SE of a percentile, as a share of its target
   # (the MCSE shrinks with the square root of the draws)
@@ -108,12 +110,66 @@ sample_setting_1a <- function(setting, predictors, model) {
     iterations <- ceiling(iterations * 1.2 * share^2)
   }
 
+  # the sampler per chain (CmdStan's diagnostics and times)
+  diagnostics <- fit$diagnostic_summary(quiet = TRUE)
+  times <- fit$time()$chains
+  chains <- data.frame(
+    chain = seq_along(diagnostics$num_divergent),
+    divergent = diagnostics$num_divergent,
+    max_treedepth_hits = diagnostics$num_max_treedepth,
+    ebfmi = diagnostics$ebfmi,
+    warmup_seconds = times$warmup,
+    sampling_seconds = times$sampling
+  )
+
   list(
     setting = setting,
     quantities = quantities_1a(draws, covariance),
     iterations = iterations,
-    smallest_ess = smallest_ess
+    smallest_ess = smallest_ess,
+    id = name,
+    seed = seed,
+    attempts = attempt,
+    seconds = as.numeric(difftime(Sys.time(), started, units = "secs")),
+    chains = chains
   )
+}
+
+## Layer 1 (R/shared/per_dataset.R): every prior draw of every quantity, one
+## row per draw
+draws_table_1a <- function(samples) {
+  bind_rows(lapply(samples, function(sampled) {
+    bind_rows(lapply(names(sampled$quantities), function(quantity) {
+      draws <- sampled$quantities[[quantity]]
+      tibble(
+        prior = sampled$setting$prior,
+        design = sampled$setting$design,
+        quantity = quantity,
+        chain = rep(seq_len(ncol(draws)), each = nrow(draws)),
+        iteration = rep(seq_len(nrow(draws)), times = ncol(draws)),
+        value = as.vector(draws)
+      )
+    }))
+  }))
+}
+
+## Layer 1: each setting's run, one row per setting (its chains as a list
+## column)
+settings_table_1a <- function(samples) {
+  bind_rows(lapply(samples, function(sampled) {
+    tibble(
+      prior = sampled$setting$prior,
+      design = sampled$setting$design,
+      id = sampled$id,
+      seed = sampled$seed,
+      iterations_per_chain = sampled$iterations,
+      attempts = sampled$attempts,
+      smallest_ess = sampled$smallest_ess,
+      seconds = sampled$seconds,
+      machine = machine_of(),
+      chains = list(sampled$chains)
+    )
+  }))
 }
 
 
@@ -127,6 +183,22 @@ recipe_partials_1a <- function(prior, covariance) {
   })
   f <- sweep(draws, 2, sqrt(1 / diag(solve(covariance))), "*")
   f / sqrt(1 + f^2)
+}
+
+## Layer 1: the recipe's draws for every prior (the three-predictor design),
+## one row per draw
+recipe_table_1a <- function(predictors) {
+  covariance <- covariance_of(predictors)
+  bind_rows(lapply(unique(settings_1a$prior), function(prior) {
+    partials <- recipe_partials_1a(prior, covariance)
+    bind_rows(lapply(seq_len(ncol(partials)), function(j) {
+      tibble(
+        prior = prior, design = "three_correlated",
+        quantity = sprintf("partial correlation of x%d", j),
+        draw = seq_len(nrow(partials)), value = partials[, j]
+      )
+    }))
+  }))
 }
 
 ## One quantity: its quantiles against the expected ones, and its KS distance
@@ -187,29 +259,43 @@ compare_quantity_1a <- function(x, name, setting, a, recipe) {
   )
 }
 
-## Every quantity of one setting
-compare_setting_1a <- function(sampled, predictors) {
-  setting <- sampled$setting
-  covariance <- covariance_of(predictors)
-  a <- prior_shape(setting$prior, ncol(covariance))
-  recipe <- if (setting$design == "three_correlated") {
-    recipe_partials_1a(setting$prior, covariance)
-  }
+## Every quantity of every setting, from the per-dataset files: the draws
+## (`draws`, one row per draw), the recipe's draws (`recipe`) and the runs
+## (`settings`); `predictors`: the designs' predictors
+compare_1a <- function(draws, recipe, settings, predictors) {
+  lapply(seq_len(nrow(settings)), function(i) {
+    setting <- settings[i, c("prior", "design")]
+    covariance <- covariance_of(predictors[[setting$design]])
+    a <- prior_shape(setting$prior, ncol(covariance))
+    of_setting <- draws[draws$prior == setting$prior & draws$design == setting$design, ]
 
-  rows <- lapply(names(sampled$quantities), function(name) {
-    compare_quantity_1a(sampled$quantities[[name]], name, setting, a, recipe)
-  })
+    # the recipe's partial correlations as a draws x 3 matrix
+    recipe_matrix <- if (setting$design == "three_correlated") {
+      of_prior <- recipe[recipe$prior == setting$prior, ]
+      sapply(sprintf("partial correlation of x%d", 1:3), function(q) {
+        of_q <- of_prior[of_prior$quantity == q, ]
+        of_q$value[order(of_q$draw)]
+      })
+    }
 
-  list(
-    quantiles = do.call(rbind, lapply(rows, `[[`, "quantiles")),
-    ks = do.call(rbind, lapply(rows, `[[`, "ks")),
-    iterations = data.frame(
-      prior = setting$prior,
-      design = setting$design,
-      iterations_per_chain = sampled$iterations,
-      smallest_ess = round(sampled$smallest_ess)
+    rows <- lapply(unique(of_setting$quantity), function(name) {
+      of_quantity <- of_setting[of_setting$quantity == name, ]
+      x <- matrix(NA_real_, max(of_quantity$iteration), max(of_quantity$chain))
+      x[cbind(of_quantity$iteration, of_quantity$chain)] <- of_quantity$value
+      compare_quantity_1a(x, name, setting, a, recipe_matrix)
+    })
+
+    list(
+      quantiles = do.call(rbind, lapply(rows, `[[`, "quantiles")),
+      ks = do.call(rbind, lapply(rows, `[[`, "ks")),
+      iterations = data.frame(
+        prior = setting$prior,
+        design = setting$design,
+        iterations_per_chain = settings$iterations_per_chain[i],
+        smallest_ess = round(settings$smallest_ess[i])
+      )
     )
-  )
+  })
 }
 
 
