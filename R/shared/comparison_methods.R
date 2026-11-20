@@ -135,5 +135,7 @@ log_bayes_factor_between <- function(method, predictors_a, predictors_b, outcome
   )
 }
 
-## A seed for the Stan fits, from a dataset's ID and a label
+## A seed for the Stan fits, from a dataset's ID and a label: the same hash
+## of a name as with_stream_of() (R/shared/random_streams.R), as a positive
+## whole number, which Stan and bridge sampling take
 seed_of <- function(...) abs(digest::digest2int(paste(...))) %% .Machine$integer.max

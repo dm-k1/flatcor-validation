@@ -5,6 +5,12 @@
 ##  so the same ID always gives the same numbers, in any study, on any
 ##  machine, in any order, on any number of cores. Datasets are made again
 ##  from their ID, never stored (docs/validation_tests.md, "The data sets").
+##
+##  In short: name -> hash -> seed. This file seeds R's own random numbers
+##  (data, bootstraps, BayesFactor's draws); seed_of() in
+##  comparison_methods.R makes the seed for Stan and bridge sampling from a
+##  name in the same way. The hash's own seed is left at 0: it is the one
+##  number from which every random number of the validation follows.
 ## =====================================================================
 
 
