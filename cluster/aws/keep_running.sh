@@ -15,6 +15,10 @@
 ##                                          the code: stop and show the log,
 ##                                          since a new machine would only
 ##                                          stop on the same error
+##    "No image for this environment"      user-data.sh found no published
+##                                          image for the commit's renv.lock
+##                                          and Dockerfile (cluster/image_tag.sh):
+##                                          stop, as for an error
 ##    anything else, or no status           AWS took the machine back (or it
 ##                                          stopped another way): launch a
 ##                                          new one from <fleet file> (an EC2
@@ -63,6 +67,11 @@ while true; do
         echo "$(date +%H:%M) $run finished"
         run_log | tail -20
         exit 0
+      fi
+      if run_log | grep -q "No image for this environment"; then
+        echo "$(date +%H:%M) $run: no image for this commit's environment; not launching again"
+        run_log | tail -20
+        exit 1
       fi
       if [ "$status" = "1" ] && run_log | grep -q "Execution halted"; then
         echo "$(date +%H:%M) $run: run_all.R stopped on an error; not launching again"

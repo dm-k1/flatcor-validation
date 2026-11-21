@@ -83,7 +83,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD":/project \
             -e VALIDATION_TIMING=${{ matrix.fraction }} \
-            ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
+            "ghcr.io/${{ github.repository_owner }}/flatcor-validation:$(cluster/image_tag.sh)" \
             Rscript R/timing/time_study.R ${{ matrix.study }}
 
       - uses: actions/upload-artifact@v4
@@ -109,7 +109,7 @@ jobs:
       - name: Scale up to the full run
         run: |
           docker run --rm -v "$PWD":/project \
-            ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
+            "ghcr.io/${{ github.repository_owner }}/flatcor-validation:$(cluster/image_tag.sh)" \
             Rscript R/timing/estimate_run_time.R timing | tee run_time_estimate.md
           cat run_time_estimate.md >> "$GITHUB_STEP_SUMMARY"
 

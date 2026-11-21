@@ -17,11 +17,14 @@ the run-time estimate, and how to run it on a cluster.
 2.40.0. GitHub Actions ([`.github/workflows/image.yml`](../.github/workflows/image.yml))
 builds it whenever the environment changes, runs the whole pipeline in smoke
 mode inside it, and only then publishes it as
-`ghcr.io/dm-k1/flatcor-validation:<branch>` (`latest` on `main`). To run the
-validation in it, from the project folder:
+`ghcr.io/dm-k1/flatcor-validation:env-<fingerprint>`. The fingerprint is a
+hash of the three files the image is built from (the Dockerfile, its ignore
+file and `renv.lock`); [`image_tag.sh`](image_tag.sh) prints it for the
+checkout you are in, so every commit finds the image of its own environment,
+whatever the branch. To run the validation in it, from the project folder:
 
 ```bash
-docker run --rm -v "$PWD":/project ghcr.io/dm-k1/flatcor-validation:latest
+docker run --rm -v "$PWD":/project "ghcr.io/dm-k1/flatcor-validation:$(cluster/image_tag.sh)"
 ```
 
 Without the image, `renv::restore()` installs the same packages; CmdStan comes
@@ -83,7 +86,7 @@ Apptainer (formerly Singularity) runs the same image. Pull it once; the
 `.sif` file is then fixed for the whole run:
 
 ```bash
-apptainer pull flatcor-validation.sif docker://ghcr.io/dm-k1/flatcor-validation:main
+apptainer pull flatcor-validation.sif "docker://ghcr.io/dm-k1/flatcor-validation:$(cluster/image_tag.sh)"
 ```
 
 **3. A job script**, here for SLURM (`run_validation.sbatch`, next to the

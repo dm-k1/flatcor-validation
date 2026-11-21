@@ -27,9 +27,6 @@ SMOKE="__SMOKE__"
 STUDIES="__STUDIES__"
 MAX_HOURS="__MAX_HOURS__"
 
-## the image built for this branch (.github/workflows/image.yml tags it by
-## branch); :main is the image of v1, with flatcor 1.x
-IMAGE="ghcr.io/dm-k1/flatcor-validation:v2"
 LOG=/var/log/flatcor-run.log
 exec > "$LOG" 2>&1
 set -x
@@ -63,7 +60,11 @@ systemctl start docker
 git clone https://github.com/dm-k1/flatcor-validation.git /opt/flatcor-validation
 cd /opt/flatcor-validation || exit 1
 git log --oneline -1
-docker pull "$IMAGE"
+
+## the image built for this checkout's environment (cluster/image_tag.sh); a
+## commit whose environment has no published image stops here
+IMAGE="ghcr.io/dm-k1/flatcor-validation:$(cluster/image_tag.sh)"
+docker pull "$IMAGE" || { echo "No image for this environment: $IMAGE"; exit 1; }
 
 ## a real run: first what an earlier instance of this run left, then a copy
 ## every 15 minutes while it runs

@@ -84,7 +84,7 @@ jobs:
       - name: Static check
         run: |
           docker run --rm -v "$PWD":/project \
-            ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
+            "ghcr.io/${{ github.repository_owner }}/flatcor-validation:$(cluster/image_tag.sh)" \
             Rscript R/shared/static_check.R
 
   links:
@@ -152,5 +152,5 @@ jobs:
         run: |
           docker run --rm -v "$PWD":/project \
             -e VALIDATION_SMOKE=1 -e R_PARALLELLY_AVAILABLECORES_SYSTEM=16 \
-            ghcr.io/${{ github.repository_owner }}/flatcor-validation:${{ github.ref_name }} \
+            "ghcr.io/${{ github.repository_owner }}/flatcor-validation:$(cluster/image_tag.sh)" \
             sh -c "Rscript run_all.R && Rscript make_figures.R"

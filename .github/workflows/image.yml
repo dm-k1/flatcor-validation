@@ -1,8 +1,10 @@
 # Builds the validation's container image (cluster/Dockerfile: R, the packages
 # of renv.lock and CmdStan), runs the whole pipeline in smoke mode inside it, and only
 # then publishes it to the GitHub container registry as
-#   ghcr.io/dm-k1/flatcor-validation:<branch>   (and :sha-<commit>; :latest on main)
-# so that any machine can run the validation in the same environment (cluster/README.md).
+#   ghcr.io/dm-k1/flatcor-validation:env-<fingerprint>   (cluster/image_tag.sh)
+# and :<branch>, :sha-<commit> (:latest on main), so that any machine can run the
+# validation in the same environment (cluster/README.md). Runs pull the env- tag
+# of their own checkout: the image built for exactly their Dockerfile and renv.lock.
 #
 # It runs when the environment changes (the Dockerfile, renv.lock, this file)
 # and on demand (Actions > "Validation image" > Run workflow).
@@ -15,6 +17,7 @@ on:
       - cluster/Dockerfile
       - cluster/Dockerfile.dockerignore
       - renv.lock
+      - cluster/image_tag.sh
       - .github/workflows/image.yml
   workflow_dispatch:
 
@@ -33,6 +36,10 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
+      - name: The environment's tag
+        id: env
+        run: echo "tag=$(cluster/image_tag.sh)" >> "$GITHUB_OUTPUT"
+
       - name: Tags and labels
         id: meta
         uses: docker/metadata-action@v5
@@ -42,6 +49,7 @@ jobs:
             type=ref,event=branch
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.env.outputs.tag }}
 
       - name: Build
         uses: docker/build-push-action@v6
