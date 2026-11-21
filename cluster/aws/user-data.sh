@@ -27,7 +27,9 @@ SMOKE="__SMOKE__"
 STUDIES="__STUDIES__"
 MAX_HOURS="__MAX_HOURS__"
 
-IMAGE="ghcr.io/dm-k1/flatcor-validation:main"
+## the image built for this branch (.github/workflows/image.yml tags it by
+## branch); :main is the image of v1, with flatcor 1.x
+IMAGE="ghcr.io/dm-k1/flatcor-validation:v2"
 LOG=/var/log/flatcor-run.log
 exec > "$LOG" 2>&1
 set -x
