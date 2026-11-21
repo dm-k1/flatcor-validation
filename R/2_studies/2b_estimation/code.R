@@ -163,7 +163,10 @@ bias_and_coverage_2b <- function(estimates) {
 }
 
 ## Excess prediction error relative to OLS (reference 1), with a paired
-## bootstrap MCSE (from its own fixed stream)
+## bootstrap MCSE. Each cell's bootstrap has its own random stream, named
+## after the cell, so a cell's MCSE depends only on its own datasets, not on
+## how many the other cells have (run_all.R judges each cell on its own, as
+## soon as its batch is done)
 prediction_2b <- function(estimates) {
   ratios_in_cell <- function(rows, keys) {
     error_of <- function(name) {
@@ -171,11 +174,9 @@ prediction_2b <- function(estimates) {
       of_method$prediction_error[order(of_method$replication)]
     }
     ols <- error_of("OLS")
-    resamples <- replicate(
-      if (smoke) 100 else 1000,
-      sample(length(ols), replace = TRUE),
-      simplify = FALSE
-    )
+    resamples <- with_stream_of(paste("2b-bootstrap", keys$cell), {
+      replicate(if (smoke) 100 else 1000, sample(length(ols), replace = TRUE), simplify = FALSE)
+    })
 
     rows_per_method <- lapply(setdiff(methods_2b, "OLS"), function(name) {
       errors <- error_of(name)
@@ -185,13 +186,11 @@ prediction_2b <- function(estimates) {
     bind_rows(rows_per_method)
   }
 
-  with_stream_of("2b-bootstrap", {
-    estimates |>
-      mutate(cell = cell_label_2b(estimates)) |>
-      group_by(k, n, rho, others, cell) |>
-      group_modify(ratios_in_cell) |>
-      ungroup()
-  })
+  estimates |>
+    mutate(cell = cell_label_2b(estimates)) |>
+    group_by(k, n, rho, others, cell) |>
+    group_modify(ratios_in_cell) |>
+    ungroup()
 }
 
 ## One table: every estimate against its reference, with its Δ, target

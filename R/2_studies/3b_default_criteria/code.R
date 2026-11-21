@@ -44,6 +44,17 @@ slope_of_medians <- function(rows) {
   tibble(estimate = slope(vapply(by_n, median, numeric(1))), mcse = sd(bootstrap))
 }
 
+## slope_of_medians() for every group of a grouped table, each group's
+## bootstrap from its own random stream, named `label` and the group's
+## values: a group's MCSE then depends only on its own datasets, not on how
+## many the other groups have (run_all.R judges each cell on its own, as
+## soon as its batch is done)
+slopes_by_group <- function(grouped, label) {
+  group_modify(grouped, function(rows, keys) {
+    with_stream_of(paste(label, paste(unlist(keys), collapse = " ")), slope_of_medians(rows))
+  })
+}
+
 
 ## ---- 3b.1, 3b.2: datasets with a set sample R-squared (R/1_data/5_set_r_squared.R) ---
 
@@ -85,20 +96,18 @@ rate_bayes_factor_3b <- function(cell, replication) {
 ## 3b.3-3b.5: the slopes against their asymptotic values, q/2 (or a against
 ## the intercept-only model)
 rate_slopes_3b <- function(rates) {
-  with_stream_of("3b-bootstrap-rates", {
-    rates |>
-      filter(setting != "alternative") |>
-      group_by(item, setting, q, prior) |>
-      group_modify(function(rows, keys) slope_of_medians(rows)) |>
-      ungroup() |>
-      mutate(
-        quantity = "slope of median log BF against log n",
-        expected = ifelse(setting == "intercept only", mapply(prior_shape, prior, q), q / 2),
-        distance_in_mcse = (estimate - expected) / mcse,
-        delta = relative_delta_3b * expected
-      ) |>
-      with_targets()
-  })
+  rates |>
+    filter(setting != "alternative") |>
+    group_by(item, setting, q, prior) |>
+    slopes_by_group("3b-bootstrap-rates") |>
+    ungroup() |>
+    mutate(
+      quantity = "slope of median log BF against log n",
+      expected = ifelse(setting == "intercept only", mapply(prior_shape, prior, q), q / 2),
+      distance_in_mcse = (estimate - expected) / mcse,
+      delta = relative_delta_3b * expected
+    ) |>
+    with_targets()
 }
 
 ## 3b.6: the slope of the median log BF10 against log n for a real effect
@@ -116,18 +125,16 @@ alternative_slopes_3b <- function(rates) {
       reached = logical(0)
     ))
   }
-  with_stream_of("3b-bootstrap-alternative-slope", {
-    alternative |>
-      group_by(item, setting, q, prior) |>
-      group_modify(function(rows, keys) slope_of_medians(rows)) |>
-      ungroup() |>
-      mutate(
-        quantity = "slope of median log BF10 against log n",
-        expected = "positive",
-        delta = direction_delta(estimate, relative_delta_3b, direction_delta_3b)
-      ) |>
-      with_targets()
-  })
+  alternative |>
+    group_by(item, setting, q, prior) |>
+    slopes_by_group("3b-bootstrap-alternative-slope") |>
+    ungroup() |>
+    mutate(
+      quantity = "slope of median log BF10 against log n",
+      expected = "positive",
+      delta = direction_delta(estimate, relative_delta_3b, direction_delta_3b)
+    ) |>
+    with_targets()
 }
 
 ## 3b.6: the median log BF10 per n (expected to increase with n)
@@ -223,19 +230,17 @@ growing_bayes_factor_3b <- function(cell, replication) {
 ## The slopes, expected positive (a direction: its Δ by the relative rule,
 ## direction_delta())
 growing_slopes_3b <- function(growing) {
-  with_stream_of("3b-bootstrap-growing", {
-    growing |>
-      group_by(truth, growth, method) |>
-      group_modify(function(rows, keys) slope_of_medians(rows)) |>
-      ungroup() |>
-      mutate(
-        item = ifelse(truth == "null", "3b.8", "3b.9"),
-        quantity = "slope of median log BF against log n",
-        expected = "positive",
-        delta = direction_delta(estimate, relative_delta_3b, direction_delta_3b)
-      ) |>
-      with_targets()
-  })
+  growing |>
+    group_by(truth, growth, method) |>
+    slopes_by_group("3b-bootstrap-growing") |>
+    ungroup() |>
+    mutate(
+      item = ifelse(truth == "null", "3b.8", "3b.9"),
+      quantity = "slope of median log BF against log n",
+      expected = "positive",
+      delta = direction_delta(estimate, relative_delta_3b, direction_delta_3b)
+    ) |>
+    with_targets()
 }
 
 growing_medians_3b <- function(growing) {
