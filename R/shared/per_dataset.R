@@ -71,8 +71,9 @@ write_per_dataset <- function(table, file, gzip = FALSE, split_by = NULL) {
         ),
         fill = TRUE
       )
-      # "k = sqrt(n)" -> "k_sqrt_n"
-      suffix <- if (group == "") "" else paste0("_", gsub("^_|_$", "", gsub("[^A-Za-z0-9]+", "_", group)))
+      # "k = sqrt(n)" -> "_k_sqrt_n"
+      suffix <- gsub("^_|_$", "", gsub("[^A-Za-z0-9]+", "_", group))
+      if (group != "") suffix <- paste0("_", suffix)
       path <- file.path(folder, sprintf("study_%s_%s%s.csv.gz", file, column, suffix))
       data.table::fwrite(long, path)
       paths <- c(paths, path)
