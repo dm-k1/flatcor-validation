@@ -77,12 +77,13 @@ parallel) and keeps every finished piece in `_targets/`. On a cluster that is
 one job on one node, resubmitted until the pipeline is done. (Several nodes
 would need crew's cluster controllers instead; not set up.)
 
-The workers stay busy until the end. The studies that run in rounds (1b,
-2b, 3a, 3b) go through a queue first ([`R/shared/queue.R`](../R/shared/queue.R)):
+The workers stay busy until the end. Every expensive piece of work goes
+through a queue ([`R/shared/queue.R`](../R/shared/queue.R)):
 each cell is judged as soon as its own batch is done and, if it needs more
 datasets, its next batch joins the queue at once, without waiting for the
 other cells. A batch that would take the run past its budget is not
-started. Then the pipeline runs once: the other studies (small) and every
+started. The parts with no rounds (1a, 2a, 3b.1 and 3b.2) join the queue
+first and run alongside. Then the pipeline runs once, in minutes: every
 study's results, from the finished pieces.
 
 **1. The project, at the commit to run.** Clone it onto storage that survives

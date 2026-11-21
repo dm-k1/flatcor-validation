@@ -72,7 +72,9 @@ list(
   tar_target(predictors_1a, data_prior_only_designs()),
   tar_target(
     samples_1a,
-    sample_setting_1a(design_1a, predictors_1a[[design_1a$design]], stan_model),
+    # a setting's draws: the ones run_all.R's queue saved, or computed here
+    # (piece_rows(), R/shared/rounds.R)
+    piece_rows("1a", design_1a, stan_model),
     pattern = map(design_1a),
     iteration = "list"
   ),
@@ -138,7 +140,8 @@ list(
   ),
   tar_target(
     sbc_2a,
-    sbc_batch_2a(design_2a, batches_2a, stan_model),
+    # a batch's fits: the queue's, or computed here (piece_rows())
+    piece_rows("2a", cbind(design_2a, from = min(batches_2a), to = max(batches_2a)), stan_model),
     pattern = cross(design_2a, batches_2a),
     iteration = "list"
   ),
@@ -252,7 +255,7 @@ list(
   tar_target(design_formula_3b, formula_checks_3b),
   tar_target(
     formula_3b,
-    formula_check_3b(design_formula_3b),
+    piece_rows("3b-formula", design_formula_3b),
     pattern = map(design_formula_3b)
   ),
 

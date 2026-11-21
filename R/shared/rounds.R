@@ -119,13 +119,15 @@ next_plan <- function(plan, table, by, batch_size, one_batch = FALSE) {
 
 ## The work of one piece: its rows. run_all.R's queue and the pipeline's
 ## steps (_targets.R) both call this, so a piece is the same work wherever
-## it runs. Every draw that matters has a seed of its own already
+## it runs. Besides the studies that run in rounds, it does the pieces that
+## run once: a setting of 1a, a batch of fits of a setting of 2a, a dataset
+## of 3b.1 and 3b.2. Every draw that matters has a seed of its own already
 ## (R/shared/random_streams.R), but flatcor seeds bridge sampling with
 ## set.seed(), which draws with whichever generator R has set. So a piece
 ## starts as targets starts a step: seeded, with R's default generator.
 ## `model`: flatcor's Stan model (2b).
 piece_work <- function(design, piece, model = NULL) {
-  replications <- piece$from:piece$to
+  replications <- if (!is.null(piece$from)) piece$from:piece$to
   set.seed(
     seed_of("piece", design, piece_id(piece)),
     kind = "default", normal.kind = "default", sample.kind = "default"
@@ -139,7 +141,10 @@ piece_work <- function(design, piece, model = NULL) {
     "3b-growing" = batch_3b(
       piece[names(growing_cells_3b)], replications, growing_bayes_factor_3b
     ),
-    stop("No study ", design, " runs in rounds")
+    "1a" = sample_setting_1a(piece, data_prior_only_designs()[[piece$design]], model),
+    "2a" = sbc_batch_2a(piece[names(settings_2a)], replications, model),
+    "3b-formula" = formula_check_3b(piece),
+    stop("No pieces of ", design)
   )
 }
 

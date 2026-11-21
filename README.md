@@ -213,7 +213,7 @@ corner of each design.
 | Path | What it is |
 |---|---|
 | `_targets.R` | The pipeline: the steps of every study, in order |
-| `run_all.R` | Runs the validation (only the simulation): the studies that run in rounds through a queue, cell by cell, then the pipeline |
+| `run_all.R` | Runs the validation (only the simulation): every expensive piece of work through a queue, each cell's rounds on its own, then the pipeline for the results |
 | `make_figures.R` | Draws the figures from the results files, after `run_all.R` |
 | `R/shared/` | Used by every step: the random streams and the one root seed, the pipeline's helpers, the reporting rule, the results file, the per-dataset files (`per_dataset.R`), the comparison methods; the rounds (`rounds.R`) and the queue that runs them cell by cell (`queue.R`); what every worker starts with (`workers.R`); the static check (`static_check.R`) |
 | `R/1_data/` | One file per data set, numbered in the order the studies first use them (what each is and which study needs it: `docs/validation_tests.md`, "The data sets") |

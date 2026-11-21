@@ -1,5 +1,5 @@
 ## =====================================================================
-##  The queue: the studies that run in rounds, cell by cell
+##  The queue: every expensive piece of work, each cell's rounds on its own
 ##  (run_all.R runs it; the rule itself is in R/shared/rounds.R)
 ##
 ##  Every cell goes through its own rounds. (A "cell" here is what a
@@ -8,7 +8,8 @@
 ##  the last of them is back, the cell is judged on its own results, and if
 ##  a quantity is short of its target, its next batch goes into the queue
 ##  at once. No cell waits for another, so the workers stay busy until the
-##  last cell is done.
+##  last cell is done. The pieces that run once (1a, 2a, 3b.1 and 3b.2) go
+##  into the queue first, so they run alongside, not after.
 ##
 ##  The results are the same as with rounds over all cells at once: a
 ##  dataset's numbers come from its name (R/shared/random_streams.R), and a
@@ -157,12 +158,18 @@ judge_cell <- function(design, plan, rows, store, one_batch) {
 
 ## ---- The queue's run ----------------------------------------------------------------
 
-## Runs every cell of `designs` (run_all.R's in_rounds) to its targets or to
-## the budget. `workers`: as in start_queue(). `spent_elsewhere`: core hours
-## the pipeline's own steps have cost so far (a run that continues).
-## `one_extension`: at most one extra batch per cell (the smoke test, which
-## tests the step, not the numbers).
-run_rounds <- function(designs, store, budget_core_hours, workers, spent_elsewhere,
+## Row i of a table of pieces, as targets hands a step one row of it (the
+## same row names), so a piece is the same object in the queue and in the
+## pipeline
+piece_row <- function(pieces, i) vctrs::vec_slice(pieces, i)
+
+## Runs the pieces of `once` (run_all.R's run_once: per part, its pieces,
+## each run once), and every cell of `designs` (run_all.R's in_rounds) to
+## its targets or to the budget. `workers`: as in start_queue().
+## `spent_elsewhere`: core hours the pipeline's own steps have cost so far
+## (a run that continues). `one_extension`: at most one extra batch per cell
+## (the smoke test, which tests the step, not the numbers).
+run_rounds <- function(designs, once, store, budget_core_hours, workers, spent_elsewhere,
                        one_extension = FALSE) {
   queue <- start_queue(workers)
   on.exit(queue$stop())
@@ -173,12 +180,13 @@ run_rounds <- function(designs, store, budget_core_hours, workers, spent_elsewhe
   run$plans <- lapply(designs, function(design) {
     read_plan(design$name, store, design$cells, design$first_round)
   })
-  # every piece's seconds, per design: those saved before (a run that
-  # continues) and those that come back
-  run$seconds <- lapply(designs, function(design) {
-    saved <- list.files(file.path(store, "pieces", design$name), "[.]rds$", full.names = TRUE)
+  # every piece's seconds, per design or part: those saved before (a run
+  # that continues) and those that come back
+  run$seconds <- lapply(c(names(designs), names(once)), function(name) {
+    saved <- list.files(file.path(store, "pieces", name), "[.]rds$", full.names = TRUE)
     vapply(saved, function(file) readRDS(file)$seconds, numeric(1), USE.NAMES = FALSE)
   })
+  names(run$seconds) <- c(names(designs), names(once))
   run$out <- list()        # per cell: the expected core hours of each piece out
   run$extended <- character(0)
   run$short <- list()      # per cell its next batch did not fit: what it would cost
@@ -190,19 +198,26 @@ run_rounds <- function(designs, store, budget_core_hours, workers, spent_elsewhe
     if (length(run$seconds[[name]]) == 0) return(0)
     mean(run$seconds[[name]]) * 4 / 3600 / designs[[name]]$batch_size
   }
-  # the pieces of a cell's plan not run yet
-  not_run <- function(name, rows) {
-    pieces <- pieces_of_plan(run$plans[[name]][rows, , drop = FALSE], designs[[name]]$batch_size)
+  # the pieces of a table not run yet
+  not_run <- function(name, pieces) {
     missing <- vapply(seq_len(nrow(pieces)), function(i) {
-      is.null(read_piece(name, pieces[i, ], store))
+      is.null(read_piece(name, piece_row(pieces, i), store))
     }, logical(1))
-    pieces[missing, , drop = FALSE]
+    vctrs::vec_slice(pieces, missing)
   }
+  # the pieces of a cell's plan not run yet
+  cell_not_run <- function(name, rows) {
+    plan <- run$plans[[name]][rows, , drop = FALSE]
+    not_run(name, pieces_of_plan(plan, designs[[name]]$batch_size))
+  }
+  # `key`: the cell; NA for a piece that runs once
   push_pieces <- function(name, key, pieces) {
     cell <- paste(name, key)
     for (i in seq_len(nrow(pieces))) {
-      run$out[[cell]] <- c(run$out[[cell]], (pieces$to[i] - pieces$from[i] + 1) * per_dataset(name))
-      queue$push(list(design = name, key = key, piece = pieces[i, ], store = store, files = files))
+      cost <- if (is.na(key)) 0 else (pieces$to[i] - pieces$from[i] + 1) * per_dataset(name)
+      run$out[[cell]] <- c(run$out[[cell]], cost)
+      piece <- piece_row(pieces, i)
+      queue$push(list(design = name, key = key, piece = piece, store = store, files = files))
     }
   }
 
@@ -212,7 +227,7 @@ run_rounds <- function(designs, store, budget_core_hours, workers, spent_elsewhe
     design <- designs[[name]]
     cell <- paste(name, key)
     rows <- cells_of(run$plans[[name]], design$by)[[key]]
-    missing <- not_run(name, rows)
+    missing <- cell_not_run(name, rows)
     if (nrow(missing) > 0) return(push_pieces(name, key, missing))
 
     plan_next <- judge_cell(design, run$plans[[name]], rows, store, one_batch = one_extension)
@@ -230,10 +245,12 @@ run_rounds <- function(designs, store, budget_core_hours, workers, spent_elsewhe
     run$extended <- c(run$extended, cell)
     run$plans[[name]]$datasets[rows] <- plan_next$datasets[rows]
     write_plan(run$plans[[name]], name, store)
-    push_pieces(name, key, not_run(name, rows))
+    push_pieces(name, key, cell_not_run(name, rows))
   }
 
-  # every cell starts; then each finished piece may complete its cell's batch
+  # the pieces that run once first, then every cell; each finished piece
+  # may complete its cell's batch
+  for (name in names(once)) push_pieces(name, NA, not_run(name, once[[name]]))
   for (name in names(designs)) {
     for (key in names(cells_of(run$plans[[name]], designs[[name]]$by))) next_step(name, key)
   }
@@ -242,7 +259,12 @@ run_rounds <- function(designs, store, budget_core_hours, workers, spent_elsewhe
     cell <- paste(task$design, task$key)
     run$seconds[[task$design]] <- c(run$seconds[[task$design]], task$seconds)
     run$out[[cell]] <- run$out[[cell]][-1]
-    if (length(run$out[[cell]]) == 0) next_step(task$design, task$key)
+    if (length(run$out[[cell]]) > 0) next
+    if (is.na(task$key)) {
+      message(sprintf("%s: done", task$design))
+    } else {
+      next_step(task$design, task$key)
+    }
   }
 
   if (length(run$short) == 0) {

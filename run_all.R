@@ -22,8 +22,12 @@
 ##  work and gives a cell its next batch as soon as its own batch is done,
 ##  without waiting for the other cells, until every cell reaches its
 ##  targets or its next batch would take the run past the budget; in the
-##  smoke test a cell gets at most one more batch. Then the pipeline runs
-##  once: the other studies, and every study's results from the pieces.
+##  smoke test a cell gets at most one more batch. The parts with no rounds
+##  (1a, 2a, 3b.1 and 3b.2) join the queue first and run alongside. Then the
+##  pipeline runs once: every study's results, from the pieces. A study run
+##  alone (Rscript run_all.R 1b) gives the same results as in a full run:
+##  1b and 3b bring 3a part B along, whose measured bridge sampling error
+##  they use.
 ##  Each study writes results/studies/study_<cell>.rds.
 ##
 ##  Only the simulation runs here, so a cloud machine does nothing else. The
@@ -165,8 +169,27 @@ in_rounds <- list(
   )
 )
 for (name in names(in_rounds)) in_rounds[[name]]$name <- name
+
+## The parts that run once, with no rounds: per part its study and its
+## pieces (one setting of 1a; one batch of fits of a setting of 2a; one
+## dataset of 3b.1 or 3b.2). They join the queue first, so they run
+## alongside the rounds and nothing waits for them at the end.
+run_once <- list(
+  "1a" = list(study = "1a", pieces = settings_1a),
+  "2a" = list(study = "2a", pieces = pieces_2a()),
+  "3b-formula" = list(study = "3b", pieces = formula_checks_3b)
+)
+
 if (length(requested) > 0) {
-  in_rounds <- Filter(function(design) design$study %in% requested, in_rounds)
+  # 1b and 3b judge single datasets against bridge sampling's error as
+  # measured by 3a part B (shortfall_3a in _targets.R), so part B runs to
+  # its targets with them, as in a full run: a study run alone gives the
+  # same results
+  part_b <- any(c("1b", "3b") %in% requested)
+  in_rounds <- Filter(function(design) {
+    design$study %in% requested || (part_b && design$name == "3a-repeats")
+  }, in_rounds)
+  run_once <- Filter(function(part) part$study %in% requested, run_once)
 }
 ## The budget: about 20 euros (docs/working/run_time_estimate.md). Raising it
 ## is a decision written in the log: VALIDATION_BUDGET_CORE_HOURS=3000
@@ -183,16 +206,16 @@ pipeline_core_hours <- function() {
 
 started <- Sys.time()
 run_rounds(
-  in_rounds, store, budget_core_hours,
+  in_rounds, lapply(run_once, `[[`, "pieces"), store, budget_core_hours,
   # the dry run samples nothing: every piece in this process
   workers = if (dry) 0 else worker_count(),
   spent_elsewhere = pipeline_core_hours(),
   one_extension = smoke
 )
 
-## ---- The pipeline: the other studies, and every study's results -------------------
+## ---- The pipeline: every study's results ---------------------------------------
 ## The pieces the queue ran are read from the store (piece_rows(),
-## R/shared/rounds.R), not run again
+## R/shared/rounds.R), not run again; what is left takes seconds
 if (length(requested) == 0) {
   targets::tar_make(store = store)
 } else {

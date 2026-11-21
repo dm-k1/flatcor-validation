@@ -41,6 +41,17 @@ sbc_dataset_2a <- function(setting, replication) {
   )
 }
 
+## The pieces of 2a for run_all.R's queue: every setting with every batch of
+## fits (from, to), one row each, as the pipeline crosses them (_targets.R)
+pieces_2a <- function() {
+  batches <- split_into_batches(fits_2a, batch_size_2a)
+  pieces <- do.call(rbind, lapply(batches, function(batch) {
+    cbind(settings_2a, from = min(batch), to = max(batch))
+  }))
+  rownames(pieces) <- NULL
+  pieces
+}
+
 ## Each fit: the posterior from flatcor's Stan model, and the rank of each
 ## true value among its posterior draws (the SBC package)
 sbc_batch_2a <- function(setting, replications, model) {
