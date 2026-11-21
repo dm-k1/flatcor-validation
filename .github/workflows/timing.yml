@@ -44,22 +44,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 320
     steps:
-      - name: Wait for the branch's latest image build, if it is still running
+      - uses: actions/checkout@v4
+      - name: Wait for an image build of this branch, if one is running
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          sleep 60
-          while true; do
-            state=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
-              --branch "$GITHUB_REF_NAME" --limit 1 --json status,conclusion \
-              -q '.[0] // empty | "\(.status) \(.conclusion)"')
-            case "$state" in
-              "") echo "No image build for this branch"; exit 0 ;;
-              "completed success") echo "Image built"; exit 0 ;;
-              completed*) echo "Image build ended: $state"; exit 1 ;;
-            esac
-            sleep 60
-          done
+        run: ci/wait_for_image.sh
 
   time:
     needs: image

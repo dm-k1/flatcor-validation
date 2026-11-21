@@ -20,13 +20,21 @@ on:
 permissions:
   contents: read
   packages: read
+  actions: read
 
 jobs:
   bridgestan:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
+
+      # a push that changes the environment builds its image first
+      # (image.yml): without this wait the pull fails until it is published
+      - name: Wait for an image build of this branch, if one is running
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ci/wait_for_image.sh
 
       - name: BridgeStan against flatcor, in the image of this commit
         run: |

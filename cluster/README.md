@@ -21,7 +21,11 @@ mode inside it, and only then publishes it as
 hash of the three files the image is built from (the Dockerfile, its ignore
 file and `renv.lock`); [`image_tag.sh`](image_tag.sh) prints it for the
 checkout you are in, so every commit finds the image of its own environment,
-whatever the branch. To run the validation in it, from the project folder:
+whatever the branch. That build's smoke test counts for the check on every
+push (`check.yml` skips its own when an image build tested the same code),
+and whatever runs inside the image in CI first waits for an image build still
+running ([`ci/wait_for_image.sh`](../ci/wait_for_image.sh)). To run the
+validation in it, from the project folder:
 
 ```bash
 docker run --rm -v "$PWD":/project "ghcr.io/dm-k1/flatcor-validation:$(cluster/image_tag.sh)"

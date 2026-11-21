@@ -6,6 +6,12 @@
 # validation in the same environment (cluster/README.md). Runs pull the env- tag
 # of their own checkout: the image built for exactly their Dockerfile and renv.lock.
 #
+# Its smoke test counts for the check too: check.yml does not run the smoke test
+# again for this commit, nor later for a commit with the same pipeline code (it
+# reads the commit tested here from the image's label
+# org.opencontainers.image.revision). A rebuild of the same environment (say,
+# after a change to this file) publishes under the same env- tag again.
+#
 # It runs when the environment changes (the Dockerfile, renv.lock, this file)
 # and on demand (Actions > "Validation image" > Run workflow).
 name: Validation image

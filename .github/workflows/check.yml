@@ -6,15 +6,16 @@
 #               valid, every function called exists, and the code keeps to
 #               the declared way (expensive calls replayable, files declared
 #               as steps); inside the published image, for its packages,
-#               after waiting for an image build still running (as smoke does)
+#               after waiting for an image build still running
+#               (ci/wait_for_image.sh)
 #   links       every link in the README, the docs and the notebook (seconds)
 #   workflows   actionlint on these workflow files (seconds)
 #   smoke       the smoke test (VALIDATION_SMOKE=1: Rscript run_all.R, a corner
 #               of every study from scratch, then Rscript make_figures.R, every
 #               figure) inside the
 #               published image, so with exactly the packages and CmdStan of
-#               the real run (about 40 minutes); skipped when this commit's
-#               own image build already ran it before publishing. It fails
+#               the real run (about 40 minutes); skipped when an image build
+#               runs it, or ran it on the same code (see the smoke job). It fails
 #               when the outputs check (R/shared/check_results.R) finds a
 #               missing file, an empty table, or NA/NaN/Inf, or when a figure
 #               script stops (make_figures.R). It runs
@@ -59,28 +60,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
+      - uses: actions/checkout@v4
       # the static check reads the packages in the image (flatcor's functions,
-      # for one): when renv.lock or the Dockerfile changed in this push, check
-      # against the new image, not the one before it
-      - name: Wait for the branch's latest image build, if it is still running
+      # for one): when this push changed the environment, check against the
+      # new image, not the one before it
+      - name: Wait for an image build of this branch, if one is running
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          sleep 60
-          while true; do
-            build=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
-              --branch "$GITHUB_REF_NAME" --limit 1 --json status,conclusion \
-              -q '.[0] // empty | "\(.status) \(.conclusion)"')
-            read -r status conclusion <<< "$build"
-            case "$status $conclusion" in
-              " ") echo "No image build for this branch"; break ;;
-              "completed success") echo "Image built"; break ;;
-              completed*) echo "Image build ended: $status $conclusion"; exit 1 ;;
-            esac
-            sleep 60
-          done
-
-      - uses: actions/checkout@v4
+        run: ci/wait_for_image.sh
       - name: Static check
         run: |
           docker run --rm -v "$PWD":/project \
@@ -111,46 +98,67 @@ jobs:
         with:
           args: -color
 
+  # The smoke test runs once per change: in the image build when there is
+  # one, here when there is not.
+  #  1. An image build for this very commit (the push changed the
+  #     environment, or image.yml) smoke-tests it before publishing: this job
+  #     stops at once and leaves the test, and any failure, to that build.
+  #  2. Otherwise it waits for an image build of an earlier push still
+  #     running, then reads from the image of this commit's environment the
+  #     commit that image was smoke-tested on (its label
+  #     org.opencontainers.image.revision). If the code is the same there and
+  #     here, the test has run: it stops. "The code" is everything except the
+  #     files the pipeline never reads: docs/, every .md file, .github/,
+  #     cluster/aws/, .lintr, validation.ipynb. So a push of only docs or
+  #     workflows right after an image build is not tested twice, and any
+  #     change to the pipeline's code is tested once.
+  #  3. Otherwise it runs the smoke test.
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 150
+    env:
+      GH_TOKEN: ${{ github.token }}
+      IMAGE: ghcr.io/${{ github.repository_owner }}/flatcor-validation
     steps:
-      # when renv.lock changed in this push or a recent one, the image is
-      # still being built: smoke-test the new image, not the one before it.
-      # An image build smoke-tests the pipeline itself before it publishes:
-      # if that build was for this very commit, the test has already run.
-      - name: Wait for the branch's latest image build, if it is still running
-        id: image
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          sleep 60
-          while true; do
-            build=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
-              --branch "$GITHUB_REF_NAME" --limit 1 --json status,conclusion,headSha \
-              -q '.[0] // empty | "\(.status) \(.conclusion) \(.headSha)"')
-            read -r status conclusion sha <<< "$build"
-            case "$status $conclusion" in
-              " ") echo "No image build for this branch"; break ;;
-              "completed success")
-                echo "Image built"
-                if [ "$sha" = "$GITHUB_SHA" ]; then
-                  echo "That build smoke-tested this commit already"
-                  echo "already_tested=true" >> "$GITHUB_OUTPUT"
-                fi
-                break ;;
-              completed*) echo "Image build ended: $status $conclusion"; exit 1 ;;
-            esac
-            sleep 60
-          done
-
       - uses: actions/checkout@v4
-        if: steps.image.outputs.already_tested != 'true'
+        with:
+          fetch-depth: 0   # to compare with the commit the image was tested on
+
+      - name: Is an image build smoke-testing this commit?
+        id: build
+        run: |
+          sleep 60   # an image build started by the same push takes a moment to show
+          build=$(gh run list -R "$GITHUB_REPOSITORY" --workflow image.yml \
+            --commit "$GITHUB_SHA" --limit 1 --json url -q '.[0].url // empty')
+          if [ -n "$build" ]; then
+            echo "The image build for this commit smoke-tests it: $build"
+            echo "tested=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wait for an image build of an earlier push, if one is running
+        if: steps.build.outputs.tested != 'true'
+        run: ci/wait_for_image.sh 0
+
+      - name: Was this code smoke-tested when its image was built?
+        id: image
+        if: steps.build.outputs.tested != 'true'
+        run: |
+          image="$IMAGE:$(cluster/image_tag.sh)"
+          docker pull -q "$image"
+          tested=$(docker inspect "$image" \
+            --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')
+          echo "$image was smoke-tested on commit $tested"
+          if git cat-file -e "$tested^{commit}" 2>/dev/null &&
+            git diff --quiet "$tested" HEAD -- . ':!docs' ':!*.md' ':!.github' \
+              ':!cluster/aws' ':!.lintr' ':!validation.ipynb'; then
+            echo "Same code here: the smoke test has run"
+            echo "tested=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Smoke test
-        if: steps.image.outputs.already_tested != 'true'
+        if: steps.build.outputs.tested != 'true' && steps.image.outputs.tested != 'true'
         run: |
           docker run --rm -v "$PWD":/project \
             -e VALIDATION_SMOKE=1 -e R_PARALLELLY_AVAILABLECORES_SYSTEM=16 \
-            "ghcr.io/${{ github.repository_owner }}/flatcor-validation:$(cluster/image_tag.sh)" \
+            "$IMAGE:$(cluster/image_tag.sh)" \
             sh -c "Rscript run_all.R && Rscript make_figures.R"

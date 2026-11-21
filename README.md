@@ -195,7 +195,9 @@ job, resubmitting until it is done).
 
 Every push to `main` is checked automatically
 ([`.github/workflows/check.yml`](.github/workflows/check.yml)): lintr, the
-links, the workflow files, and the smoke test inside the published image.
+links, the workflow files, and the smoke test inside the published image
+(once per change: a push that builds a new image is smoke-tested by that
+build, and the check then skips it).
 
 The smoke test is meant to run the way a real run does, because a bug can
 hide anywhere the two differ. So it runs in the same image (the same
