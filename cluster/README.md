@@ -77,6 +77,14 @@ parallel) and keeps every finished piece in `_targets/`. On a cluster that is
 one job on one node, resubmitted until the pipeline is done. (Several nodes
 would need crew's cluster controllers instead; not set up.)
 
+The workers stay busy until the end. The studies that run in rounds (1b,
+2b, 3a, 3b) go through a queue first ([`R/shared/queue.R`](../R/shared/queue.R)):
+each cell is judged as soon as its own batch is done and, if it needs more
+datasets, its next batch joins the queue at once, without waiting for the
+other cells. A batch that would take the run past its budget is not
+started. Then the pipeline runs once: the other studies (small) and every
+study's results, from the finished pieces.
+
 **1. The project, at the commit to run.** Clone it onto storage that survives
 between jobs (your home or project space, not a node's local scratch):
 
@@ -117,7 +125,8 @@ sbatch run_validation.sbatch
 ```
 
 - **Cores.** The pipeline uses the job's allocation (`--cpus-per-task`), not
-  all cores of the node (`parallelly::availableCores()` in `_targets.R`),
+  all cores of the node (`parallelly::availableCores()`, in
+  `worker_count()` in `R/shared/workers.R`),
   and starts (cores - 1) / 4 workers, rounded down: one core is for the
   pipeline itself. So ask for 4 × workers + 1: 33 cores give 8 workers,
   where 32 would give 7 and leave 3 idle.

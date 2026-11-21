@@ -151,7 +151,7 @@ studies, only in a recording run or the dry run, and replaces a few
 functions (the seams: flatcor's Bayes factors and fit, 1a's prior draws of a
 setting, 2a's SBC fits of a batch) by versions that record or replay the
 original. Everything else runs for real: the data, every step, the
-hand-overs between them, both rounds, the results files, the check at the
+hand-overs between them, the queue with both rounds of each cell, the results files, the check at the
 end and, with `make_figures.R`, the figures. Its results go to `cache/dry_results/` and
 `cache/dry_figures/`. It does not test the code inside the seams or whether
 the numbers are right: run the smoke test for that, and record again when
@@ -168,7 +168,8 @@ enforces (it fails, saying which rule and where):
    it. A new expensive step either calls one of them or gets a seam of its
    own there.
 2. A step reads and writes files only where it is declared: a study's
-   results file, the plans of the rounds, the recordings. Any other file a
+   results file, the plans of the rounds and the queue's finished pieces
+   (both in the store), the recordings. Any other file a
    step needs or makes is a step of its own (`tar_target(..., format =
    "file")`), so targets knows it is there before a step needs it.
 3. Every results file a figure script or `run_all.R` reads is made by a step
@@ -203,8 +204,8 @@ The smoke test is meant to run the way a real run does, because a bug can
 hide anywhere the two differ. So it runs in the same image (the same
 packages and CmdStan) and with several workers (3, by pretending to have 16
 cores), since workers clashing over shared files only happens with more
-than one. Two differences remain, on purpose: it stops after two rounds
-(round three and later run the same code as round two), and it runs a
+than one. Two differences remain, on purpose: a cell gets at most two
+rounds (round three and later run the same code as round two), and it runs a
 corner of each design.
 
 ## What's where
@@ -212,9 +213,9 @@ corner of each design.
 | Path | What it is |
 |---|---|
 | `_targets.R` | The pipeline: the steps of every study, in order |
-| `run_all.R` | Runs the pipeline, in rounds (only the simulation) |
+| `run_all.R` | Runs the validation (only the simulation): the studies that run in rounds through a queue, cell by cell, then the pipeline |
 | `make_figures.R` | Draws the figures from the results files, after `run_all.R` |
-| `R/shared/` | Used by every step: the random streams and the one root seed, the pipeline's helpers, the reporting rule, the results file, the per-dataset files (`per_dataset.R`), the comparison methods; the static check (`static_check.R`) |
+| `R/shared/` | Used by every step: the random streams and the one root seed, the pipeline's helpers, the reporting rule, the results file, the per-dataset files (`per_dataset.R`), the comparison methods; the rounds (`rounds.R`) and the queue that runs them cell by cell (`queue.R`); what every worker starts with (`workers.R`); the static check (`static_check.R`) |
 | `R/1_data/` | One file per data set, numbered in the order the studies first use them (what each is and which study needs it: `docs/validation_tests.md`, "The data sets") |
 | `R/2_studies/` | The six studies, one folder per cell, each with `design.R` and `code.R` |
 | `R/3_figures/` | One script per study that draws its figures from its results file |

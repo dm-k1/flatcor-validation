@@ -18,8 +18,12 @@
 ##  the figures first. The smoke test always starts from scratch.
 ##  Studies that measure their numbers of datasets run in rounds
 ##  (R/shared/rounds.R; docs/validation_tests.md, "How many datasets"),
-##  until every cell reaches its targets or the run reaches its budget; the
-##  smoke test runs two rounds.
+##  each cell on its own: a queue (R/shared/queue.R) runs their pieces of
+##  work and gives a cell its next batch as soon as its own batch is done,
+##  without waiting for the other cells, until every cell reaches its
+##  targets or its next batch would take the run past the budget; in the
+##  smoke test a cell gets at most one more batch. Then the pipeline runs
+##  once: the other studies, and every study's results from the pieces.
 ##  Each study writes results/studies/study_<cell>.rds.
 ##
 ##  Only the simulation runs here, so a cloud machine does nothing else. The
@@ -98,24 +102,16 @@ if (file.exists(commit_file)) {
   writeLines(flatcor_commit, commit_file)
 }
 
-## ---- The studies, in rounds --------------------------------------------------------
-## The designs, for the studies that run in rounds. Each plan: its study's
-## results file and the table(s) whose quantities must reach their targets,
-## the columns that name a quantity's unit (a cell, or the cells of a slope
-## over n), and its cells, first round and batch size
-design_scripts <- list.files(
-  file.path("R", "2_studies"),
-  pattern = "^design[.]R$", recursive = TRUE, full.names = TRUE
-)
-for (script in c(
-  file.path("R", "shared", c("random_streams.R", "pipeline.R", "rounds.R")),
-  list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
-  design_scripts,
-  # last, and only to record or replay the expensive calls (R/dry_run/replay.R)
-  if (dry || recording) file.path("R", "dry_run", "replay.R")
-)) {
-  source(script)
-}
+## ---- The code ---------------------------------------------------------------------
+## Every worker's environment and the validation's code (R/shared/workers.R),
+## the same as the pipeline's (_targets.R), with the packages its steps
+## load, and the queue (R/shared/queue.R)
+suppressPackageStartupMessages({
+  library(flatcor)
+  library(dplyr)
+})
+source(file.path("R", "shared", "workers.R"))
+for (script in c(code_files(), file.path("R", "shared", "queue.R"))) source(script)
 
 ## ---- flatcor's models, compiled before any worker starts ---------------------------
 ## The first compile in a fresh CmdStan also builds the files every model
@@ -123,41 +119,52 @@ for (script in c(
 ## before the workers start, so a worker's own compile only writes its own
 ## files and never rebuilds a shared one under another worker. The lock in
 ## compile_flatcor_models() stays as a second guard. The cache folder is the
-## one _targets.R gives the workers, so they find the model compiled here.
-if (!nzchar(Sys.getenv("R_USER_CACHE_DIR"))) {
-  Sys.setenv(R_USER_CACHE_DIR = file.path(getwd(), "cache", "r_user_cache"))
-}
+## one R/shared/workers.R gives the workers, so they find the model compiled here.
 compile_flatcor_models()
 
+## ---- The studies that run in rounds: a queue, cell by cell (R/shared/queue.R) -------
+## Per study (or part of one): its cells, first round and batch size; the
+## columns that name a cell (one cell, or the cells of a slope over n); and
+## `table`, the study's table(s) whose quantities must reach their targets,
+## computed from a cell's per-dataset rows (the same functions its results
+## file uses)
 in_rounds <- list(
   "1b" = list(
-    study = "1b", tables = "pooled", by = "prior", pieces = "log_bfs_1b",
-    cells = priors_1b, first_round = first_round_1b, batch_size = batch_size_1b
+    study = "1b", by = "prior",
+    cells = priors_1b, first_round = first_round_1b, batch_size = batch_size_1b,
+    table = function(rows) list(pooled_1b(changes_of_1b(rows)))
   ),
   "2b" = list(
-    study = "2b", tables = "estimates", by = c("k", "n", "rho", "others"), pieces = "fits_2b",
-    cells = cells_2b, first_round = first_round_2b, batch_size = batch_size_2b
+    study = "2b", by = c("k", "n", "rho", "others"),
+    cells = cells_2b, first_round = first_round_2b, batch_size = batch_size_2b,
+    table = function(rows) list(results_table_2b(bias_and_coverage_2b(rows), prediction_2b(rows)))
   ),
   "3a" = list(
-    study = "3a", tables = "data_averaged_posterior", by = c("prior", "k", "n"),
-    pieces = "calibration_runs_3a",
-    cells = cells_3a, first_round = first_round_3a, batch_size = batch_size_3a
+    study = "3a", by = c("prior", "k", "n"),
+    cells = cells_3a, first_round = first_round_3a, batch_size = batch_size_3a,
+    table = function(rows) list(data_averaged_posterior_3a(rows))
   ),
   "3a-repeats" = list(
-    study = "3a", tables = "repeated_runs", by = c("prior", "k", "n"), pieces = "repeated_3a",
-    cells = cells_3a, first_round = first_round_repeats_3a, batch_size = batch_size_repeats_3a
+    study = "3a", by = c("prior", "k", "n"),
+    cells = cells_3a, first_round = first_round_repeats_3a, batch_size = batch_size_repeats_3a,
+    table = function(rows) list(repeat_spread_3a(rows, repeat_runs_3a))
   ),
   "3b-rates" = list(
-    study = "3b", tables = c("rates", "alternative_slopes"),
-    by = c("item", "setting", "q", "prior"), pieces = "rates_3b",
-    cells = rate_cells_3b, first_round = first_round_rates_3b, batch_size = batch_size_3b
+    study = "3b", by = c("item", "setting", "q", "prior"),
+    cells = rate_cells_3b, first_round = first_round_rates_3b, batch_size = batch_size_3b,
+    # a slope is either a rate (3b.3-3b.5) or the alternative's (3b.6)
+    table = function(rows) {
+      if (all(rows$setting == "alternative")) list(alternative_slopes_3b(rows))
+      else list(rate_slopes_3b(rows))
+    }
   ),
   "3b-growing" = list(
-    study = "3b", tables = "growing_slopes", by = c("truth", "growth", "method"),
-    pieces = "growing_3b",
-    cells = growing_cells_3b, first_round = first_round_growing_3b, batch_size = batch_size_3b
+    study = "3b", by = c("truth", "growth", "method"),
+    cells = growing_cells_3b, first_round = first_round_growing_3b, batch_size = batch_size_3b,
+    table = function(rows) list(growing_slopes_3b(rows))
   )
 )
+for (name in names(in_rounds)) in_rounds[[name]]$name <- name
 if (length(requested) > 0) {
   in_rounds <- Filter(function(design) design$study %in% requested, in_rounds)
 }
@@ -165,101 +172,31 @@ if (length(requested) > 0) {
 ## is a decision written in the log: VALIDATION_BUDGET_CORE_HOURS=3000
 budget_core_hours <- as.numeric(Sys.getenv("VALIDATION_BUDGET_CORE_HOURS", "2500"))
 message("Budget: ", budget_core_hours, " core hours")
-last_round <- if (smoke) 2 else Inf
 
-## the core hours so far: every piece's seconds, times the 4 chains it runs
-core_hours_so_far <- function() {
-  pieces <- targets::tar_meta(fields = c("type", "seconds"), store = store)
-  sum(pieces$seconds[pieces$type %in% c("stem", "branch")], na.rm = TRUE) * 4 / 3600
-}
-
-## The core hours one dataset of a design has cost so far: the mean seconds
-## of its pieces, times the 4 chains each runs, over the datasets in a piece
-core_hours_per_dataset <- function(design) {
-  meta <- targets::tar_meta(fields = c("type", "seconds"), store = store)
-  pieces <- meta$seconds[meta$type == "branch" & startsWith(meta$name, paste0(design$pieces, "_"))]
-  if (length(pieces) == 0) return(0)
-  mean(pieces, na.rm = TRUE) * 4 / 3600 / design$batch_size
-}
-
-## The core hours the next round would cost, per design: the datasets it
-## adds, times what one of its datasets has cost so far. `plans`,
-## `plans_next`: per design, the plan so far and the plan of the next round.
-round_cost <- function(plans, plans_next) {
-  vapply(names(plans), function(name) {
-    added <- sum(plans_next[[name]]$datasets - plans[[name]]$datasets)
-    added * core_hours_per_dataset(in_rounds[[name]])
-  }, numeric(1))
+## the core hours the pipeline's own steps have cost so far (a run that
+## continues): every step's seconds, times the 4 chains it runs
+pipeline_core_hours <- function() {
+  if (!file.exists(file.path(store, "meta", "meta"))) return(0)
+  steps <- targets::tar_meta(fields = c("type", "seconds"), store = store)
+  sum(steps$seconds[steps$type %in% c("stem", "branch")], na.rm = TRUE) * 4 / 3600
 }
 
 started <- Sys.time()
-round <- 1
-repeat {
-  if (length(requested) == 0) {
-    targets::tar_make(store = store)
-  } else {
-    targets::tar_make(names = tidyselect::ends_with(!!paste0("_", requested)), store = store)
-  }
+run_rounds(
+  in_rounds, store, budget_core_hours,
+  # the dry run samples nothing: every piece in this process
+  workers = if (dry) 0 else worker_count(),
+  spent_elsewhere = pipeline_core_hours(),
+  one_extension = smoke
+)
 
-  # every cell short of a target gets the datasets it is estimated to lack
-  plans <- list()
-  plans_next <- list()
-  for (name in names(in_rounds)) {
-    design <- in_rounds[[name]]
-    plans[[name]] <- read_plan(name, store, design$cells, design$first_round)
-    file <- file.path(results_root, "studies", sprintf("study_%s.rds", design$study))
-    tables <- readRDS(file)$tables[design$tables]
-    columns <- c(design$by, "mcse", "target_mcse", "reached")
-    table <- do.call(rbind, lapply(tables, function(t) as.data.frame(t)[columns]))
-    plans_next[[name]] <- next_plan(
-      plans[[name]], table, design$by, design$batch_size, one_batch = smoke
-    )
-  }
-  short <- any(vapply(names(plans), function(name) {
-    !identical(plans_next[[name]]$datasets, plans[[name]]$datasets)
-  }, logical(1)))
-
-  # a round that would take the run past its budget is not started: the run
-  # stops before it and says what it would cost, and the researcher decides
-  # (raise the budget and start again, or report the cells short of a
-  # target as such); docs/validation_tests.md, "How many datasets"
-  core_hours <- core_hours_so_far()
-  cost <- round_cost(plans, plans_next)
-  if (short && round < last_round && core_hours + sum(cost) > budget_core_hours) {
-    message(sprintf(
-      paste(
-        "Round %d done, %.1f core hours so far. The next round would cost about %.1f core",
-        "hours (%s), more than the %.1f left of the budget of %.1f: stopping before it.",
-        "To run it, raise the budget (VALIDATION_BUDGET_CORE_HOURS) and start again; to",
-        "stop here, the cells short of a target are marked in their study's results",
-        "(column reached)."
-      ),
-      round, core_hours, sum(cost),
-      paste(sprintf("%s %.1f", names(cost), cost)[cost > 0], collapse = ", "),
-      max(0, budget_core_hours - core_hours), budget_core_hours
-    ))
-    break
-  }
-
-  extended <- character(0)
-  for (name in names(plans)) {
-    if (!identical(plans_next[[name]]$datasets, plans[[name]]$datasets)) {
-      write_plan(plans_next[[name]], name, store)
-      extended <- c(extended, sprintf(
-        "%s (%d of %d cells)", name,
-        sum(plans_next[[name]]$datasets > plans[[name]]$datasets), nrow(plans[[name]])
-      ))
-    }
-  }
-
-  status <- if (!short) {
-    "Every cell has reached its targets."
-  } else {
-    paste("Next round for:", paste(extended, collapse = ", "))
-  }
-  message(sprintf("Round %d done, %.1f core hours so far. %s", round, core_hours, status))
-  if (length(extended) == 0 || round >= last_round) break
-  round <- round + 1
+## ---- The pipeline: the other studies, and every study's results -------------------
+## The pieces the queue ran are read from the store (piece_rows(),
+## R/shared/rounds.R), not run again
+if (length(requested) == 0) {
+  targets::tar_make(store = store)
+} else {
+  targets::tar_make(names = tidyselect::ends_with(!!paste0("_", requested)), store = store)
 }
 
 ## ---- Which results there are -------------------------------------------------------

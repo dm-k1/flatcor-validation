@@ -8,7 +8,8 @@
 ##
 ##  Each study writes its tables to results/studies/study_<cell>.rds; the
 ##  figures are made from those files afterwards by the scripts in
-##  R/3_figures/ (Rscript run_all.R runs this pipeline in rounds, then
+##  R/3_figures/ (Rscript run_all.R runs the studies' rounds through a queue,
+##  cell by cell, then this pipeline once; then
 ##  Rscript make_figures.R the figures). Every finished piece is saved in _targets/
 ##  as soon as it is done, so a run that stops (a laptop closed, Colab or a
 ##  cloud machine shutting down) continues where it was.
@@ -35,69 +36,15 @@ library(crew)
 dry_run <- identical(Sys.getenv("VALIDATION_DRY"), "1")
 if (dry_run) Sys.setenv(VALIDATION_SMOKE = "1")
 
-## flatcor compiles its Stan model into R's user cache folder: keep that in
-## cache/, writable everywhere (set before the workers start, so they inherit it)
-if (!nzchar(Sys.getenv("R_USER_CACHE_DIR"))) {
-  Sys.setenv(R_USER_CACHE_DIR = file.path(getwd(), "cache", "r_user_cache"))
-}
+## Every worker's environment (the cache folder, a copy of the TBB library,
+## one BLAS thread), set before any worker starts, so they inherit it, and
+## the validation's code, in order (R/shared/workers.R)
+source(file.path("R", "shared", "workers.R"))
+tar_source(code_files())
 
-## Linux: every Stan model loads CmdStan's TBB library (libtbb.so.2) when it
-## starts, and compiling a model can make CmdStan rebuild that library in
-## place. With several workers, one worker's compile then removes it under a
-## model another worker is starting ("libtbb.so.2: cannot open shared object
-## file", seen with 7 workers on AWS). A copy made here, before any worker
-## starts, and put first on the library path the workers inherit, is never
-## touched by such a rebuild.
-if (Sys.info()[["sysname"]] == "Linux") {
-  tbb_copy <- file.path(getwd(), "cache", "tbb")
-  dir.create(tbb_copy, recursive = TRUE, showWarnings = FALSE)
-  tbb_libraries <- list.files(
-    file.path(cmdstanr::cmdstan_path(), "stan", "lib", "stan_math", "lib", "tbb"),
-    pattern = "^libtbb.*[.]so[.]2$", full.names = TRUE
-  )
-  file.copy(tbb_libraries, tbb_copy, overwrite = TRUE)
-  library_path <- Sys.getenv("LD_LIBRARY_PATH")
-  if (!startsWith(library_path, tbb_copy)) {
-    library_path <- paste(c(tbb_copy, library_path[nzchar(library_path)]), collapse = ":")
-    Sys.setenv(LD_LIBRARY_PATH = library_path)
-  }
-}
-
-## One thread per process for linear algebra (BLAS, OpenMP). Each piece of
-## work already keeps 4 cores busy with Stan's chains, and the workers are
-## sized for that; a BLAS that starts a thread per core in every worker
-## overloads the machine instead (a load of about 200 on 64 cores, seen on
-## AWS). Set before the workers start, so they inherit it; a value set from
-## outside (a cluster job, say) is kept.
-local({
-  for (variable in c("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")) {
-    if (!nzchar(Sys.getenv(variable))) do.call(Sys.setenv, stats::setNames(list("1"), variable))
-  }
-})
-
-## The shared code, then each study's design and code
-studies <- c(
-  "1a_prior_sampling", "1b_invariance", "2a_posterior",
-  "2b_estimation", "3a_bayes_factors", "3b_default_criteria"
-)
-tar_source(c(
-  "R/shared/random_streams.R", "R/shared/pipeline.R", "R/shared/expectations.R",
-  "R/shared/results.R", "R/shared/per_dataset.R", "R/shared/comparison_methods.R",
-  "R/shared/rounds.R",
-  list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
-  file.path("R", "2_studies", studies, "design.R"),
-  file.path("R", "2_studies", studies, "code.R"),
-  # last, and only to record or replay the expensive calls: it replaces a few
-  # of the functions above (R/dry_run/replay.R)
-  if (dry_run || identical(Sys.getenv("VALIDATION_RECORD"), "1")) "R/dry_run/replay.R"
-))
-
-## Each piece of work runs Stan's 4 chains in parallel, so a quarter of the
-## cores work on pieces at the same time, each in its own R process. The
-## cores are those given to this run: on a cluster, the job's allocation
-## (parallelly reads SLURM, PBS and cgroups), not all cores of the node.
-## The dry run samples nothing, so it runs every step in this one process:
-## starting workers would take longer than the steps.
+## A worker per 4 cores (worker_count(), R/shared/workers.R). The dry run
+## samples nothing, so it runs every step in this one process: starting
+## workers would take longer than the steps.
 tar_option_set(
   packages = c("flatcor", "dplyr"),
   # targets seeds R before each step from the step's name and this seed;
@@ -105,7 +52,7 @@ tar_option_set(
   # but whatever is left follows the same root seed
   seed = root_seed,
   controller = if (dry_run) NULL else crew_controller_local(
-    workers = max(1, (parallelly::availableCores() - 1) %/% 4),
+    workers = worker_count(),
     # a log per worker (its R output, including Stan's own messages), for
     # finding out why a piece of work failed
     options_local = crew_options_local(log_directory = file.path("cache", "logs", "workers"))
@@ -167,7 +114,7 @@ list(
   tar_target(pieces_1b, pieces_of_plan(plan_1b, batch_size_1b)),
   tar_target(
     log_bfs_1b,
-    invariance_batch_1b(pieces_1b["prior"], pieces_1b$from:pieces_1b$to),
+    piece_rows("1b", pieces_1b),
     pattern = map(pieces_1b)
   ),
   # layer 1: every log Bayes factor's row (R/shared/per_dataset.R)
@@ -223,11 +170,13 @@ list(
     read_plan("2b", targets::tar_path_store(), cells_2b, first_round_2b),
     cue = tar_cue(mode = "always")
   ),
-  # one piece of work per cell and batch; a new round only adds pieces
+  # one piece of work per cell and batch; a new round only adds pieces. Each
+  # piece's rows: the ones run_all.R's queue saved, or computed here
+  # (piece_rows(), R/shared/rounds.R)
   tar_target(pieces_2b, pieces_of_plan(plan_2b, batch_size_2b)),
   tar_target(
     fits_2b,
-    estimates_batch_2b(pieces_2b[names(cells_2b)], pieces_2b$from:pieces_2b$to, stan_model),
+    piece_rows("2b", pieces_2b, stan_model),
     pattern = map(pieces_2b)
   ),
   # layer 1: every fit's row (R/shared/per_dataset.R)
@@ -246,7 +195,7 @@ list(
   tar_target(pieces_3a, pieces_of_plan(plan_3a, batch_size_3a)),
   tar_target(
     calibration_runs_3a,
-    calibration_batch_3a(pieces_3a[names(cells_3a)], pieces_3a$from:pieces_3a$to),
+    piece_rows("3a", pieces_3a),
     pattern = map(pieces_3a)
   ),
   # layer 1: every dataset's row (R/shared/per_dataset.R)
@@ -271,11 +220,7 @@ list(
   tar_target(pieces_repeats_3a, pieces_of_plan(plan_repeats_3a, batch_size_repeats_3a)),
   tar_target(
     repeated_3a,
-    repeats_3a(
-      pieces_repeats_3a[names(cells_3a)],
-      pieces_repeats_3a$from:pieces_repeats_3a$to,
-      repeat_runs_3a
-    ),
+    piece_rows("3a-repeats", pieces_repeats_3a),
     pattern = map(pieces_repeats_3a)
   ),
   tar_target(
@@ -320,11 +265,7 @@ list(
   tar_target(pieces_rates_3b, pieces_of_plan(plan_rates_3b, batch_size_3b)),
   tar_target(
     rates_3b,
-    batch_3b(
-      pieces_rates_3b[names(rate_cells_3b)],
-      pieces_rates_3b$from:pieces_rates_3b$to,
-      rate_bayes_factor_3b
-    ),
+    piece_rows("3b-rates", pieces_rates_3b),
     pattern = map(pieces_rates_3b)
   ),
 
@@ -337,11 +278,7 @@ list(
   tar_target(pieces_growing_3b, pieces_of_plan(plan_growing_3b, batch_size_3b)),
   tar_target(
     growing_3b,
-    batch_3b(
-      pieces_growing_3b[names(growing_cells_3b)],
-      pieces_growing_3b$from:pieces_growing_3b$to,
-      growing_bayes_factor_3b
-    ),
+    piece_rows("3b-growing", pieces_growing_3b),
     pattern = map(pieces_growing_3b)
   ),
 

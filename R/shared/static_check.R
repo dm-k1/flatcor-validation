@@ -53,7 +53,7 @@ studies <- basename(list.dirs(file.path("R", "2_studies"), recursive = FALSE))
 pipeline_files <- c(
   file.path("R", "shared", c(
     "random_streams.R", "pipeline.R", "expectations.R", "results.R", "per_dataset.R",
-    "comparison_methods.R", "rounds.R", "check_results.R"
+    "comparison_methods.R", "rounds.R", "check_results.R", "workers.R", "queue.R"
   )),
   list.files(file.path("R", "1_data"), pattern = "[.]R$", full.names = TRUE),
   file.path("R", "2_studies", studies, "design.R"),
@@ -142,9 +142,9 @@ cat(sprintf("3. calls checked in %d functions and the pipeline's steps\n", lengt
 ##      R/dry_run/replay.R), and every seam listed there exists
 ##   b. files are read and written only where it is declared: a study's results
 ##      file (save_study_results_file(), a "file" step), the plans of the
-##      rounds (in the store), the recordings, the compile lock and the final
-##      check. Any other file a step needs or makes is a step of its own
-##      (tar_target(..., format = "file"))
+##      rounds and the pieces the queue runs (both in the store), the
+##      recordings, the compile lock and the final check. Any other file a
+##      step needs or makes is a step of its own (tar_target(..., format = "file"))
 ##   c. every results file a figure script or run_all.R reads is made by a
 ##      step: results_<study>, format = "file"; the figure scripts read them
 ##      only through read_results()
@@ -160,6 +160,7 @@ file_calls <- c(
 )
 allowed_file_use <- c(
   "save_study_results_file", "read_plan", "write_plan",
+  "run_piece", "read_piece", "run_rounds", "as_read_back", "code_files",
   "compile_flatcor_models", "check_results_file", "check_results",
   "write_per_dataset", "read_per_dataset"
 )
@@ -258,7 +259,7 @@ if (!is.null(manifest)) {
       }
     }
   }
-  # run_all.R reads the results file of every study that runs in rounds
+  # run_all.R reads, at the end, the results file of every study that runs in rounds
   run_all_lines <- grep("study = \"[0-9][a-z]\"", readLines("run_all.R"), value = TRUE)
   run_all_studies <- unique(sub(".*study = \"([0-9][a-z])\".*", "\\1", run_all_lines))
   for (study in run_all_studies) {
